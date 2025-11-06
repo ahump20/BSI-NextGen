@@ -1,0 +1,5 @@
+# Packages Directory
+
+This directory contains all the packages in the BSI-NextGen monorepo.
+
+Each subdirectory represents an individual package that can be developed, tested, and published independently while sharing common development tools and configurations from the root.
