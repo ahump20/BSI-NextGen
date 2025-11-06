@@ -1,0 +1,19 @@
+name = "blaze-backyard-baseball"
+compatibility_date = "2024-11-06"
+pages_build_output_dir = "dist"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "blaze-baseball-db"
+database_id = "TBD" # Replace with actual database ID after creation
+
+# KV namespace for leaderboards
+[[kv_namespaces]]
+binding = "KV"
+id = "TBD" # Replace with actual KV namespace ID after creation
+
+# R2 bucket for 3D models and textures
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "blaze-baseball-assets"
