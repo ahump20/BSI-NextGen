@@ -18,11 +18,7 @@
       "plugins": ["@typescript-eslint"],
       "extends": [
         "plugin:@typescript-eslint/recommended"
-      ],
-      "parserOptions": {
-        "ecmaVersion": "latest",
-        "sourceType": "module"
-      }
+      ]
     },
     {
       "files": ["*.jsx", "*.tsx"],
