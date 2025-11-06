@@ -1,0 +1,22 @@
+{
+  "name": "bsi-nextgen",
+  "version": "1.0.0",
+  "description": "BSI-NextGen monorepo",
+  "private": true,
+  "scripts": {
+    "lint": "eslint \"packages/**/*.{js,jsx,ts,tsx}\"",
+    "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
