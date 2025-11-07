@@ -65,7 +65,6 @@ jobs:
 
       - name: Build project
         run: pnpm build || echo "Build command not yet configured - skipping"
-        continue-on-error: true
 
   deploy-info:
     name: Deployment Information
