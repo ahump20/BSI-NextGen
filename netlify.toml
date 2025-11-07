@@ -47,6 +47,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
 
 # Plugin to manage build cache
+# Note: This plugin is available by default in Netlify and doesn't require separate installation
 # If builds fail unexpectedly, you can clear the cache via Netlify UI
 [[plugins]]
   package = "netlify-plugin-cache"

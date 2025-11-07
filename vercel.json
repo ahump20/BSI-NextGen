@@ -14,7 +14,6 @@
     "silent": false,
     "autoJobCancellation": true
   },
-  "env": {},
   "build": {
     "env": {
       "CI": ""
