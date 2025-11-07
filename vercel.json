@@ -6,12 +6,12 @@
   "framework": null,
   "outputDirectory": "dist",
   "env": {
-    "CI": "false"
+    "CI": ""
   },
   "build": {
     "env": {
       "NPM_FLAGS": "--legacy-peer-deps",
-      "CI": "false"
+      "CI": ""
     }
   },
   "github": {
