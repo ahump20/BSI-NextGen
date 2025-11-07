@@ -24,10 +24,6 @@
   # PNPM version
   PNPM_VERSION = "8"
 
-# Enable PNPM
-[build.processing]
-  skip_processing = false
-
 # Cache configuration
 [build.processing.css]
   bundle = true

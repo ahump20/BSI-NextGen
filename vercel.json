@@ -16,7 +16,7 @@
   },
   "github": {
     "silent": false,
-    "autoJobCancelation": true
+    "autoJobCancellation": true
   },
   "regions": ["iad1"],
   "crons": []
