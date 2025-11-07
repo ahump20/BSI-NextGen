@@ -16,7 +16,6 @@
   NODE_VERSION = "18"
   
   # NPM flags to handle peer dependency conflicts
-  NPM_FLAGS = "--legacy-peer-deps"
   
   # Prevent warnings from being treated as errors
   CI = ""
