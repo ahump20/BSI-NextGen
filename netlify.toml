@@ -1,0 +1,42 @@
+[build]
+  # Default build command for the monorepo
+  command = "pnpm install && pnpm build"
+
+  # Default publish directory
+  publish = "dist"
+
+  # Use pnpm for package management
+  [build.environment]
+    NODE_VERSION = "18"
+    NPM_FLAGS = "--version"
+
+# Production context: all deploys from the main branch
+[context.production]
+  command = "pnpm install && pnpm build"
+  publish = "dist"
+
+# Deploy Preview context: all deploys from pull requests
+[context.deploy-preview]
+  command = "pnpm install && pnpm build"
+  publish = "dist"
+
+# Branch deploy context: all deploys from non-production branches
+[context.branch-deploy]
+  command = "pnpm install && pnpm build"
+  publish = "dist"
+
+# Redirect rules (optional - customize as needed)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Headers (optional - security headers)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

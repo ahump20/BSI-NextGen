@@ -1,0 +1,30 @@
+name: Deployment Status
+
+on:
+  deployment_status:
+
+jobs:
+  deployment-status:
+    name: Check Deployment Status
+    runs-on: ubuntu-latest
+    if: github.event.deployment_status.state != 'pending'
+
+    steps:
+      - name: Deployment Status Info
+        run: |
+          echo "Deployment Status: ${{ github.event.deployment_status.state }}"
+          echo "Environment: ${{ github.event.deployment_status.environment }}"
+          echo "Deployment URL: ${{ github.event.deployment_status.target_url }}"
+          echo "Creator: ${{ github.event.deployment_status.creator.login }}"
+
+      - name: Notify on Success
+        if: github.event.deployment_status.state == 'success'
+        run: |
+          echo "✅ Deployment succeeded!"
+          echo "🌐 Visit: ${{ github.event.deployment_status.target_url }}"
+
+      - name: Notify on Failure
+        if: github.event.deployment_status.state == 'failure'
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Check logs at: ${{ github.event.deployment_status.target_url }}"
