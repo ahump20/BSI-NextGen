@@ -79,6 +79,8 @@
 
 [context.branch-deploy.environment]
   CI = ""
+[context.branch-deploy.environment]
+  CI = ""
 
 # Development server settings
 [dev]
