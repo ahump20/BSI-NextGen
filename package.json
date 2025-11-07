@@ -8,7 +8,7 @@
     "dev": "pnpm -r dev",
     "lint": "eslint \"packages/**/*.{js,jsx,ts,tsx}\"",
     "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "clean": "pnpm -r clean && rm -rf dist node_modules/.cache",
+    "clean": "pnpm -r clean && rimraf dist node_modules/.cache",
     "test": "pnpm -r test"
   },
   "devDependencies": {
