@@ -4,6 +4,8 @@
   "description": "BSI-NextGen monorepo",
   "private": true,
   "scripts": {
+    "build": "echo 'Building packages...' && echo 'No packages to build yet'",
+    "dev": "echo 'Starting dev server...' && echo 'No packages to run yet'",
     "lint": "eslint \"packages/**/*.{js,jsx,ts,tsx}\"",
     "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\""
   },

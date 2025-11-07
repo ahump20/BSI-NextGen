@@ -13,5 +13,10 @@
     "autoAlias": true,
     "silent": false,
     "autoJobCancellation": true
+  },
+  "build": {
+    "env": {
+      "CI": ""
+    }
   }
 }

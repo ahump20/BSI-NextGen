@@ -61,3 +61,19 @@ yarn.lock
 
 # Build artifacts
 *.tgz
+
+# Large files (Netlify CDN limit ~10 MB)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.zip
+*.tar.gz
+*.7z
+*.rar
+*.iso
+
+# Exclude large media files
+*.psd
+*.ai
+*.sketch
