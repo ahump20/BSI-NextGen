@@ -1,0 +1,41 @@
+# Vercel ignore file
+# Prevents large files and unnecessary files from being uploaded to Vercel
+
+# Large media files (Vercel has 100MB function limit per deployment)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.zip
+*.tar.gz
+*.7z
+*.rar
+*.iso
+
+# Large design files
+*.psd
+*.ai
+*.sketch
+
+# Development files
+.env.local
+.env.development.local
+.env.test.local
+
+# Tests
+**/*.test.js
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.js
+**/*.spec.ts
+**/*.spec.tsx
+coverage/
+
+# Documentation (usually not needed in deployment)
+docs/
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
