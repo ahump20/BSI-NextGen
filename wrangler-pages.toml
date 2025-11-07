@@ -14,14 +14,7 @@ binding = "KV"
 id = "1b4e56b25c1442029c5eb3215f9ff636"
 
 # Durable Objects for multiplayer game sessions
-# NOTE: Temporarily disabled until Worker script is deployed
-# [[durable_objects.bindings]]
-# name = "GAME_SESSIONS"
-# class_name = "GameSessionDurableObject"
-# script_name = "sandlot-sluggers"
-
-# R2 bucket for 3D models and textures
-# NOTE: R2 is not enabled on this account. Game assets are served from dist/assets/ instead.
-# [[r2_buckets]]
-# binding = "GAME_ASSETS"
-# bucket_name = "blaze-baseball-assets"
+[[durable_objects.bindings]]
+name = "GAME_SESSIONS"
+class_name = "GameSessionDurableObject"
+script_name = "sandlot-sluggers"

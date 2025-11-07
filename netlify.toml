@@ -1,0 +1,68 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  environment = { NODE_VERSION = "20" }
+
+[build.environment]
+  VITE_APP_VERSION = "netlify-deployment"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://sandlot-sluggers.pages.dev/api/:splat"
+  status = 200
+
+# Allow embed.html to be embedded in Blaze Sports Intel
+[[headers]]
+  for = "/embed.html"
+  [headers.values]
+    X-Frame-Options = "ALLOW-FROM https://blazesportsintel.com"
+    Content-Security-Policy = "frame-ancestors 'self' https://blazesportsintel.com https://www.blazesportsintel.com"
+    Access-Control-Allow-Origin = "https://blazesportsintel.com"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Strict headers for all other pages
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+
+# Aggressive caching for static assets
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.wasm"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "application/wasm"
+
+# Optimal caching for index.html (revalidate)
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/embed.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

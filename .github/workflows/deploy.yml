@@ -1,0 +1,202 @@
+name: Deploy Sandlot Sluggers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Allow manual deployment
+
+jobs:
+  # Job 1: Lint and Type Check
+  quality-check:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint check
+        run: npm run lint || true # Don't fail on lint warnings
+
+  # Job 2: Build Application
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: quality-check
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        env:
+          VITE_BLAZE_API_URL: ${{ secrets.VITE_BLAZE_API_URL }}
+          VITE_BLAZE_CLIENT_ID: ${{ secrets.VITE_BLAZE_CLIENT_ID }}
+          VITE_BLAZE_CLIENT_SECRET: ${{ secrets.VITE_BLAZE_CLIENT_SECRET }}
+          VITE_BLAZE_API_KEY: ${{ secrets.VITE_BLAZE_API_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_APP_VERSION: ${{ github.sha }}
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  # Job 3: Deploy to Cloudflare Pages
+  deploy:
+    name: Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=sandlot-sluggers --branch=main
+
+      - name: Get deployment URL
+        id: deploy
+        run: |
+          echo "DEPLOYMENT_URL=https://sandlot-sluggers.pages.dev" >> $GITHUB_OUTPUT
+
+      - name: Send Discord notification
+        if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            STATUS_EMOJI="✅"
+            STATUS_COLOR="3066993"
+            STATUS_TEXT="Deployment Successful"
+          else
+            STATUS_EMOJI="❌"
+            STATUS_COLOR="15158332"
+            STATUS_TEXT="Deployment Failed"
+          fi
+
+          COMMIT_MSG=$(git log -1 --pretty=%B | head -n 1)
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_AUTHOR=$(git log -1 --pretty=%an)
+
+          curl -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "'"${STATUS_EMOJI} Sandlot Sluggers Deployment"'",
+                "description": "'"${STATUS_TEXT}"'",
+                "color": '"${STATUS_COLOR}"',
+                "fields": [
+                  {
+                    "name": "Commit",
+                    "value": "'"${COMMIT_MSG}"'",
+                    "inline": false
+                  },
+                  {
+                    "name": "Author",
+                    "value": "'"${COMMIT_AUTHOR}"'",
+                    "inline": true
+                  },
+                  {
+                    "name": "SHA",
+                    "value": "'"${COMMIT_SHA}"'",
+                    "inline": true
+                  },
+                  {
+                    "name": "Deployment URL",
+                    "value": "'"${{ steps.deploy.outputs.DEPLOYMENT_URL }}"'",
+                    "inline": false
+                  }
+                ],
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
+              }]
+            }' \
+            "$DISCORD_WEBHOOK" || echo "Discord notification failed (webhook may not be configured)"
+
+  # Job 4: Performance Monitoring
+  performance:
+    name: Performance Monitoring
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Wait for deployment
+        run: sleep 30 # Wait for deployment to propagate
+
+      - name: Run Lighthouse CI
+        run: |
+          npm install -g @lhci/cli@0.13.x
+          lhci autorun || echo "Lighthouse CI completed (may have warnings)"
+        env:
+          LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
+          LHCI_BUILD_CONTEXT__COMMIT_TIME: ${{ github.event.head_commit.timestamp }}
+
+      - name: Upload Lighthouse results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          retention-days: 30
+
+  # Job 5: Error Tracking Setup (Sentry)
+  sentry-release:
+    name: Create Sentry Release
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        if: env.SENTRY_AUTH_TOKEN != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: sandlot-sluggers
+        with:
+          environment: production
+          version: ${{ github.sha }}

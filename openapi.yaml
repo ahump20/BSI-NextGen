@@ -1,0 +1,857 @@
+openapi: 3.0.3
+info:
+  title: Sandlot Sluggers API
+  description: |
+    REST API for Sandlot Sluggers baseball game.
+
+    ## Features
+    - Real-time game statistics
+    - Player progression tracking
+    - Global leaderboards
+    - Character and stadium analytics
+
+    ## Base URL
+    Production: `https://eaec3ea6.sandlot-sluggers.pages.dev/api`
+
+    ## Rate Limits
+    - 100 requests per minute per IP
+    - 1000 requests per hour per player
+
+    ## Timezone
+    All timestamps are in America/Chicago timezone (CST/CDT)
+
+  version: 1.0.0
+  contact:
+    name: Blaze Sports Intel
+    url: https://blazesportsintel.com
+    email: ahump20@outlook.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://eaec3ea6.sandlot-sluggers.pages.dev/api
+    description: Production server
+  - url: https://5e1ebbdb.sandlot-sluggers.pages.dev/api
+    description: Previous production deployment
+  - url: http://localhost:8788/api
+    description: Local development server
+
+tags:
+  - name: Health
+    description: System health monitoring
+  - name: Stats
+    description: Game statistics and analytics
+  - name: Leaderboards
+    description: Player rankings and leaderboards
+  - name: Characters
+    description: Character performance metrics
+  - name: Stadiums
+    description: Stadium usage analytics
+  - name: Progress
+    description: Player progression tracking
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Returns system health status including D1 database and KV cache connectivity
+      operationId: getHealth
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                timestamp: 1762475501451
+                status: healthy
+                checks:
+                  database:
+                    status: healthy
+                    latency: 98
+                  kv:
+                    status: healthy
+                    latency: 150
+                  frontend:
+                    status: healthy
+                    latency: 0
+        '503':
+          description: Service degraded or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                timestamp: 1762475501451
+                status: degraded
+                checks:
+                  database:
+                    status: unhealthy
+                    latency: 5000
+                    error: Connection timeout
+                  kv:
+                    status: healthy
+                    latency: 150
+                  frontend:
+                    status: healthy
+                    latency: 0
+
+  /stats/global:
+    get:
+      tags:
+        - Stats
+      summary: Get global game statistics
+      description: Returns aggregated statistics across all players and games
+      operationId: getGlobalStats
+      responses:
+        '200':
+          description: Global statistics retrieved successfully
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Cache control header (max-age=300)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalStats'
+              example:
+                activePlayers: 0
+                gamesToday: 0
+                gamesTotal: 2
+                totalHomeRuns: 5
+                totalHits: 20
+                totalRuns: 15
+                topPlayer:
+                  id: test-player-001
+                  name: Anonymous
+                  homeRuns: 5
+                mostPopularStadium:
+                  id: dusty_acres
+                  name: Dusty Acres
+                  usagePercent: 20
+                mostPopularCharacter:
+                  id: rocket_rivera
+                  name: Rocket Rivera
+                  usagePercent: 15
+                avgGameLength: 510
+                lastUpdated: "2025-11-07T00:31:50.472Z"
+                timezone: America/Chicago
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /stats/leaderboard/{statType}:
+    get:
+      tags:
+        - Leaderboards
+      summary: Get leaderboard by stat type
+      description: Returns top players for a specific statistic
+      operationId: getLeaderboard
+      parameters:
+        - name: statType
+          in: path
+          required: true
+          description: Type of statistic to rank by
+          schema:
+            type: string
+            enum:
+              - home_runs
+              - wins
+              - batting_avg
+              - total_hits
+              - total_runs
+              - games_played
+              - experience
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of entries to return (default 10, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Leaderboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardResponse'
+              example:
+                statType: home_runs
+                entries:
+                  - rank: 1
+                    playerId: player-123
+                    playerName: Rocket Rivera
+                    statValue: 42
+                    gamesPlayed: 15
+                  - rank: 2
+                    playerId: player-456
+                    playerName: Sally Slugger
+                    statValue: 38
+                    gamesPlayed: 18
+                totalEntries: 150
+                lastUpdated: "2025-11-07T00:31:50.472Z"
+                timezone: America/Chicago
+        '400':
+          description: Invalid stat type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Invalid stat type. Must be one of: home_runs, wins, batting_avg, total_hits, total_runs, games_played, experience"
+                timestamp: "2025-11-07T00:31:57.345Z"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /stats/characters:
+    get:
+      tags:
+        - Characters
+      summary: Get character performance statistics
+      description: Returns performance metrics for all characters or a specific character
+      operationId: getCharacterStats
+      parameters:
+        - name: characterId
+          in: query
+          required: false
+          description: Filter by specific character ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Character statistics retrieved successfully
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Cache control header (max-age=600)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterStatsResponse'
+              example:
+                characters:
+                  - id: rocket_rivera
+                    name: Rocket Rivera
+                    gamesPlayed: 45
+                    winRate: 0.67
+                    avgHomeRuns: 3.2
+                    avgHits: 8.5
+                    popularityRank: 1
+                  - id: sally_slugger
+                    name: Sally Slugger
+                    gamesPlayed: 38
+                    winRate: 0.71
+                    avgHomeRuns: 2.8
+                    avgHits: 9.1
+                    popularityRank: 2
+                mostPopular:
+                  id: rocket_rivera
+                  name: Rocket Rivera
+                  usagePercent: 22.5
+                totalGames: 200
+                metadata:
+                  lastUpdated: "2025-11-07T00:31:58.593Z"
+                  timezone: America/Chicago
+        '404':
+          description: Character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /stats/stadiums:
+    get:
+      tags:
+        - Stadiums
+      summary: Get stadium usage statistics
+      description: Returns usage metrics and scoring averages for all stadiums or a specific stadium
+      operationId: getStadiumStats
+      parameters:
+        - name: stadiumId
+          in: query
+          required: false
+          description: Filter by specific stadium ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Stadium statistics retrieved successfully
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Cache control header (max-age=600)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StadiumStatsResponse'
+              example:
+                stadiums:
+                  - id: dusty_acres
+                    name: Dusty Acres
+                    gamesPlayed: 55
+                    avgHomeRuns: 4.2
+                    avgRuns: 12.8
+                    popularityRank: 1
+                  - id: steel_mill_park
+                    name: Steel Mill Park
+                    gamesPlayed: 42
+                    avgHomeRuns: 3.8
+                    avgRuns: 11.5
+                    popularityRank: 2
+                mostPopular:
+                  id: dusty_acres
+                  name: Dusty Acres
+                  usagePercent: 27.5
+                totalGames: 200
+                metadata:
+                  lastUpdated: "2025-11-07T00:32:01.123Z"
+                  timezone: America/Chicago
+        '404':
+          description: Stadium not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /progress/{playerId}:
+    get:
+      tags:
+        - Progress
+      summary: Get player progression data
+      description: Returns detailed progression information for a specific player
+      operationId: getPlayerProgress
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          description: Unique player identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Player progress retrieved successfully
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Cache control header (max-age=60)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerProgress'
+              example:
+                playerId: player-123
+                gamesPlayed: 25
+                wins: 18
+                losses: 7
+                totalRuns: 156
+                totalHits: 234
+                totalHomeRuns: 42
+                unlockedCharacters:
+                  - rocket_rivera
+                  - sally_slugger
+                  - tommy_twobagger
+                unlockedStadiums:
+                  - dusty_acres
+                  - steel_mill_park
+                currentLevel: 8
+                experience: 1250
+                nextLevelXP: 1500
+                createdAt: "2025-10-15T14:22:00.000Z"
+                updatedAt: "2025-11-07T00:30:00.000Z"
+        '404':
+          description: Player not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /game-result:
+    post:
+      tags:
+        - Stats
+      summary: Submit game result
+      description: Records the result of a completed game (optional, for future analytics)
+      operationId: submitGameResult
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameResultRequest'
+            example:
+              playerId: player-123
+              characterId: rocket_rivera
+              stadiumId: dusty_acres
+              runs: 8
+              hits: 12
+              homeRuns: 3
+              innings: 9
+              won: true
+              gameLength: 520
+      responses:
+        '201':
+          description: Game result recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResultResponse'
+              example:
+                success: true
+                gameId: game-789
+                xpGained: 150
+                newLevel: 9
+                unlockedRewards:
+                  - character: dizzy_dean
+                    type: character
+                timestamp: "2025-11-07T00:35:00.000Z"
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - checks
+      properties:
+        timestamp:
+          type: integer
+          format: int64
+          description: Unix timestamp in milliseconds
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        checks:
+          type: object
+          properties:
+            database:
+              $ref: '#/components/schemas/HealthCheck'
+            kv:
+              $ref: '#/components/schemas/HealthCheck'
+            frontend:
+              $ref: '#/components/schemas/HealthCheck'
+
+    HealthCheck:
+      type: object
+      required:
+        - status
+        - latency
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        latency:
+          type: integer
+          description: Latency in milliseconds
+        error:
+          type: string
+          description: Error message if unhealthy
+
+    GlobalStats:
+      type: object
+      required:
+        - activePlayers
+        - gamesToday
+        - gamesTotal
+        - totalHomeRuns
+        - totalHits
+        - totalRuns
+        - avgGameLength
+        - lastUpdated
+        - timezone
+      properties:
+        activePlayers:
+          type: integer
+          description: Number of active players (last 24 hours)
+        gamesToday:
+          type: integer
+          description: Games played today
+        gamesTotal:
+          type: integer
+          description: Total games played all-time
+        totalHomeRuns:
+          type: integer
+        totalHits:
+          type: integer
+        totalRuns:
+          type: integer
+        topPlayer:
+          $ref: '#/components/schemas/TopPlayer'
+        mostPopularStadium:
+          $ref: '#/components/schemas/PopularItem'
+        mostPopularCharacter:
+          $ref: '#/components/schemas/PopularItem'
+        avgGameLength:
+          type: integer
+          description: Average game length in seconds
+        lastUpdated:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          example: America/Chicago
+
+    TopPlayer:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        homeRuns:
+          type: integer
+
+    PopularItem:
+      type: object
+      required:
+        - id
+        - name
+        - usagePercent
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        usagePercent:
+          type: number
+          format: float
+
+    LeaderboardResponse:
+      type: object
+      required:
+        - statType
+        - entries
+        - totalEntries
+        - lastUpdated
+        - timezone
+      properties:
+        statType:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+        totalEntries:
+          type: integer
+        lastUpdated:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+
+    LeaderboardEntry:
+      type: object
+      required:
+        - rank
+        - playerId
+        - statValue
+        - gamesPlayed
+      properties:
+        rank:
+          type: integer
+        playerId:
+          type: string
+        playerName:
+          type: string
+        statValue:
+          type: number
+        gamesPlayed:
+          type: integer
+
+    CharacterStatsResponse:
+      type: object
+      required:
+        - characters
+        - totalGames
+        - metadata
+      properties:
+        characters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterStats'
+        mostPopular:
+          $ref: '#/components/schemas/PopularItem'
+        totalGames:
+          type: integer
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+
+    CharacterStats:
+      type: object
+      required:
+        - id
+        - name
+        - gamesPlayed
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        gamesPlayed:
+          type: integer
+        winRate:
+          type: number
+          format: float
+        avgHomeRuns:
+          type: number
+          format: float
+        avgHits:
+          type: number
+          format: float
+        popularityRank:
+          type: integer
+
+    StadiumStatsResponse:
+      type: object
+      required:
+        - stadiums
+        - totalGames
+        - metadata
+      properties:
+        stadiums:
+          type: array
+          items:
+            $ref: '#/components/schemas/StadiumStats'
+        mostPopular:
+          $ref: '#/components/schemas/PopularItem'
+        totalGames:
+          type: integer
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+
+    StadiumStats:
+      type: object
+      required:
+        - id
+        - name
+        - gamesPlayed
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        gamesPlayed:
+          type: integer
+        avgHomeRuns:
+          type: number
+          format: float
+        avgRuns:
+          type: number
+          format: float
+        popularityRank:
+          type: integer
+
+    PlayerProgress:
+      type: object
+      required:
+        - playerId
+        - gamesPlayed
+        - wins
+        - losses
+        - totalRuns
+        - totalHits
+        - totalHomeRuns
+        - currentLevel
+        - experience
+        - createdAt
+        - updatedAt
+      properties:
+        playerId:
+          type: string
+        gamesPlayed:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        totalRuns:
+          type: integer
+        totalHits:
+          type: integer
+        totalHomeRuns:
+          type: integer
+        unlockedCharacters:
+          type: array
+          items:
+            type: string
+        unlockedStadiums:
+          type: array
+          items:
+            type: string
+        currentLevel:
+          type: integer
+        experience:
+          type: integer
+        nextLevelXP:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GameResultRequest:
+      type: object
+      required:
+        - playerId
+        - characterId
+        - stadiumId
+        - runs
+        - hits
+        - homeRuns
+        - innings
+        - won
+        - gameLength
+      properties:
+        playerId:
+          type: string
+        characterId:
+          type: string
+        stadiumId:
+          type: string
+        runs:
+          type: integer
+          minimum: 0
+        hits:
+          type: integer
+          minimum: 0
+        homeRuns:
+          type: integer
+          minimum: 0
+        innings:
+          type: integer
+          minimum: 1
+          maximum: 20
+        won:
+          type: boolean
+        gameLength:
+          type: integer
+          description: Game duration in seconds
+
+    GameResultResponse:
+      type: object
+      required:
+        - success
+        - gameId
+        - xpGained
+        - timestamp
+      properties:
+        success:
+          type: boolean
+        gameId:
+          type: string
+        xpGained:
+          type: integer
+        newLevel:
+          type: integer
+        unlockedRewards:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnlockedReward'
+        timestamp:
+          type: string
+          format: date-time
+
+    UnlockedReward:
+      type: object
+      required:
+        - type
+      properties:
+        character:
+          type: string
+        stadium:
+          type: string
+        type:
+          type: string
+          enum: [character, stadium, achievement]
+
+    Metadata:
+      type: object
+      required:
+        - lastUpdated
+        - timezone
+      properties:
+        lastUpdated:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: object
+          description: Additional error context
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authenticated requests (future implementation)
+
+security: []

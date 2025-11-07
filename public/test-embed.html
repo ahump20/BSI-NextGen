@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sandlot Sluggers - Embed Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .subtitle {
+      color: rgba(255, 255, 255, 0.9);
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
+    }
+
+    .controls {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .controls h2 {
+      margin-bottom: 1rem;
+      color: #333;
+      font-size: 1.3rem;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    .game-wrapper {
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    .game-container {
+      width: 100%;
+      height: 800px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #1a1a1a;
+      position: relative;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .status {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f0f9ff;
+      border-left: 4px solid #0ea5e9;
+      border-radius: 4px;
+    }
+
+    .status h3 {
+      color: #0369a1;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .status-text {
+      color: #075985;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.9rem;
+    }
+
+    .event-log {
+      margin-top: 1rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 1rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .event-log h3 {
+      color: #374151;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .event-item {
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+      background: white;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #4b5563;
+      font-family: 'Monaco', 'Courier New', monospace;
+    }
+
+    .event-item.received {
+      border-left: 3px solid #10b981;
+    }
+
+    .event-item.sent {
+      border-left: 3px solid #3b82f6;
+    }
+
+    .event-item .timestamp {
+      color: #9ca3af;
+      font-size: 0.75rem;
+    }
+
+    .info-box {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-box h2 {
+      color: #333;
+      margin-bottom: 1rem;
+    }
+
+    .info-box p {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 0.5rem;
+    }
+
+    .info-box code {
+      background: #f3f4f6;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.9rem;
+      color: #be185d;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+
+      h1 {
+        font-size: 1.8rem;
+      }
+
+      .game-container {
+        height: 600px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏆 Sandlot Sluggers - Embed Test</h1>
+    <p class="subtitle">Interactive iframe embedding demonstration</p>
+
+    <!-- Controls -->
+    <div class="controls">
+      <h2>Embed Controls</h2>
+      <div class="button-group">
+        <button class="btn-primary" onclick="sendMessage('startGame', { difficulty: 'medium' })">
+          ▶️ Start Game
+        </button>
+        <button class="btn-secondary" onclick="sendMessage('resetGame')">
+          🔄 Reset Game
+        </button>
+        <button class="btn-secondary" onclick="sendMessage('getStats')">
+          📊 Get Stats
+        </button>
+        <button class="btn-danger" onclick="reloadIframe()">
+          🔃 Reload Iframe
+        </button>
+      </div>
+
+      <!-- Status -->
+      <div class="status">
+        <h3>Connection Status</h3>
+        <div class="status-text" id="status">
+          Waiting for iframe to load...
+        </div>
+      </div>
+
+      <!-- Event Log -->
+      <div class="event-log">
+        <h3>Event Log</h3>
+        <div id="event-log"></div>
+      </div>
+    </div>
+
+    <!-- Game Iframe -->
+    <div class="game-wrapper">
+      <div class="game-container">
+        <iframe
+          id="game-iframe"
+          src="/embed.html"
+          allow="accelerometer; gyroscope; fullscreen"
+          sandbox="allow-scripts allow-same-origin allow-forms"
+        ></iframe>
+      </div>
+    </div>
+
+    <!-- Information -->
+    <div class="info-box">
+      <h2>ℹ️ About This Test</h2>
+      <p>
+        This page demonstrates the embeddable version of Sandlot Sluggers using an iframe.
+        The game communicates with this parent page using the <code>postMessage</code> API.
+      </p>
+      <p>
+        <strong>Try the controls above to:</strong>
+      </p>
+      <ul style="margin-left: 1.5rem; color: #666; line-height: 1.8;">
+        <li>Start a new game with custom settings</li>
+        <li>Reset the game state</li>
+        <li>Request current statistics</li>
+        <li>Reload the iframe completely</li>
+      </ul>
+      <p style="margin-top: 1rem;">
+        <strong>Security:</strong> The embed version only accepts messages from whitelisted origins
+        (blazesportsintel.com, localhost) to prevent unauthorized control.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const iframe = document.getElementById('game-iframe');
+    const statusEl = document.getElementById('status');
+    const eventLogEl = document.getElementById('event-log');
+    let gameReady = false;
+
+    // Listen for messages from iframe
+    window.addEventListener('message', (event) => {
+      // Security: In production, verify event.origin
+      if (event.origin !== window.location.origin &&
+          !event.origin.includes('blazesportsintel.com')) {
+        console.warn('Received message from unauthorized origin:', event.origin);
+        return;
+      }
+
+      const { type, data } = event.data;
+
+      // Log the event
+      logEvent('received', type, data);
+
+      // Handle different message types
+      switch (type) {
+        case 'gameReady':
+          gameReady = true;
+          statusEl.textContent = '✅ Game loaded and ready!';
+          statusEl.style.color = '#10b981';
+          break;
+
+        case 'gameStart':
+          statusEl.textContent = '🎮 Game started!';
+          break;
+
+        case 'gameEnd':
+          statusEl.textContent = `🏁 Game ended! Stats: ${JSON.stringify(data.stats)}`;
+          break;
+
+        case 'statsUpdate':
+          statusEl.textContent = `📊 Stats updated: ${JSON.stringify(data)}`;
+          break;
+
+        case 'error':
+          statusEl.textContent = `❌ Error: ${data.message}`;
+          statusEl.style.color = '#ef4444';
+          break;
+
+        default:
+          console.log('Unknown message type:', type, data);
+      }
+    });
+
+    // Send message to iframe
+    function sendMessage(messageType, data = {}) {
+      if (!gameReady && messageType !== 'ping') {
+        statusEl.textContent = '⏳ Waiting for game to load...';
+        return;
+      }
+
+      iframe.contentWindow.postMessage(
+        { type: messageType, data },
+        window.location.origin
+      );
+
+      logEvent('sent', messageType, data);
+      statusEl.textContent = `📤 Sent: ${messageType}`;
+    }
+
+    // Reload iframe
+    function reloadIframe() {
+      gameReady = false;
+      statusEl.textContent = '🔄 Reloading iframe...';
+      iframe.src = iframe.src;
+      logEvent('system', 'iframe_reload', {});
+    }
+
+    // Log events
+    function logEvent(direction, type, data) {
+      const timestamp = new Date().toLocaleTimeString();
+      const eventItem = document.createElement('div');
+      eventItem.className = `event-item ${direction}`;
+      eventItem.innerHTML = `
+        <span class="timestamp">[${timestamp}]</span>
+        <strong>${direction.toUpperCase()}</strong>: ${type}
+        ${Object.keys(data).length > 0 ? `<br><small>${JSON.stringify(data)}</small>` : ''}
+      `;
+
+      eventLogEl.insertBefore(eventItem, eventLogEl.firstChild);
+
+      // Keep only last 10 events
+      while (eventLogEl.children.length > 10) {
+        eventLogEl.removeChild(eventLogEl.lastChild);
+      }
+    }
+
+    // Initial status
+    logEvent('system', 'page_load', { origin: window.location.origin });
+
+    // Check iframe ready after 2 seconds
+    setTimeout(() => {
+      if (!gameReady) {
+        sendMessage('ping');
+      }
+    }, 2000);
+  </script>
+</body>
+</html>
