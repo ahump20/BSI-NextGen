@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@bsi/*": ["packages/*/src"]
+    }
+  },
+  "references": [
+    { "path": "./packages/sports-dashboard" }
+  ]
+}
