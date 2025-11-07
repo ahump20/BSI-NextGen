@@ -133,8 +133,9 @@ Configures:
 **Cause:** NPM 8.6–8.12 peer dependency issues, especially with React 17+.
 
 **Fix:**
-- Already configured via `NPM_FLAGS=--legacy-peer-deps` in both config files
-- If still failing, you can add `--force` flag
+- For pnpm, add the `--legacy-peer-deps` flag directly to your install/build command (e.g., `pnpm install --legacy-peer-deps`)
+- Alternatively, configure this in your `.npmrc` or `pnpm-workspace.yaml` for persistent behavior
+- If still failing, you can add the `--force` flag
 
 ### 5. Warnings Treated as Errors in CI
 
