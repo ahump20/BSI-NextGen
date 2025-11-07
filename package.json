@@ -4,8 +4,12 @@
   "description": "BSI-NextGen monorepo",
   "private": true,
   "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev",
     "lint": "eslint \"packages/**/*.{js,jsx,ts,tsx}\"",
-    "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\""
+    "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "clean": "pnpm -r clean && rm -rf dist node_modules/.cache",
+    "test": "pnpm -r test"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

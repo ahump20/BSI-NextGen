@@ -1,0 +1,94 @@
+# Netlify Configuration
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  # Build command - CI='' prevents warnings from being treated as errors
+  command = "CI='' pnpm install && CI='' pnpm run build"
+  
+  # Output directory for the build
+  publish = "dist"
+  
+  # Functions directory (if using Netlify Functions)
+  # functions = "netlify/functions"
+
+[build.environment]
+  # Node version
+  NODE_VERSION = "18"
+  
+  # NPM flags to handle peer dependency conflicts
+  NPM_FLAGS = "--legacy-peer-deps"
+  
+  # Prevent warnings from being treated as errors
+  CI = ""
+  
+  # PNPM version
+  PNPM_VERSION = "8"
+
+# Enable PNPM
+[build.processing]
+  skip_processing = false
+
+# Cache configuration
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+[build.processing.images]
+  compress = true
+
+# Plugin configuration
+[[plugins]]
+  package = "@netlify/plugin-cache"
+  
+  [plugins.inputs]
+    paths = [
+      "node_modules",
+      ".pnpm-store",
+      ".cache"
+    ]
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Redirect rules (example)
+# [[redirects]]
+#   from = "/old-path"
+#   to = "/new-path"
+#   status = 301
+
+# Context-specific builds (production, deploy-preview, branch-deploy)
+[context.production]
+  command = "CI='' pnpm install && CI='' pnpm run build"
+  
+[context.production.environment]
+  NODE_ENV = "production"
+
+[context.deploy-preview]
+  command = "CI='' pnpm install && CI='' pnpm run build"
+
+[context.deploy-preview.environment]
+  NODE_ENV = "production"
+
+[context.branch-deploy]
+  command = "CI='' pnpm install && CI='' pnpm run build"
+
+# Development server settings
+[dev]
+  command = "pnpm run dev"
+  port = 3000
+  targetPort = 3000
+  publish = "dist"
+  autoLaunch = false

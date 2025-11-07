@@ -1,0 +1,23 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm install && pnpm run build",
+  "devCommand": "pnpm run dev",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "outputDirectory": "dist",
+  "env": {
+    "CI": "false"
+  },
+  "build": {
+    "env": {
+      "NPM_FLAGS": "--legacy-peer-deps",
+      "CI": "false"
+    }
+  },
+  "github": {
+    "silent": false,
+    "autoJobCancelation": true
+  },
+  "regions": ["iad1"],
+  "crons": []
+}
