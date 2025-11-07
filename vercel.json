@@ -5,12 +5,8 @@
   "installCommand": "pnpm install",
   "framework": null,
   "outputDirectory": "dist",
-  "env": {
-    "CI": ""
-  },
   "build": {
     "env": {
-      "NPM_FLAGS": "--legacy-peer-deps",
       "CI": ""
     }
   },
