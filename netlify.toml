@@ -15,8 +15,6 @@
   # Node version
   NODE_VERSION = "18"
   
-  # NPM flags to handle peer dependency conflicts
-  
   # Prevent warnings from being treated as errors
   CI = ""
   
@@ -78,6 +76,9 @@
 
 [context.branch-deploy]
   command = "CI='' pnpm install && CI='' pnpm run build"
+
+[context.branch-deploy.environment]
+  CI = ""
 
 # Development server settings
 [dev]

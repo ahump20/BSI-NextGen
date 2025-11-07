@@ -130,7 +130,7 @@ Configures:
 
 **Problem:** Build fails with "Could not resolve dependency" warnings.
 
-**Cause:** NPM 8.6–8.12 peer dependency issues, especially with React 17+.
+**Cause:** NPM 8.6-8.12 peer dependency issues, especially with React 17+.
 
 **Fix:**
 - For pnpm, add the `--legacy-peer-deps` flag directly to your install/build command (e.g., `pnpm install --legacy-peer-deps`)
