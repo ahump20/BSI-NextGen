@@ -1,232 +1,83 @@
-# Deployment Troubleshooting Guide
+# Cloudflare Deployment Playbook
 
-This guide covers common issues that cause preview builds to fail on Netlify and Vercel.
+This playbook documents how BlazeSportsIntel ships to production on Cloudflare Pages + Workers with D1, KV, and R2.
 
-## Common Build Failures and Solutions
+## Architecture Overview
 
-### 1. Environment Variable Mismatches
+- **Front-end**: `packages/web` – Next.js 14 built with `@cloudflare/next-on-pages` and deployed to Cloudflare Pages.
+- **API**: `packages/worker` – Cloudflare Worker exposing the analytics endpoints.
+- **Data**: Cloudflare D1 (structured game data) + KV (caching) + R2 (assets).
 
-**Problem:** Netlify/Vercel only inject variables that **exactly** match the names defined in the dashboard.
+## Required Environment Variables
 
-**Symptoms:**
-- Build fails with "undefined is not a function" or similar errors
-- Missing API key errors
-- Variables show as `undefined` in the application
+| Variable | Purpose |
+| --- | --- |
+| `CF_ACCOUNT_ID` | Cloudflare account identifier (used by Wrangler + GitHub Actions). |
+| `CF_API_TOKEN` | Token with Pages Deployments + Workers KV/D1/R2 permissions. |
+| `BSI_D1_DATABASE_ID` | D1 database binding referenced in `wrangler.toml`. |
+| `BSI_KV_NAMESPACE_ID` | Production KV namespace id. |
+| `BSI_KV_PREVIEW_ID` | Preview KV namespace id for dev. |
+| `NEXT_PUBLIC_API_BASE_URL` | Worker endpoint consumed by the Next.js app. |
+| `NEXT_PUBLIC_ASSETS_BASE_URL` | Public R2 asset domain. |
 
-**Solutions:**
-- ✅ Ensure variable names in your code **exactly** match what's set in the platform dashboard
-- ✅ Use the `.env.example` file as a reference for required variables
-- ✅ For Vite/React apps, prefix public variables with `VITE_`
-- ✅ For Next.js, use `NEXT_PUBLIC_` prefix for client-side variables
-- ✅ Check for typos - `OPENAI_API_KEY` ≠ `VITE_APP_OPENAI`
+Populate these locally via `.env` (see `.env.example`) and mirror them in GitHub > Settings > Secrets and variables.
 
-### 2. Missing or Invalid Configuration Files
-
-**Problem:** Invalid `vercel.json` or missing `netlify.toml` prevents builds from starting.
-
-**Symptoms:**
-- Build fails immediately without logs
-- "Invalid configuration" errors
-- Vercel doesn't show build logs
-
-**Solutions:**
-- ✅ Ensure `vercel.json` is valid JSON (use a JSON validator)
-- ✅ Ensure `netlify.toml` is valid TOML syntax
-- ✅ Both files are present in the repository root
-- ✅ Verify the build command and output directory are correct
-
-**Current Configuration:**
-- `vercel.json`: Uses `pnpm install && pnpm build` with output to `dist/`
-- `netlify.toml`: Uses `CI='' pnpm install && pnpm build` with output to `dist/`
-
-### 3. Missing Build Script
-
-**Problem:** Platform expects a `build` script in `package.json`.
-
-**Symptoms:**
-- "Missing Build script" error
-- Build command not found
-
-**Solutions:**
-- ✅ Add a `build` script to root `package.json`
-- ✅ Ensure it matches what's referenced in `vercel.json` or `netlify.toml`
-- ✅ For monorepos, the build script should build all necessary packages
-
-### 4. Peer Dependency Conflicts
-
-**Problem:** NPM 8.6-8.12 produces "Could not resolve dependency" warnings that Netlify treats as errors.
-
-**Symptoms:**
-- "Could not resolve dependency" errors
-- "ERESOLVE unable to resolve dependency tree"
-- Build works locally but fails in CI
-
-**Solutions:**
-- ✅ Set `NPM_FLAGS="--legacy-peer-deps"` in Netlify environment variables (already configured in `netlify.toml`)
-- ✅ Or use `NPM_FLAGS="--force"` as an alternative
-- ✅ Ensure you're using compatible package versions
-
-### 5. CI Environment Warnings as Errors
-
-**Problem:** Netlify sets `CI=true` during builds; some libraries treat warnings as fatal when `CI` is set.
-
-**Symptoms:**
-- Build succeeds locally but fails in CI
-- ESLint or TypeScript warnings cause build failure
-- "Treating warnings as errors" messages
-
-**Solutions:**
-- ✅ Build commands already include `CI=''` prefix (configured in `netlify.toml`)
-- ✅ This prevents warnings from being treated as errors
-- ✅ Alternatively, fix the warnings if they indicate real issues
-
-### 6. Missing Dependencies
-
-**Problem:** Build script relies on tools not declared in `package.json`.
-
-**Symptoms:**
-- "command not found" errors
-- Missing package errors
-- Tool not available errors
-
-**Solutions:**
-- ✅ Add all build tools to `devDependencies` in `package.json`
-- ✅ Don't rely on globally installed packages
-- ✅ Test build locally with a fresh `node_modules`: `rm -rf node_modules && pnpm install && pnpm build`
-
-### 7. Pnpm Configuration Issues
-
-**Problem:** Vercel may show "Pnpm engine unsupported" or similar errors.
-
-**Symptoms:**
-- Pnpm version mismatch
-- Package manager errors
-- Lock file issues
-
-**Solutions:**
-- ✅ Ensure `pnpm-workspace.yaml` exists in repository root (already present)
-- ✅ Specify pnpm version in `package.json` engines (already set to >=8.0.0)
-- ✅ Commit `pnpm-lock.yaml` to repository
-- ✅ Vercel automatically detects pnpm if `pnpm-lock.yaml` exists
-
-### 8. Large Files and Build Limits
-
-**Problem:** Files >10 MB or too many HTML files can cause deployment issues.
-
-**Symptoms:**
-- Deploy hangs or times out
-- Long processing times
-- CDN warnings
-
-**Solutions:**
-- ✅ Keep individual files under 10 MB
-- ✅ Use `.gitignore` to exclude large files from repository
-- ✅ Optimize images and assets before committing
-- ✅ For Vercel Hobby: Stay under 8 GB RAM and 23 GB disk space
-- ✅ Ensure builds complete within 45 minutes
-
-### 9. Cache Issues
-
-**Problem:** Corrupted build cache causes unexpected failures.
-
-**Symptoms:**
-- Builds fail inconsistently
-- Same code fails sometimes, succeeds other times
-- Stale dependency errors
-
-**Solutions:**
-- ✅ **Netlify:** Clear cache via UI or push commit message containing "Clear cache and deploy"
-- ✅ **Vercel:** Redeploy will use fresh cache
-- ✅ Cache plugin configured in `netlify.toml` to manage `node_modules` and `.pnpm-store`
-
-### 10. Repository Permissions and Plan Limits
-
-**Problem:** Private repos on organization accounts may require upgraded plans.
-
-**Symptoms:**
-- Netlify build fails with permissions error
-- "Plan limit exceeded" errors
-
-**Solutions:**
-- ✅ **Netlify Core Starter:** Only works with public repos or personal private repos
-- ✅ For organization private repos, upgrade to Pro plan
-- ✅ Or make the repository public
-- ✅ **Vercel Hobby:** Check RAM (8 GB limit) and disk space (23 GB limit)
-
-### 11. Case-Sensitive File Paths
-
-**Problem:** Netlify's build environment is case-sensitive (unlike Windows/macOS).
-
-**Symptoms:**
-- "Module not found" errors in CI
-- Imports work locally but fail in deployment
-- File path errors
-
-**Solutions:**
-- ✅ Ensure file paths in imports match the actual file names exactly
-- ✅ `import Component from './Component'` not `import Component from './component'`
-- ✅ Use consistent casing for all files and imports
-
-### 12. Recursive Command Invocation
-
-**Problem:** Build script calls itself recursively.
-
-**Symptoms:**
-- "Recursive invocation of commands" error
-- Build hangs
-- Infinite loop in build process
-
-**Solutions:**
-- ✅ Don't name your build script the same as a dependency command
-- ✅ Avoid naming build command "build" if it conflicts
-- ✅ Use specific commands like `next build` or `vite build`
-
-## Verifying Your Build Locally
-
-Before pushing changes, test your build locally:
+## Local Validation
 
 ```bash
-# Clean install
-rm -rf node_modules .pnpm-store dist
 pnpm install
-
-# Test build with CI environment variable
-CI='' pnpm build
-
-# Test build with CI=true to simulate Netlify default
-CI=true pnpm build
+pnpm lint
+pnpm test
+pnpm build
+pnpm --filter @bsi/worker dev # optional: run worker locally
 ```
 
-## Environment Variable Checklist
+## GitHub Actions (recommended)
 
-Before deploying, verify:
+Create `.github/workflows/cloudflare-pages.yml` with two jobs:
 
-- [ ] All required environment variables are set in platform dashboard
-- [ ] Variable names match **exactly** (case-sensitive)
-- [ ] Variables are set for the correct environment (Preview, Production, etc.)
-- [ ] No typos in variable names
-- [ ] Public variables have correct prefix (VITE_, NEXT_PUBLIC_, etc.)
-- [ ] Secret variables are not committed to repository
-- [ ] `.env.example` is updated with new variables (without values)
+1. **web** – install deps, run lint/test/build, execute `npx @cloudflare/next-on-pages@latest --experimental-minify` inside `packages/web`, publish using `cloudflare/pages-action`.
+2. **worker** – run `pnpm --filter @bsi/worker deploy --env production` after the web job succeeds.
 
-## Quick Debugging Steps
+Both jobs require `CF_ACCOUNT_ID` and `CF_API_TOKEN` secrets.
 
-1. **Check build logs** in Netlify/Vercel dashboard
-2. **Verify configuration files** are valid (JSON/TOML syntax)
-3. **Check environment variables** match exactly
-4. **Clear cache** if builds are inconsistent
-5. **Test locally** with `CI='' pnpm install && pnpm build`
-6. **Check plan limits** if you get resource errors
-7. **Verify file paths** are case-sensitive correct
+## Manual Deploy Steps
 
-## Getting Help
+### Worker API
 
-If builds continue to fail:
+```bash
+cd packages/worker
+pnpm deploy
+```
 
-1. Check the detailed build logs in the platform dashboard
-2. Compare working commits with failing commits
-3. Test the exact build command locally
-4. Check platform status pages for outages
-5. Review platform-specific documentation:
-   - [Netlify Build Troubleshooting](https://docs.netlify.com/configure-builds/troubleshooting-tips/)
-   - [Vercel Build Troubleshooting](https://vercel.com/docs/deployments/troubleshoot-a-build)
+### Next.js Front-end
+
+```bash
+cd packages/web
+pnpm build
+npx @cloudflare/next-on-pages@latest --experimental-minify
+echo "Deploy the output/. directory via Cloudflare Pages UI or CLI"
+```
+
+## Data Lifecycle
+
+- Apply database schema: `pnpm --filter @bsi/worker exec tsx scripts/migrate.ts`.
+- Seed analytics data via D1 console or future migrations.
+- KV cache is warmed automatically by Worker requests; clear using `wrangler kv:key delete` if needed.
+
+## Troubleshooting
+
+| Issue | Fix |
+| --- | --- |
+| Missing bindings | Verify Wrangler uses the same names as `wrangler.toml` (`BSI_DB`, `BSI_CACHE`, `BSI_ASSETS`). |
+| 403 during deploy | Ensure API token includes `Workers Scripts`, `Pages`, `KV`, `D1`, and `R2` permissions. |
+| Next.js build exceeds limits | Use `NEXT_ON_PAGES_DISABLE_UPLOAD_WORKERS=true` and keep assets in R2. |
+| API returning stale data | Delete KV key via `wrangler kv:key delete BSI_CACHE dashboard:*`. |
+| Database errors | Run migrations again or inspect tables using `wrangler d1 execute`. |
+
+## Rollback Strategy
+
+- Cloudflare Pages keeps prior deployments; click **Rollback** in the Pages dashboard.
+- Workers maintain version history; use `wrangler deployments list` and `wrangler deployments rollback <id>`.
+
+Document every production deploy in GitHub Releases so the entire stack remains audit-ready.

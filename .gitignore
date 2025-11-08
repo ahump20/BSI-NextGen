@@ -15,6 +15,7 @@ out/
 .next/
 .nuxt/
 .cache/
+.cloudflare/
 
 # Misc
 .DS_Store

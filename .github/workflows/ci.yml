@@ -11,7 +11,7 @@ on:
 
 jobs:
   lint-and-format:
-    name: Lint and Format Check
+    name: Quality Gates
     runs-on: ubuntu-latest
 
     steps:
@@ -26,22 +26,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run ESLint
+      - name: Lint packages
         run: pnpm lint
-        continue-on-error: false
+
+      - name: Type check web
+        run: pnpm type-check
 
       - name: Check formatting
-        run: pnpm format --check
-        continue-on-error: false
+        run: pnpm format:check
 
-  build:
-    name: Build Project
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
     needs: lint-and-format
 
@@ -57,28 +58,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build project
-        run: pnpm build || echo "Build command not yet configured - skipping"
+      - name: Run tests
+        run: pnpm test
 
-  deploy-info:
-    name: Deployment Information
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Deployment Info
-        run: |
-          echo "🚀 Deployments are handled automatically by:"
-          echo "  - Netlify (via GitHub App integration)"
-          echo "  - Vercel (via GitHub App integration)"
-          echo ""
-          echo "Configuration files are in place:"
-          echo "  - netlify.toml"
-          echo "  - vercel.json"
+      - name: Build web and worker
+        env:
+          NEXT_PUBLIC_API_BASE_URL: https://example.com/api/v1
+          NEXT_PUBLIC_ASSETS_BASE_URL: https://imagedelivery.net/demo
+        run: pnpm build
