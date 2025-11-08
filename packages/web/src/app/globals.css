@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --blaze-orange: #ff6b00;
+  --blaze-blue: #0066cc;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.sport-card {
+  @apply bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-orange-500 transition-colors;
+}
+
+.game-card {
+  @apply bg-gray-800 border border-gray-700 rounded-md p-3 mb-3;
+}
+
+.live-indicator {
+  @apply inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2;
+}
+
+.team-logo {
+  @apply w-8 h-8 object-contain;
+}
+
+@media (max-width: 640px) {
+  .container {
+    @apply px-2;
+  }
+
+  .sport-card {
+    @apply p-3;
+  }
+}

@@ -4,10 +4,12 @@
   "description": "BSI-NextGen monorepo",
   "private": true,
   "scripts": {
-    "build": "echo 'Building packages...' && echo 'No packages to build yet'",
-    "dev": "echo 'Starting dev server...' && echo 'No packages to run yet'",
+    "build": "pnpm --filter @bsi/shared build && pnpm --filter @bsi/api build && pnpm --filter @bsi/web build",
+    "dev": "pnpm --filter @bsi/web dev",
+    "dev:api": "pnpm --filter @bsi/api dev",
     "lint": "eslint \"packages/**/*.{js,jsx,ts,tsx}\"",
-    "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\""
+    "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "clean": "rm -rf packages/*/dist packages/*/.next packages/*/node_modules node_modules"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
@@ -15,7 +17,8 @@
     "@typescript-eslint/parser": "^7.0.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "prettier": "^3.2.5"
+    "prettier": "^3.2.5",
+    "typescript": "^5.0.0"
   },
   "engines": {
     "node": ">=18.0.0",
