@@ -53,8 +53,7 @@ handle routing, authentication, data processing, and auxiliary workloads:
 - Real-time and analytics workers push processed data into the D1 primary
   (`blaze-db`) and auxiliary databases for historical and model-driven insights.
 - KV caches ensure sub-200 ms read performance for high-traffic endpoints.
-- The baseball rankings worker was deployed on **November 5, 2025 at 4:49 PM CST**
-  and writes to `blazesports-models`.
+- The baseball rankings worker is deployed and writes to `blazesports-models`.
 - No Hyperdrive connection pooling is configured; workers currently access D1
   databases directly.
 
