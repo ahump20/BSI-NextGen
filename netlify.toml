@@ -1,10 +1,10 @@
 [build]
   # Default build command for the monorepo
   # CI='' prevents warnings from being treated as errors in CI environment
-  command = "CI='' pnpm install && pnpm build"
+  command = "CI='' pnpm install --frozen-lockfile && pnpm build"
 
-  # Default publish directory
-  publish = "dist"
+  # Publish Next.js output directory
+  publish = "packages/web/.next"
 
   # Use pnpm for package management
   [build.environment]
@@ -17,18 +17,18 @@
 
 # Production context: all deploys from the main branch
 [context.production]
-  command = "CI='' pnpm install && pnpm build"
-  publish = "dist"
+  command = "CI='' pnpm install --frozen-lockfile && pnpm build"
+  publish = "packages/web/.next"
 
 # Deploy Preview context: all deploys from pull requests
 [context.deploy-preview]
-  command = "CI='' pnpm install && pnpm build"
-  publish = "dist"
+  command = "CI='' pnpm install --frozen-lockfile && pnpm build"
+  publish = "packages/web/.next"
 
 # Branch deploy context: all deploys from non-production branches
 [context.branch-deploy]
-  command = "CI='' pnpm install && pnpm build"
-  publish = "dist"
+  command = "CI='' pnpm install --frozen-lockfile && pnpm build"
+  publish = "packages/web/.next"
 
 # Redirect rules (optional - customize as needed)
 [[redirects]]

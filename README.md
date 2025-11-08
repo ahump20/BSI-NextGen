@@ -1,42 +1,209 @@
-# BSI-NextGen
+# BSI-NextGen - Blaze Sports Intel Platform
 
-A modern monorepo for the BSI-NextGen project.
+A professional sports intelligence platform with **real-time data** from official APIs. Mobile-first. No placeholders.
 
-## Getting Started
+## 🔥 Key Features
+
+- **Real Sports Data**: MLB Stats API, SportsDataIO for NFL/NBA, ESPN for NCAA
+- **College Baseball Priority**: Full box scores, batting/pitching lines - **filling the ESPN gap**
+- **Mobile-First Design**: Optimized for phones and tablets
+- **Real-Time Updates**: Live scores refresh every 30 seconds
+- **Professional Architecture**: TypeScript monorepo with pnpm workspaces
+
+## 🏗️ Architecture
+
+```
+bsi-nextgen/
+├── packages/
+│   ├── shared/          # Shared types and utilities
+│   ├── api/             # Sports data adapters (MLB, NFL, NBA, NCAA, College Baseball)
+│   └── web/             # Next.js web application
+├── .github/workflows/   # CI/CD with GitHub Actions
+├── netlify.toml         # Netlify deployment config
+└── vercel.json          # Vercel deployment config
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js >= 18.0.0
+- pnpm >= 8.0.0
+- SportsDataIO API key (required for NFL/NBA data)
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/ahump20/BSI-NextGen.git
+cd BSI-NextGen
+
 # Install dependencies
 pnpm install
 
-# Build the project
+# Configure environment variables
+cp .env.example .env
+# Edit .env and add your SPORTSDATAIO_API_KEY
+
+# Build all packages
 pnpm build
+
+# Start development server
+pnpm dev
+```
+
+Visit `http://localhost:3000` to see the app.
+
+## 📦 Packages
+
+### `@bsi/shared`
+Shared TypeScript types and utilities used across all packages.
+
+- Common types (Team, Game, Standing, etc.)
+- Utility functions (date formatting, win percentage calculations)
+- America/Chicago timezone support
+
+### `@bsi/api`
+Sports data adapters for fetching real-time data from official APIs.
+
+- **MLBAdapter**: MLB Stats API (free, official)
+- **NFLAdapter**: SportsDataIO (requires API key)
+- **NBAAdapter**: SportsDataIO (requires API key)
+- **NCAAFootballAdapter**: ESPN public API
+- **CollegeBaseballAdapter**: ESPN API + enhanced box scores
+
+### `@bsi/web`
+Next.js web application with mobile-first UI.
+
+- Real-time game updates
+- Standings tables
+- Responsive design with Tailwind CSS
+- API routes for serving sports data
+
+## 🎯 Sports Coverage Priority
+
+1. **College Baseball** 🔥 - Complete box scores (ESPN gap filler)
+2. **MLB** - Real-time scores and standings
+3. **NFL** - Live games and team stats
+4. **NCAA Football** - Conference standings and scores
+5. **NBA** - Live scores and standings
+
+## 🔧 Development
+
+```bash
+# Start web dev server
+pnpm dev
+
+# Start API dev server (TypeScript watch mode)
+pnpm dev:api
 
 # Run linting
 pnpm lint
 
 # Format code
 pnpm format
+
+# Clean all build artifacts
+pnpm clean
 ```
 
-## Deployment
+## 🚢 Deployment
 
-This project is configured for deployment on Netlify and Vercel. See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed troubleshooting and best practices.
+### Netlify
 
-### Environment Variables
+1. Connect your GitHub repository to Netlify
+2. Set environment variables in Netlify dashboard:
+   - `SPORTSDATAIO_API_KEY`
+3. Deploy automatically on push to `main` branch
 
-Copy `.env.example` to `.env` and fill in your values:
+### Vercel
+
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard:
+   - `SPORTSDATAIO_API_KEY`
+3. Deploy automatically on push to `main` branch
+
+### GitHub Actions
+
+CI/CD pipeline automatically:
+- Runs tests and linting on all PRs
+- Deploys to Netlify and Vercel on merge to `main`
+
+## 📊 API Endpoints
+
+```
+GET /api/sports/mlb/games?date=2025-01-10
+GET /api/sports/mlb/standings?divisionId=200
+GET /api/sports/mlb/teams
+
+GET /api/sports/nfl/games?week=1&season=2025
+GET /api/sports/nfl/standings?season=2025
+GET /api/sports/nfl/teams
+
+GET /api/sports/nba/games?date=2025-01-10
+GET /api/sports/nba/standings
+GET /api/sports/nba/teams
+
+GET /api/sports/ncaa_football/games?week=1
+GET /api/sports/ncaa_football/standings?conference=12
+
+GET /api/sports/college_baseball/games?date=2025-01-10
+GET /api/sports/college_baseball/standings?conference=ACC
+```
+
+## 🔐 Environment Variables
+
+Copy `.env.example` to `.env`:
 
 ```bash
-cp .env.example .env
+# Required
+SPORTSDATAIO_API_KEY=your_api_key_here
+
+# Optional
+NODE_ENV=production
+NEXT_PUBLIC_API_URL=https://yourdomain.com
 ```
 
-**Important:** Ensure variable names in `.env` match **exactly** what you set in Netlify/Vercel dashboard.
+## 🎨 Technology Stack
 
-## Monorepo Structure
+- **Frontend**: Next.js 14, React 18, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Language**: TypeScript
+- **Package Manager**: pnpm
+- **Deployment**: Netlify, Vercel
+- **CI/CD**: GitHub Actions
 
-This is a pnpm monorepo. Individual packages are located in the `packages/` directory.
+## 📝 Data Sources
 
-## Requirements
+- **MLB**: Official MLB Stats API (free)
+- **NFL**: SportsDataIO (paid API)
+- **NBA**: SportsDataIO (paid API)
+- **NCAA Football**: ESPN public API
+- **College Baseball**: ESPN public API + enhanced box scores
 
-- Node.js >= 18.0.0
-- pnpm >= 8.0.0
+All timestamps in **America/Chicago** timezone.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🙏 Acknowledgments
+
+- MLB Stats API for free, official baseball data
+- SportsDataIO for comprehensive NFL/NBA coverage
+- ESPN for college sports data
+- All the developers building real sports data tools
+
+---
+
+**Built with real data. No placeholders. Mobile-first.**
+
+Blaze Sports Intel © 2025
