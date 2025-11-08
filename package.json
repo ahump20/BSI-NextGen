@@ -4,12 +4,14 @@
   "description": "BSI-NextGen monorepo",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter @bsi/sports-dashboard build",
-    "dev": "pnpm --filter @bsi/sports-dashboard dev",
-    "preview": "pnpm --filter @bsi/sports-dashboard preview",
-    "lint": "eslint \"packages/**/*.{js,jsx,ts,tsx}\"",
+    "build": "pnpm --filter @bsi/web build && pnpm --filter @bsi/worker build",
+    "dev": "pnpm --filter @bsi/web dev",
+    "preview": "pnpm --filter @bsi/web start",
+    "lint": "pnpm --filter @bsi/web lint && pnpm --filter @bsi/worker lint",
     "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "type-check": "tsc --noEmit"
+    "format:check": "prettier --check \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "type-check": "pnpm --filter @bsi/web type-check",
+    "test": "pnpm --filter @bsi/worker test"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

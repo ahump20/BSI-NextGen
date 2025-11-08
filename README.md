@@ -1,42 +1,49 @@
-# BSI-NextGen
+# BlazeSportsIntel NextGen
 
-A modern monorepo for the BSI-NextGen project.
+Cloudflare-first monorepo delivering the BlazeSportsIntel front-end (Next.js 14 App Router) and edge analytics API (Cloudflare Worker + D1 + KV + R2).
 
-## Getting Started
+## Prerequisites
+
+- Node.js >= 18
+- pnpm >= 8
+- Wrangler >= 3.50 (installed globally or via `pnpm wrangler`)
+- Cloudflare account with D1, KV, and R2 enabled
+
+## Install
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Build the project
-pnpm build
-
-# Run linting
-pnpm lint
-
-# Format code
-pnpm format
 ```
 
-## Deployment
+## Useful scripts
 
-This project is configured for deployment on Netlify and Vercel. See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed troubleshooting and best practices.
+| Command | Description |
+| --- | --- |
+| `pnpm dev` | Run the Next.js 14 experience locally. |
+| `pnpm build` | Build the Next.js app and run a dry-run Worker deploy. |
+| `pnpm lint` | Run ESLint across the web and worker packages. |
+| `pnpm test` | Execute Worker unit tests via Vitest. |
+| `pnpm --filter @bsi/worker dev` | Start the Worker against local D1/KV bindings. |
 
-### Environment Variables
+## Packages
 
-Copy `.env.example` to `.env` and fill in your values:
+- `packages/web`: BlazeSportsIntel App Router experience with Tailwind CSS, React Query, and storytelling components.
+- `packages/worker`: Cloudflare Worker exposing `/api/v1/dashboard`, `/api/v1/teams/:id`, and `/api/v1/health` backed by D1, KV, and R2 bindings.
+
+## Environment
+
+Copy `.env.example` to `.env` and populate the Cloudflare identifiers plus public API/asset URLs.
 
 ```bash
 cp .env.example .env
 ```
 
-**Important:** Ensure variable names in `.env` match **exactly** what you set in Netlify/Vercel dashboard.
+Set the same secrets in GitHub (for CI) and Cloudflare Pages/Workers dashboards.
 
-## Monorepo Structure
+## Deployment
 
-This is a pnpm monorepo. Individual packages are located in the `packages/` directory.
+1. Run `pnpm build` to ensure both the web client and worker compile.
+2. Deploy the Worker: `pnpm --filter @bsi/worker deploy`.
+3. Deploy the Next.js site to Cloudflare Pages using the generated `.vercel/output` (handled by Pages action) or run `npx @cloudflare/next-on-pages` inside `packages/web`.
 
-## Requirements
-
-- Node.js >= 18.0.0
-- pnpm >= 8.0.0
+For complete CI/CD automation, configure the provided GitHub Actions workflow in `.github/workflows` (see `DEPLOYMENT.md`).
