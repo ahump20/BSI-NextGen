@@ -56,7 +56,7 @@ export class SportsDataService {
   /**
    * Get standings for a specific sport
    */
-  async getStandings(sport: Sport, options?: any): Promise<ApiResponse<Standing[]>> {
+  async getStandings(sport: Sport, options?: any): Promise<ApiResponse<Standing[] | import('@bsi/shared').ConferenceStanding[]>> {
     switch (sport) {
       case 'MLB':
         return this.mlb.getStandings(options?.divisionId);
@@ -67,7 +67,7 @@ export class SportsDataService {
       case 'NCAA_FOOTBALL':
         return this.ncaaFootball.getStandings(options?.conference);
       case 'COLLEGE_BASEBALL':
-        return this.collegeBaseball.getStandings(options?.conference);
+        return this.collegeBaseball.getStandings(options?.conference) as any;
       default:
         throw new Error(`Unsupported sport: ${sport}`);
     }

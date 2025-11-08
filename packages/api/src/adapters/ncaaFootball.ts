@@ -33,7 +33,7 @@ export class NCAAFootballAdapter {
         throw new Error(`ESPN API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const teams: Team[] = [];
 
@@ -80,7 +80,7 @@ export class NCAAFootballAdapter {
         throw new Error(`ESPN API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const standings: Standing[] = [];
 
@@ -135,7 +135,7 @@ export class NCAAFootballAdapter {
         throw new Error(`ESPN API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const games: Game[] = (data.events || []).map((event: any) => {
         const competition = event.competitions?.[0];

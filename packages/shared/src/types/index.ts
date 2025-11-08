@@ -112,10 +112,9 @@ export interface CacheConfig {
 export interface CollegeBaseballGame extends Game {
   sport: 'COLLEGE_BASEBALL';
   conference: string;
-  boxScore?: {
-    battingLines: BattingLine[];
-    pitchingLines: PitchingLine[];
-  };
+  boxScore?: EnhancedBoxScore;
+  recap?: string;
+  preview?: string;
 }
 
 export interface BattingLine {
@@ -136,4 +135,137 @@ export interface PitchingLine {
   er: number;
   bb: number;
   so: number;
+}
+
+// Play-by-play types for enhanced game coverage
+export interface PlayByPlay {
+  inning: number;
+  halfInning: 'top' | 'bottom';
+  outs: number;
+  plays: Play[];
+}
+
+export interface Play {
+  id: string;
+  description: string;
+  timestamp: string;
+  batter: string;
+  pitcher: string;
+  result: string;
+  runsScored: number;
+  rbi?: number;
+}
+
+// Enhanced box score with play-by-play
+export interface EnhancedBoxScore {
+  battingLines: BattingLine[];
+  pitchingLines: PitchingLine[];
+  playByPlay?: PlayByPlay[];
+  inningScores?: InningScore[];
+}
+
+export interface InningScore {
+  inning: number;
+  homeScore: number;
+  awayScore: number;
+}
+
+// D1Baseball Rankings
+export interface D1BaseballRanking {
+  rank: number;
+  team: string;
+  conference: string;
+  record: string;
+  wins: number;
+  losses: number;
+  previousRank?: number;
+  trend?: 'up' | 'down' | 'same';
+}
+
+export interface ConferenceStanding {
+  team: string;
+  conferenceRecord: string;
+  overallRecord: string;
+  conferenceWins: number;
+  conferenceLosses: number;
+  overallWins: number;
+  overallLosses: number;
+  winPercentage: number;
+  streak?: string;
+}
+
+// MLB Enhanced Types
+export interface MLBGame extends Game {
+  sport: 'MLB';
+  boxScore?: MLBBoxScore;
+  playByPlay?: MLBPlayByPlay[];
+}
+
+export interface MLBBoxScore {
+  teams: {
+    home: MLBTeamStats;
+    away: MLBTeamStats;
+  };
+  players: {
+    home: MLBPlayerStats[];
+    away: MLBPlayerStats[];
+  };
+  linescore: MLBInningScore[];
+}
+
+export interface MLBTeamStats {
+  team: Team;
+  teamStats: {
+    hits: number;
+    runs: number;
+    errors: number;
+    leftOnBase: number;
+  };
+}
+
+export interface MLBPlayerStats {
+  player: Player;
+  position: string;
+  battingStats?: {
+    atBats: number;
+    runs: number;
+    hits: number;
+    rbi: number;
+    walks: number;
+    strikeouts: number;
+    avg: number;
+  };
+  pitchingStats?: {
+    inningsPitched: number;
+    hits: number;
+    runs: number;
+    earnedRuns: number;
+    walks: number;
+    strikeouts: number;
+    era: number;
+    pitchCount: number;
+  };
+}
+
+export interface MLBInningScore {
+  inning: number;
+  home: number;
+  away: number;
+}
+
+export interface MLBPlayByPlay {
+  inning: number;
+  halfInning: 'top' | 'bottom';
+  events: MLBPlayEvent[];
+}
+
+export interface MLBPlayEvent {
+  id: string;
+  description: string;
+  result: string;
+  batter: string;
+  pitcher: string;
+  runners?: string[];
+  outs: number;
+  runsScored: number;
 }
