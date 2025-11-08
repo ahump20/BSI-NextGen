@@ -18,6 +18,11 @@ pnpm lint
 pnpm format
 ```
 
+## Documentation
+
+- [INFRASTRUCTURE.md](./docs/INFRASTRUCTURE.md) - Complete infrastructure mapping of BlazeSportsIntel.com
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Deployment procedures and troubleshooting
+
 ## Deployment
 
 This project is configured for deployment on Netlify and Vercel. See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed troubleshooting and best practices.
