@@ -109,9 +109,9 @@ export function MLBScoreCard({ game }: MLBScoreCardProps) {
         </div>
         <div className="text-right text-xs text-gray-400">
           <p>{formatTime(game.date)}</p>
-          {!isLive && game.broadcasts?.length && (
+          {!isLive && game.broadcasters?.length && (
             <p className="text-[11px] text-gray-500 mt-0.5">
-              {game.broadcasts.join(', ')}
+              {game.broadcasters.join(', ')}
             </p>
           )}
         </div>
@@ -217,10 +217,10 @@ export function MLBScoreCard({ game }: MLBScoreCardProps) {
         </div>
       ) : null}
 
-      {game.broadcasts?.length ? (
+      {game.broadcasters?.length ? (
         <div className="mt-4 text-xs text-gray-400 flex items-center gap-2">
           <span className="uppercase tracking-wide text-gray-500">Broadcast</span>
-          <span className="text-gray-300">{game.broadcasts.join(', ')}</span>
+          <span className="text-gray-300">{game.broadcasters.join(', ')}</span>
         </div>
       ) : null}
 

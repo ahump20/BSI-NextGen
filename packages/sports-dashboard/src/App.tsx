@@ -3,8 +3,9 @@ import './App.css';
 import { SportsDataDashboard } from './components/SportsDataDashboard';
 import { OddsComparison } from './components/OddsComparison';
 import { ApiStatus } from './components/ApiStatus';
+import { ChampionshipDashboard } from './components/ChampionshipDashboard';
 
-type Tab = 'sports-data' | 'odds' | 'status';
+type Tab = 'sports-data' | 'odds' | 'championships' | 'status';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('sports-data');
@@ -30,6 +31,12 @@ function App() {
           Odds Comparison
         </button>
         <button
+          className={`tab ${activeTab === 'championships' ? 'active' : ''}`}
+          onClick={() => setActiveTab('championships')}
+        >
+          ⚾ Championships
+        </button>
+        <button
           className={`tab ${activeTab === 'status' ? 'active' : ''}`}
           onClick={() => setActiveTab('status')}
         >
@@ -40,6 +47,7 @@ function App() {
       <main className="app-main">
         {activeTab === 'sports-data' && <SportsDataDashboard />}
         {activeTab === 'odds' && <OddsComparison />}
+        {activeTab === 'championships' && <ChampionshipDashboard />}
         {activeTab === 'status' && <ApiStatus />}
       </main>
 
