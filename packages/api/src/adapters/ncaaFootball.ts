@@ -118,7 +118,11 @@ export class NCAAFootballAdapter {
   /**
    * Get scores for a specific week
    */
-  async getGames(week?: number, season: number = 2025): Promise<ApiResponse<Game[]>> {
+  async getGames(params?: { week?: number; season?: number } | number): Promise<ApiResponse<Game[]>> {
+    // Support both object param and legacy number param for backwards compatibility
+    const week = typeof params === 'object' ? params?.week : params;
+    const season = typeof params === 'object' ? (params?.season ?? 2025) : 2025;
+
     return retryWithBackoff(async () => {
       const url = week
         ? `${this.baseUrl}/scoreboard?week=${week}&seasontype=2&year=${season}`

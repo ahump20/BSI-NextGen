@@ -4,7 +4,7 @@
  * ESPN shows ONLY the score and inning - we show everything
  */
 
-import type { CollegeBaseballGame, ApiResponse, BattingLine, PitchingLine } from '@bsi/shared';
+import type { Game, Team, Standing, ApiResponse, BattingLine, PitchingLine, CollegeBaseballGame } from '@bsi/shared';
 import { validateApiKey, retryWithBackoff, getChicagoTimestamp } from '@bsi/shared';
 
 export class CollegeBaseballAdapter {
@@ -16,10 +16,60 @@ export class CollegeBaseballAdapter {
   }
 
   /**
+   * Get college baseball teams
+   */
+  async getTeams(): Promise<ApiResponse<Team[]>> {
+    return retryWithBackoff(async () => {
+      const url = `${this.espnBaseUrl}/teams`;
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'BlazeSportsIntel/1.0',
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`ESPN API error: ${response.statusText}`);
+      }
+
+      const data = await response.json() as any;
+
+      const rawTeams = data.sports?.[0]?.leagues?.[0]?.teams || [];
+      const teams: Team[] = rawTeams.map((item: any) => ({
+        id: item.team?.id || '',
+        name: item.team?.displayName || '',
+        abbreviation: item.team?.abbreviation || '',
+        city: item.team?.location || '',
+        logo: item.team?.logos?.[0]?.href || '',
+        conference: item.team?.groups?.[0]?.name,
+      }));
+
+      return {
+        data: teams,
+        source: {
+          provider: 'ESPN API',
+          timestamp: getChicagoTimestamp(),
+          confidence: 0.95,
+        },
+      };
+    });
+  }
+
+  /**
    * Get college baseball games with FULL box scores
    * This is what ESPN SHOULD provide but doesn't
    */
-  async getGamesWithBoxScores(date?: string): Promise<ApiResponse<CollegeBaseballGame[]>> {
+  async getGames(params?: { date?: string }): Promise<ApiResponse<Game[]>> {
+    const date = params?.date;
+    return this.getGamesWithBoxScores(date);
+  }
+
+  /**
+   * Get college baseball games with FULL box scores (internal method)
+   * This is what ESPN SHOULD provide but doesn't
+   */
+  private async getGamesWithBoxScores(date?: string): Promise<ApiResponse<Game[]>> {
     return retryWithBackoff(async () => {
       const targetDate = date || new Date().toISOString().split('T')[0].replace(/-/g, '');
       const url = `${this.espnBaseUrl}/scoreboard?dates=${targetDate}`;
@@ -37,39 +87,42 @@ export class CollegeBaseballAdapter {
 
       const data = await response.json() as any;
 
-      const games: CollegeBaseballGame[] = await Promise.all(
+      const games: Game[] = await Promise.all(
         (data.events || []).map(async (event: any) => {
-          const game: CollegeBaseballGame = {
+          const homeCompetitor = event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home');
+          const awayCompetitor = event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away');
+
+          const game: Game = {
             id: event.id,
             sport: 'COLLEGE_BASEBALL',
             date: event.date,
             status: this.mapGameStatus(event.status?.type?.name),
-            conference: event.competitions?.[0]?.conferenceCompetition ? 'Yes' : 'No',
             homeTeam: {
-              id: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.id || '',
-              name: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.displayName || '',
-              abbreviation: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.abbreviation || '',
-              city: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.location || '',
-              logo: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.logo || '',
+              id: homeCompetitor?.team?.id || '',
+              name: homeCompetitor?.team?.displayName || '',
+              abbreviation: homeCompetitor?.team?.abbreviation || '',
+              city: homeCompetitor?.team?.location || '',
+              logo: homeCompetitor?.team?.logo || '',
             },
             awayTeam: {
-              id: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.id || '',
-              name: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.displayName || '',
-              abbreviation: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.abbreviation || '',
-              city: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.location || '',
-              logo: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.logo || '',
+              id: awayCompetitor?.team?.id || '',
+              name: awayCompetitor?.team?.displayName || '',
+              abbreviation: awayCompetitor?.team?.abbreviation || '',
+              city: awayCompetitor?.team?.location || '',
+              logo: awayCompetitor?.team?.logo || '',
             },
-            homeScore: parseInt(event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.score || '0'),
-            awayScore: parseInt(event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.score || '0'),
+            homeScore: parseInt(homeCompetitor?.score || '0'),
+            awayScore: parseInt(awayCompetitor?.score || '0'),
             period: event.status?.period ? `Inning ${event.status.period}` : undefined,
             venue: event.competitions?.[0]?.venue?.fullName,
           };
 
-          // Fetch full box score if game is final or live
+          // Fetch full box score if game is final or live (store in metadata)
           if (game.status === 'final' || game.status === 'live') {
             try {
               const boxScore = await this.getBoxScore(event.id);
-              game.boxScore = boxScore;
+              // Store box score in metadata since it's not part of standard Game type
+              (game as any).boxScore = boxScore;
             } catch (error) {
               console.error(`Failed to fetch box score for game ${event.id}:`, error);
             }
@@ -162,7 +215,7 @@ export class CollegeBaseballAdapter {
   /**
    * Get conference standings
    */
-  async getStandings(conference?: string): Promise<ApiResponse<any[]>> {
+  async getStandings(conference?: string): Promise<ApiResponse<Standing[]>> {
     return retryWithBackoff(async () => {
       // ESPN doesn't provide great standings for college baseball
       // We'll need to aggregate from game results or use NCAA direct
@@ -183,8 +236,36 @@ export class CollegeBaseballAdapter {
 
       const data = await response.json() as any;
 
+      // Transform ESPN standings to standard Standing type
+      const rawStandings = data.standings || [];
+      const standings: Standing[] = rawStandings.flatMap((conference: any) =>
+        (conference.standings?.entries || []).map((entry: any) => {
+          const stats = entry.stats || [];
+          const wins = stats.find((s: any) => s.name === 'wins')?.value || 0;
+          const losses = stats.find((s: any) => s.name === 'losses')?.value || 0;
+          const gamesPlayed = wins + losses;
+
+          return {
+            team: {
+              id: entry.team?.id || '',
+              name: entry.team?.displayName || '',
+              abbreviation: entry.team?.abbreviation || '',
+              city: entry.team?.location || '',
+              logo: entry.team?.logos?.[0]?.href || '',
+              conference: conference.name,
+            },
+            wins,
+            losses,
+            winPercentage: gamesPlayed > 0 ? wins / gamesPlayed : 0,
+            gamesBack: stats.find((s: any) => s.name === 'gamesBehind')?.value || 0,
+            streak: stats.find((s: any) => s.name === 'streak')?.displayValue,
+            lastTen: stats.find((s: any) => s.name === 'L10')?.displayValue,
+          };
+        })
+      );
+
       return {
-        data: data.standings || [],
+        data: standings,
         source: {
           provider: 'ESPN API',
           timestamp: getChicagoTimestamp(),
@@ -194,7 +275,7 @@ export class CollegeBaseballAdapter {
     });
   }
 
-  private mapGameStatus(status: string): CollegeBaseballGame['status'] {
+  private mapGameStatus(status: string): Game['status'] {
     switch (status?.toLowerCase()) {
       case 'status.type.final':
         return 'final';
