@@ -6,7 +6,10 @@
       "@bsi/*": ["packages/*/src"]
     }
   },
+  "files": [],
   "references": [
-    { "path": "./packages/sports-dashboard" }
+    { "path": "./packages/shared" },
+    { "path": "./packages/api" },
+    { "path": "./packages/web" }
   ]
 }

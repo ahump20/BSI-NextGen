@@ -77,3 +77,6 @@ yarn.lock
 *.psd
 *.ai
 *.sketch
+
+# Local Netlify folder
+.netlify
