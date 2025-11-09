@@ -30,6 +30,23 @@ The Texas Longhorns Baseball Cloudflare Worker has been **successfully deployed*
 
 **Total Time:** 7 hours 50 minutes (including all blocker resolutions)
 
+### Deployment Update - November 9, 2025 (8:04 AM CT)
+
+| Time | Event | Status |
+|------|-------|--------|
+| 08:03 AM | Fixed storeStats() for game-by-game data | ✅ Complete |
+| 08:04 AM | Redeployed with updated worker.js | ✅ Complete |
+| 08:04 AM | Verified all endpoints working | ✅ Complete |
+
+**Changes:**
+- Updated `storeStats()` function to properly handle game-by-game data from scraper
+- Added support for all new fields: `team_id`, `season`, `game_date`, `opponent`, `opponent_id`, `home_away`, `game_result`
+- Fixed team_id lookup from database instead of hardcoding
+- Ensured dynamic year calculation: `stat.season || new Date().getFullYear()`
+
+**New Version ID:** `d59849a2-8ba3-443a-b47f-dd750e9b04b5`
+**New Deployment Size:** 32.31 KiB / gzip: 8.12 KiB
+
 ---
 
 ## Deployment Details
@@ -42,13 +59,15 @@ account_id = "a12cb329d84130460eed99b816e4d0d3"
 compatibility_date = "2024-01-01"
 ```
 
-**Version ID:** `9f224c11-5361-4dc8-b43e-67ba852a6f1e`
+**Version IDs:**
+- Initial: `9f224c11-5361-4dc8-b43e-67ba852a6f1e` (Nov 9, 2025 1:56 PM)
+- Current: `d59849a2-8ba3-443a-b47f-dd750e9b04b5` (Nov 9, 2025 8:04 AM)
 
 **Worker URL:** `https://longhorns-baseball-tracker.humphrey-austin20.workers.dev`
 
-**Deployment Size:**
-- Total Upload: 31.55 KiB
-- Gzip Compressed: 7.96 KiB
+**Deployment Sizes:**
+- Initial: 31.55 KiB / gzip: 7.96 KiB
+- Current: 32.31 KiB / gzip: 8.12 KiB
 
 ### Database Configuration
 
