@@ -119,14 +119,18 @@ export class CollegeBaseballAdapter {
         if (statGroup.name === 'Batting') {
           statGroup.athletes?.forEach((athlete: any) => {
             const stats = athlete.stats || [];
+            const ab = parseInt(stats[0] || '0');
+            const h = parseInt(stats[2] || '0');
             battingLines.push({
-              player: athlete.athlete?.displayName || 'Unknown',
-              ab: parseInt(stats[0] || '0'),
-              r: parseInt(stats[1] || '0'),
-              h: parseInt(stats[2] || '0'),
+              name: athlete.athlete?.displayName || 'Unknown',
+              position: athlete.athlete?.position?.abbreviation || '',
+              atBats: ab,
+              runs: parseInt(stats[1] || '0'),
+              hits: h,
               rbi: parseInt(stats[3] || '0'),
-              bb: parseInt(stats[4] || '0'),
-              so: parseInt(stats[5] || '0'),
+              walks: parseInt(stats[4] || '0'),
+              strikeouts: parseInt(stats[5] || '0'),
+              avg: ab > 0 ? (h / ab).toFixed(3) : '.000',
             });
           });
         }
@@ -134,14 +138,18 @@ export class CollegeBaseballAdapter {
         if (statGroup.name === 'Pitching') {
           statGroup.athletes?.forEach((athlete: any) => {
             const stats = athlete.stats || [];
+            const ip = parseFloat(stats[0] || '0');
+            const er = parseInt(stats[3] || '0');
             pitchingLines.push({
-              player: athlete.athlete?.displayName || 'Unknown',
-              ip: parseFloat(stats[0] || '0'),
-              h: parseInt(stats[1] || '0'),
-              r: parseInt(stats[2] || '0'),
-              er: parseInt(stats[3] || '0'),
-              bb: parseInt(stats[4] || '0'),
-              so: parseInt(stats[5] || '0'),
+              name: athlete.athlete?.displayName || 'Unknown',
+              decision: athlete.athlete?.displayValue || '',
+              inningsPitched: ip,
+              hits: parseInt(stats[1] || '0'),
+              runs: parseInt(stats[2] || '0'),
+              earnedRuns: er,
+              walks: parseInt(stats[4] || '0'),
+              strikeouts: parseInt(stats[5] || '0'),
+              era: ip > 0 ? ((er * 9) / ip).toFixed(2) : '0.00',
             });
           });
         }

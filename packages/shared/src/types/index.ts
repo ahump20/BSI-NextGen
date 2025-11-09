@@ -154,22 +154,153 @@ export interface CollegeBaseballGame extends Game {
   };
 }
 
+// NCAA College Baseball Types (enhanced box scores)
+export interface NCAAGame {
+  id: string;
+  date: string;
+  name: string;
+  shortName: string;
+  status: {
+    type: string;
+    detail: string;
+    completed: boolean;
+    inning: number;
+    inningHalf: 'top' | 'bottom';
+  };
+  teams: {
+    home: NCAATeam;
+    away: NCAATeam;
+  };
+  venue: {
+    name: string;
+    city: string;
+    state: string;
+  };
+}
+
+export interface NCAATeam {
+  id: string;
+  name: string;
+  abbreviation: string;
+  logo: string;
+  score: number;
+  record: string;
+  conference: string;
+}
+
+export interface NCAABoxScore {
+  gameId: string;
+  status: {
+    type: string;
+    detail: string;
+    completed: boolean;
+    inning: number;
+    inningHalf: 'top' | 'bottom';
+  };
+  teams: {
+    home: NCAATeam;
+    away: NCAATeam;
+  };
+  batting: {
+    home: BattingLine[];
+    away: BattingLine[];
+  };
+  pitching: {
+    home: PitchingLine[];
+    away: PitchingLine[];
+  };
+  teamStats: {
+    home: TeamStats;
+    away: TeamStats;
+  };
+  venue: {
+    name: string;
+    city: string;
+    state: string;
+  };
+  dataSource: string;
+  lastUpdated: string;
+  timezone: string;
+}
+
 export interface BattingLine {
-  player: string;
-  ab: number;
-  r: number;
-  h: number;
+  name: string;
+  position: string;
+  atBats: number;
+  runs: number;
+  hits: number;
   rbi: number;
-  bb: number;
-  so: number;
+  walks: number;
+  strikeouts: number;
+  avg: string;
 }
 
 export interface PitchingLine {
-  player: string;
-  ip: number;
-  h: number;
-  r: number;
-  er: number;
-  bb: number;
-  so: number;
+  name: string;
+  decision: string;
+  inningsPitched: number;
+  hits: number;
+  runs: number;
+  earnedRuns: number;
+  walks: number;
+  strikeouts: number;
+  era: string;
+}
+
+export interface TeamStats {
+  runs: number;
+  hits: number;
+  errors: number;
+  leftOnBase: number;
+}
+
+// D1Baseball Rankings & Standings Types
+export interface D1BaseballRanking {
+  rank: number;
+  team: {
+    id: string;
+    school: string;
+    conference: string;
+    logo: string;
+  };
+  record: {
+    overall: string;
+    conference: string;
+    wins: number;
+    losses: number;
+  };
+  previousRank: number;
+  rankMovement: 'up' | 'down' | 'same' | 'new';
+  firstPlaceVotes: number;
+  points: number;
+}
+
+export interface ConferenceStandings {
+  conference: string;
+  teams: ConferenceTeam[];
+  lastUpdated: string;
+  dataSource: string;
+}
+
+export interface ConferenceTeam {
+  id: string;
+  school: string;
+  logo: string;
+  record: {
+    overall: string;
+    conference: string;
+    wins: number;
+    losses: number;
+    conferenceWins: number;
+    conferenceLosses: number;
+    winPercentage: number;
+    conferenceWinPercentage: number;
+  };
+  stats: {
+    runsScored: number;
+    runsAllowed: number;
+    homeRecord: string;
+    awayRecord: string;
+    streak: string;
+  };
 }
