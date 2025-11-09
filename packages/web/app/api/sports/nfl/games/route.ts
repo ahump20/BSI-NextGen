@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
     const season = parseInt(searchParams.get('season') || '2025');
     const week = parseInt(searchParams.get('week') || '1');
 
-    const adapter = new NFLAdapter();
-    const response = await adapter.getGames(season, week);
+    const adapter = new NFLAdapter(process.env.SPORTSDATAIO_API_KEY);
+    const response = await adapter.getGames({ season, week });
 
     // Cache based on game status
     const hasLiveGames = response.data.some(game => game.status === 'live');

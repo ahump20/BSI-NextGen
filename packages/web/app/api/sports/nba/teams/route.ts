@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
  */
 export async function GET() {
   try {
-    const adapter = new NBAAdapter();
+    const adapter = new NBAAdapter(process.env.SPORTSDATAIO_API_KEY);
     const response = await adapter.getTeams();
 
     return NextResponse.json(response, {

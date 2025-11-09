@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const season = parseInt(searchParams.get('season') || '2025');
 
-    const adapter = new NFLAdapter();
+    const adapter = new NFLAdapter(process.env.SPORTSDATAIO_API_KEY);
     const response = await adapter.getStandings(season);
 
     return NextResponse.json(response, {

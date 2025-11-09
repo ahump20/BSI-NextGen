@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { orchestrator } from '@bsi/api';
+import { LeagueOrchestrator } from '@bsi/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +18,11 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
+    // Create orchestrator with runtime API keys
+    const orchestrator = new LeagueOrchestrator({
+      sportsDataIOKey: process.env.SPORTSDATAIO_API_KEY,
+    });
+
     // Fetch standings from all leagues
     const response = await orchestrator.getAllStandings();
 

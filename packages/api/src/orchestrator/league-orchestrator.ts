@@ -76,12 +76,12 @@ export interface MultiLeagueResponse<T> {
 export class LeagueOrchestrator {
   private adapters: Map<Sport, SportAdapter>;
 
-  constructor() {
+  constructor(config?: { sportsDataIOKey?: string }) {
     // Initialize all sport adapters
     this.adapters = new Map<Sport, SportAdapter>([
       ['MLB', new MLBAdapter()],
-      ['NFL', new NFLAdapter()],
-      ['NBA', new NBAAdapter()],
+      ['NFL', new NFLAdapter(config?.sportsDataIOKey)],
+      ['NBA', new NBAAdapter(config?.sportsDataIOKey)],
       ['NCAA_FOOTBALL', new NCAAFootballAdapter()],
       ['COLLEGE_BASEBALL', new CollegeBaseballAdapter()],
     ]);
@@ -487,5 +487,8 @@ export class LeagueOrchestrator {
 
 /**
  * Export singleton instance
+ * Note: This will use process.env if keys aren't explicitly provided
  */
-export const orchestrator = new LeagueOrchestrator();
+export const orchestrator = new LeagueOrchestrator({
+  sportsDataIOKey: process.env.SPORTSDATAIO_API_KEY,
+});
