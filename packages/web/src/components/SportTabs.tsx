@@ -5,11 +5,11 @@ interface SportTabsProps {
 
 export function SportTabs({ selectedSport, onSelectSport }: SportTabsProps) {
   const sports = [
-    { id: 'COLLEGE_BASEBALL', label: 'College Baseball', priority: true },
-    { id: 'MLB', label: 'MLB' },
-    { id: 'NFL', label: 'NFL' },
-    { id: 'NCAA_FOOTBALL', label: 'NCAA Football' },
-    { id: 'NBA', label: 'NBA' },
+    { id: 'COLLEGE_BASEBALL', label: 'College Baseball', priority: true as const },
+    { id: 'MLB', label: 'MLB', priority: false as const },
+    { id: 'NFL', label: 'NFL', priority: false as const },
+    { id: 'NCAA_FOOTBALL', label: 'NCAA Football', priority: false as const },
+    { id: 'NBA', label: 'NBA', priority: false as const },
   ] as const;
 
   return (

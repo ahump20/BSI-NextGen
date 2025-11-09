@@ -56,9 +56,15 @@ export function calculateGamesBack(
 
 /**
  * Validate API key exists
+ * During build time, returns a placeholder if key is missing
  */
 export function validateApiKey(key: string | undefined, provider: string): string {
   if (!key) {
+    // During Next.js build, allow missing keys with placeholder
+    if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.NODE_ENV === 'development') {
+      console.warn(`Warning: Missing API key for ${provider}. Using placeholder for build.`);
+      return 'placeholder-api-key-for-build';
+    }
     throw new Error(`Missing API key for ${provider}. Check environment variables.`);
   }
   return key;

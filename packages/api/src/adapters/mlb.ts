@@ -31,7 +31,7 @@ export class MLBAdapter {
         throw new Error(`MLB API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const teams: Team[] = data.teams.map((team: any) => ({
         id: team.id.toString(),
@@ -69,7 +69,7 @@ export class MLBAdapter {
         throw new Error(`MLB API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const standings: Standing[] = [];
 
@@ -117,7 +117,7 @@ export class MLBAdapter {
         throw new Error(`MLB API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const games: Game[] = data.dates?.[0]?.games?.map((game: any) => ({
         id: game.gamePk.toString(),
