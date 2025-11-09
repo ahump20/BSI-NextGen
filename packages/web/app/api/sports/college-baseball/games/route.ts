@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createNCAAAdapter } from '@bsi/api';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/sports/college-baseball/games
  * Fetch NCAA college baseball games list
