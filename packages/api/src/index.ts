@@ -11,3 +11,5 @@ export * from './adapters/collegeBaseball';
 export * from './adapters/ncaa-adapter';
 export * from './adapters/d1baseball-adapter';
 export * from './services/sportsDataService';
+export * from './auth/jwt';
+export * from './auth/auth0';

@@ -10,7 +10,8 @@
     "test": "echo 'Tests coming soon'"
   },
   "dependencies": {
-    "@bsi/shared": "workspace:*"
+    "@bsi/shared": "workspace:*",
+    "jose": "^6.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

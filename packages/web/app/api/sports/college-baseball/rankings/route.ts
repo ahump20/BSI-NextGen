@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createD1BaseballAdapter } from '@bsi/api';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/sports/college-baseball/rankings
  * Fetch D1Baseball Top 25 rankings
