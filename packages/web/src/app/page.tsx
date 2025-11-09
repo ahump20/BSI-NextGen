@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { Game, Standing } from '@bsi/shared';
 import { GameCard } from '../components/GameCard';
@@ -57,6 +58,13 @@ export default function HomePage() {
         <p className="text-sm text-orange-500 mb-6">
           <strong>PRIORITY:</strong> College Baseball - Complete box scores that ESPN refuses to show
         </p>
+        <Link
+          href="/mlb"
+          className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-orange-600 transition-colors"
+        >
+          Jump to MLB Real-Time Command Center
+          <span aria-hidden="true">→</span>
+        </Link>
       </section>
 
       <SportTabs

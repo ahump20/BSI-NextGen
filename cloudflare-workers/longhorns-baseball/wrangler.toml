@@ -1,0 +1,56 @@
+# Wrangler Configuration for Longhorns Baseball Tracker
+# Cloudflare Workers deployment configuration
+
+name = "longhorns-baseball-tracker"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Account ID - Replace with your Cloudflare account ID
+# Find it in: Cloudflare Dashboard > Workers & Pages > Overview
+account_id = "YOUR_ACCOUNT_ID_HERE"
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "longhorns-baseball-db"
+database_id = "YOUR_DATABASE_ID_HERE"  # Will be generated during `wrangler d1 create`
+
+# Cron trigger - Runs daily at 6:00 AM Central Time (12:00 UTC)
+[triggers]
+crons = ["0 12 * * *"]
+
+# Environment variables (optional)
+[vars]
+TEAM_NAME = "Texas Longhorns"
+TEAM_ID = "251"
+TIMEZONE = "America/Chicago"
+
+# Limits and performance
+[limits]
+cpu_ms = 50
+
+# Route configuration (optional - for custom domain)
+# [[routes]]
+# pattern = "baseball.yourdomain.com/*"
+# zone_name = "yourdomain.com"
+
+# Development configuration
+[env.dev]
+name = "longhorns-baseball-tracker-dev"
+
+# Production configuration
+[env.production]
+name = "longhorns-baseball-tracker"
+
+# Build configuration
+[build]
+command = ""
+
+[build.upload]
+format = "modules"
+main = "./worker.js"
+
+# Enable observability
+[observability]
+enabled = true

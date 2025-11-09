@@ -1,0 +1,43 @@
+{
+  "name": "longhorns-baseball-tracker",
+  "version": "1.0.0",
+  "description": "Texas Longhorns Baseball Stats Pipeline - Production-ready Cloudflare Workers deployment",
+  "type": "module",
+  "main": "worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "init": "node cli.js init",
+    "update": "node cli.js update",
+    "query": "node cli.js query",
+    "analytics": "node cli.js analytics",
+    "db:create": "wrangler d1 create longhorns-baseball-db",
+    "db:execute": "wrangler d1 execute longhorns-baseball-db --file=./schema.sql",
+    "db:query": "wrangler d1 execute longhorns-baseball-db --command",
+    "db:backup": "wrangler d1 export longhorns-baseball-db --output=backup.sql"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "d1",
+    "baseball",
+    "texas-longhorns",
+    "sports-analytics",
+    "sabermetrics",
+    "blaze-sports-intel"
+  ],
+  "author": "BSI-NextGen",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ahump20/BSI-NextGen.git",
+    "directory": "cloudflare-workers/longhorns-baseball"
+  }
+}
