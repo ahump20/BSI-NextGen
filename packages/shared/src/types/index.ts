@@ -35,6 +35,12 @@ export interface Game {
   awayScore: number;
   period?: string;
   venue?: string;
+  broadcasters?: string[];
+  probablePitchers?: {
+    home?: PitcherInfo;
+    away?: PitcherInfo;
+  };
+  linescore?: LinescoreSummary;
 }
 
 export type GameStatus = 'scheduled' | 'live' | 'final' | 'postponed' | 'cancelled';
@@ -47,6 +53,36 @@ export interface Standing {
   gamesBack?: number;
   streak?: string;
   lastTen?: string;
+}
+
+export interface PitcherInfo {
+  name: string;
+  throws?: string;
+  wins?: number;
+  losses?: number;
+  era?: number;
+}
+
+export interface LinescoreSummary {
+  currentInning?: number;
+  inningState?: string;
+  innings: Array<{
+    number: number;
+    home: number | null;
+    away: number | null;
+  }>;
+  totals: {
+    home: {
+      runs: number;
+      hits: number;
+      errors: number;
+    };
+    away: {
+      runs: number;
+      hits: number;
+      errors: number;
+    };
+  };
 }
 
 export interface MLBStats {
