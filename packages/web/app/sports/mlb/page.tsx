@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 import type { Game, Standing } from '@bsi/shared';
+import { Avatar } from '@/components/Avatar';
 
 interface ApiResponse<T> {
   data: T;
@@ -104,17 +105,11 @@ export default function MLBPage() {
                     href="/profile"
                     className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all"
                   >
-                    {user.picture ? (
-                      <img
-                        src={user.picture}
-                        alt={user.name}
-                        className="w-6 h-6 rounded-full"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold">
-                        {(user.name || user.email)[0]}
-                      </div>
-                    )}
+                    <Avatar
+                      src={user.picture}
+                      name={user.name || user.email}
+                      size="sm"
+                    />
                     <span className="hidden sm:inline">{user.name || user.email}</span>
                   </Link>
                 ) : (

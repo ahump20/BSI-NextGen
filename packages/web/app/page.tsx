@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
+import { Avatar } from '@/components/Avatar';
 
 /**
  * Homepage
@@ -58,36 +59,24 @@ export default function HomePage() {
                     href="/profile"
                     className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                   >
-                    {user.picture ? (
-                      <img
-                        src={user.picture}
-                        alt={user.name || user.email}
-                        className="w-6 h-6 rounded-full"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        {(user.name || user.email).charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <Avatar
+                      src={user.picture}
+                      name={user.name || user.email}
+                      size="sm"
+                    />
                     <span className="text-sm font-medium text-gray-700">
                       {user.name || user.email.split('@')[0]}
                     </span>
                   </Link>
                   <Link
                     href="/profile"
-                    className="sm:hidden w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"
+                    className="sm:hidden"
                   >
-                    {user.picture ? (
-                      <img
-                        src={user.picture}
-                        alt={user.name || user.email}
-                        className="w-8 h-8 rounded-full"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                        {(user.name || user.email).charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <Avatar
+                      src={user.picture}
+                      name={user.name || user.email}
+                      size="md"
+                    />
                   </Link>
                 </>
               ) : (
