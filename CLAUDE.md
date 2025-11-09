@@ -310,24 +310,37 @@ export async function POST(request: NextRequest) {
 
 ### Available API Endpoints
 
+**✅ Fully Implemented (API Routes + Frontend Pages):**
+
 ```
+# MLB - Live data from MLB Stats API
 GET /api/sports/mlb/games?date=2025-01-11
 GET /api/sports/mlb/standings?divisionId=200
 GET /api/sports/mlb/teams
+Frontend: /sports/mlb
 
+# NFL - Live data from SportsDataIO
 GET /api/sports/nfl/games?week=1&season=2025
 GET /api/sports/nfl/standings?season=2025
 GET /api/sports/nfl/teams
+Frontend: /sports/nfl
 
+# NBA - Live data from SportsDataIO
 GET /api/sports/nba/games?date=2025-01-11
-GET /api/sports/nba/standings
+GET /api/sports/nba/standings?season=2025
 GET /api/sports/nba/teams
+Frontend: /sports/nba
 
-GET /api/sports/ncaa_football/games?week=1
-GET /api/sports/ncaa_football/standings?conference=12
+# NCAA Football - Live data from ESPN API
+GET /api/sports/ncaa-football/games?week=1&season=2025
+GET /api/sports/ncaa-football/standings?conference=12
+GET /api/sports/ncaa-football/teams?group=80
+Frontend: /sports/ncaa-football
 
+# College Baseball - Live data from ESPN API (PRIORITY SPORT)
 GET /api/sports/college_baseball/games?date=2025-01-11
 GET /api/sports/college_baseball/standings?conference=ACC
+Frontend: /sports/college-baseball
 ```
 
 ---

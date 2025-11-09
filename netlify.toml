@@ -30,12 +30,8 @@
   command = "CI='' pnpm install --frozen-lockfile && pnpm build"
   publish = "packages/web/.next"
 
-# Redirect rules (optional - customize as needed)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+# Next.js handles routing automatically - no redirect rules needed
+# Netlify has built-in support for Next.js App Router
 
 # Headers (optional - security headers)
 [[headers]]

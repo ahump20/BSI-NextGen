@@ -230,8 +230,9 @@ GET /api/sports/nba/standings
 GET /api/sports/nba/teams
 
 # NCAA Football
-GET /api/sports/ncaa_football/games?week=1
-GET /api/sports/ncaa_football/standings?conference=12
+GET /api/sports/ncaa-football/games?week=1&season=2025
+GET /api/sports/ncaa-football/standings?conference=12
+GET /api/sports/ncaa-football/teams?group=80
 ```
 
 ### Authentication

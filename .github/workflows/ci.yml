@@ -64,7 +64,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build project
-        run: pnpm build || echo "Build command not yet configured - skipping"
+        run: pnpm build
 
   deploy-info:
     name: Deployment Information
