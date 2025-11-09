@@ -3,7 +3,14 @@
  * Uses MLB Stats API and SportsDataIO
  */
 
-import type { Team, Game, Standing, ApiResponse } from '@bsi/shared';
+import type {
+  Team,
+  Game,
+  Standing,
+  ApiResponse,
+  PitcherInfo,
+  LinescoreSummary,
+} from '@bsi/shared';
 import { validateApiKey, retryWithBackoff, getChicagoTimestamp } from '@bsi/shared';
 
 export class MLBAdapter {
@@ -138,8 +145,13 @@ export class MLBAdapter {
         },
         homeScore: game.teams.home.score || 0,
         awayScore: game.teams.away.score || 0,
-        period: game.linescore?.currentInning ? `${game.linescore.currentInning}${game.linescore.inningHalf}` : undefined,
+        period: game.linescore?.currentInning
+          ? `${game.linescore.currentInning}${game.linescore.inningHalf}`
+          : undefined,
         venue: game.venue?.name,
+        broadcasters: game.broadcasts?.map((broadcast: any) => broadcast.name).filter(Boolean) || undefined,
+        probablePitchers: this.mapProbablePitchers(game.probablePitchers),
+        linescore: this.mapLinescore(game.linescore, game.teams),
       })) || [];
 
       return {
@@ -175,5 +187,90 @@ export class MLBAdapter {
       default:
         return 'scheduled';
     }
+  }
+
+  private mapProbablePitchers(probable: any): Game['probablePitchers'] | undefined {
+    if (!probable?.home && !probable?.away) {
+      return undefined;
+    }
+
+    const home = this.toPitcherInfo(probable.home);
+    const away = this.toPitcherInfo(probable.away);
+
+    if (!home && !away) {
+      return undefined;
+    }
+
+    return { home, away };
+  }
+
+  private toPitcherInfo(pitcher: any): PitcherInfo | undefined {
+    if (!pitcher) {
+      return undefined;
+    }
+
+    const name = [pitcher.firstName, pitcher.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    if (!name) {
+      return undefined;
+    }
+
+    const stats = pitcher.stats?.pitching || pitcher.seasonStats?.pitching;
+
+    const parseNumber = (value: any): number | undefined => {
+      if (value === null || value === undefined) {
+        return undefined;
+      }
+
+      const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+      return Number.isFinite(num) ? num : undefined;
+    };
+
+    const info: PitcherInfo = {
+      name,
+      throws: pitcher.pitchHand?.description || pitcher.pitchHand?.code,
+      wins: parseNumber(stats?.wins),
+      losses: parseNumber(stats?.losses),
+      era: parseNumber(stats?.era),
+    };
+
+    return info;
+  }
+
+  private mapLinescore(linescore: any, teams: any): LinescoreSummary | undefined {
+    if (!linescore) {
+      return undefined;
+    }
+
+    const innings = Array.isArray(linescore.innings)
+      ? linescore.innings.map((inning: any) => ({
+          number: inning.num,
+          home: inning.home?.runs ?? null,
+          away: inning.away?.runs ?? null,
+        }))
+      : [];
+
+    const totals: LinescoreSummary['totals'] = {
+      home: {
+        runs: linescore.teams?.home?.runs ?? teams?.home?.score ?? 0,
+        hits: linescore.teams?.home?.hits ?? 0,
+        errors: linescore.teams?.home?.errors ?? 0,
+      },
+      away: {
+        runs: linescore.teams?.away?.runs ?? teams?.away?.score ?? 0,
+        hits: linescore.teams?.away?.hits ?? 0,
+        errors: linescore.teams?.away?.errors ?? 0,
+      },
+    };
+
+    return {
+      currentInning: linescore.currentInning ?? undefined,
+      inningState: linescore.inningState || linescore.inningHalf || undefined,
+      innings,
+      totals,
+    };
   }
 }
