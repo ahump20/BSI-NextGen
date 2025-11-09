@@ -6,6 +6,7 @@ A professional sports intelligence platform with **real-time data** from officia
 
 - **Real Sports Data**: MLB Stats API, SportsDataIO for NFL/NBA, ESPN for NCAA
 - **College Baseball Priority**: Full box scores, batting/pitching lines - **filling the ESPN gap**
+- **User Authentication**: OAuth 2.0 with Auth0, JWT sessions, role-based access control
 - **Mobile-First Design**: Optimized for phones and tablets
 - **Real-Time Updates**: Live scores refresh every 30 seconds
 - **Professional Architecture**: TypeScript monorepo with pnpm workspaces
@@ -43,7 +44,7 @@ pnpm install
 
 # Configure environment variables
 cp .env.example .env
-# Edit .env and add your SPORTSDATAIO_API_KEY
+# Edit .env and add your API keys (see Authentication Setup below)
 
 # Build all packages
 pnpm build
@@ -54,31 +55,75 @@ pnpm dev
 
 Visit `http://localhost:3000` to see the app.
 
+### Authentication Setup
+
+1. **Create Auth0 Account** (free tier available)
+   - Go to https://auth0.com/ and sign up
+   - Create a new tenant
+
+2. **Create Auth0 Application**
+   - In Auth0 Dashboard, go to Applications → Applications
+   - Click "Create Application"
+   - Choose "Regular Web Application"
+   - Name it "BSI-NextGen"
+
+3. **Configure Application Settings**
+   - **Allowed Callback URLs**: `http://localhost:3000/api/auth/callback`
+   - **Allowed Logout URLs**: `http://localhost:3000`
+   - **Allowed Web Origins**: `http://localhost:3000`
+   - Save changes
+
+4. **Copy Credentials to .env**
+   ```bash
+   AUTH0_DOMAIN=your-tenant.us.auth0.com
+   AUTH0_CLIENT_ID=your_client_id
+   AUTH0_CLIENT_SECRET=your_client_secret
+   AUTH0_AUDIENCE=https://your-api-audience
+   JWT_SECRET=your-random-secret  # Generate with: openssl rand -base64 32
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+   ```
+
+5. **Add SportsDataIO API Key** (for NFL/NBA data)
+   - Get from https://sportsdata.io/
+   ```bash
+   SPORTSDATAIO_API_KEY=your_sportsdataio_api_key
+   ```
+
+6. **Restart Development Server**
+   ```bash
+   pnpm dev
+   ```
+
 ## 📦 Packages
 
 ### `@bsi/shared`
 Shared TypeScript types and utilities used across all packages.
 
-- Common types (Team, Game, Standing, etc.)
+- Common types (Team, Game, Standing, AuthUser, etc.)
 - Utility functions (date formatting, win percentage calculations)
 - America/Chicago timezone support
+- Authentication types and interfaces
 
 ### `@bsi/api`
-Sports data adapters for fetching real-time data from official APIs.
+Sports data adapters and authentication utilities.
 
 - **MLBAdapter**: MLB Stats API (free, official)
 - **NFLAdapter**: SportsDataIO (requires API key)
 - **NBAAdapter**: SportsDataIO (requires API key)
-- **NCAAFootballAdapter**: ESPN public API
-- **CollegeBaseballAdapter**: ESPN API + enhanced box scores
+- **NCAAAdapter**: ESPN API + enhanced box scores
+- **D1BaseballAdapter**: D1Baseball rankings and standings
+- **Auth0Client**: OAuth 2.0 authentication flow
+- **JWT utilities**: Session token creation and verification
 
 ### `@bsi/web`
 Next.js web application with mobile-first UI.
 
+- Homepage with sports dashboard
+- College baseball box scores and standings
+- User authentication (login, profile, protected routes)
 - Real-time game updates
-- Standings tables
 - Responsive design with Tailwind CSS
-- API routes for serving sports data
+- API routes for sports data and authentication
 
 ## 🎯 Sports Coverage Priority
 
@@ -160,24 +205,49 @@ CI/CD pipeline automatically:
 
 ## 📊 API Endpoints
 
+### Sports Data
+
 ```
+# College Baseball (PRIORITY - Complete box scores)
+GET /api/sports/college-baseball/games?date=2025-01-10
+GET /api/sports/college-baseball/games/[gameId]
+GET /api/sports/college-baseball/rankings?week=1
+GET /api/sports/college-baseball/standings?conference=ACC
+
+# MLB
 GET /api/sports/mlb/games?date=2025-01-10
 GET /api/sports/mlb/standings?divisionId=200
 GET /api/sports/mlb/teams
 
+# NFL
 GET /api/sports/nfl/games?week=1&season=2025
 GET /api/sports/nfl/standings?season=2025
 GET /api/sports/nfl/teams
 
+# NBA
 GET /api/sports/nba/games?date=2025-01-10
 GET /api/sports/nba/standings
 GET /api/sports/nba/teams
 
+# NCAA Football
 GET /api/sports/ncaa_football/games?week=1
 GET /api/sports/ncaa_football/standings?conference=12
+```
 
-GET /api/sports/college_baseball/games?date=2025-01-10
-GET /api/sports/college_baseball/standings?conference=ACC
+### Authentication
+
+```
+# Initiate OAuth login flow
+GET /api/auth/login?returnTo=/profile
+
+# OAuth callback (handled by Auth0)
+GET /api/auth/callback?code=xxx&state=xxx
+
+# Get current authenticated user
+GET /api/auth/me
+
+# Logout and clear session
+GET /api/auth/logout?returnTo=/
 ```
 
 ## 🔐 Environment Variables
@@ -185,13 +255,23 @@ GET /api/sports/college_baseball/standings?conference=ACC
 Copy `.env.example` to `.env`:
 
 ```bash
-# Required
-SPORTSDATAIO_API_KEY=your_api_key_here
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NODE_ENV=development
 
-# Optional
-NODE_ENV=production
-NEXT_PUBLIC_API_URL=https://yourdomain.com
+# Authentication (Auth0)
+AUTH0_DOMAIN=your-tenant.us.auth0.com
+AUTH0_CLIENT_ID=your_client_id
+AUTH0_CLIENT_SECRET=your_client_secret
+AUTH0_AUDIENCE=https://your-api-audience
+JWT_SECRET=your-random-secret
+
+# Sports Data
+SPORTSDATAIO_API_KEY=your_sportsdataio_key
+D1BASEBALL_API_URL=https://d1baseball.com/api  # Optional
 ```
+
+See `.env.example` for detailed configuration options and deployment notes.
 
 ## 🎨 Technology Stack
 
