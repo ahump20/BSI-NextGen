@@ -1,0 +1,52 @@
+{
+  "siteName": "Blaze Sports Intel",
+  "siteUrl": "https://blazesportsintel.com",
+  "monitoring": {
+    "uptime": {
+      "enabled": true,
+      "interval": "5m",
+      "endpoints": [
+        "https://blazesportsintel.com",
+        "https://blazesportsintel.com/api/sports/mlb/teams",
+        "https://blazesportsintel.com/api/sports/college-baseball/games"
+      ]
+    },
+    "performance": {
+      "enabled": true,
+      "thresholds": {
+        "homepage": 2000,
+        "api": 1000,
+        "assets": 500
+      }
+    },
+    "errors": {
+      "enabled": true,
+      "alertOn": ["5xx", "4xx"],
+      "notifyEmail": "ahump20@outlook.com"
+    }
+  },
+  "analytics": {
+    "netlify": {
+      "enabled": true,
+      "url": "https://app.netlify.com/sites/blazesportsintelligence/analytics"
+    },
+    "googleAnalytics": {
+      "enabled": false,
+      "measurementId": "G-XXXXXXXXXX"
+    }
+  },
+  "alerts": {
+    "downtime": {
+      "enabled": true,
+      "threshold": "2 consecutive failures"
+    },
+    "slowResponse": {
+      "enabled": true,
+      "threshold": "3s average over 5 minutes"
+    },
+    "errorRate": {
+      "enabled": true,
+      "threshold": "5% over 10 minutes"
+    }
+  }
+}

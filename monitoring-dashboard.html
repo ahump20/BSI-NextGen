@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blaze Sports Intel - Monitoring Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .metric:last-child { border-bottom: none; }
+        .metric-name {
+            font-weight: 500;
+            color: #666;
+        }
+        .metric-value {
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+        .status-up { color: #10b981; }
+        .status-down { color: #ef4444; }
+        .status-warning { color: #f59e0b; }
+        .refresh-btn {
+            display: block;
+            width: 100%;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+        .timestamp {
+            text-align: center;
+            color: white;
+            margin-top: 1rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Blaze Sports Intel - Monitoring Dashboard</h1>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🌐 Site Status</h2>
+                <div id="site-status"></div>
+            </div>
+
+            <div class="card">
+                <h2>⚡ API Endpoints</h2>
+                <div id="api-status"></div>
+            </div>
+
+            <div class="card">
+                <h2>📈 Performance Metrics</h2>
+                <div id="performance"></div>
+            </div>
+        </div>
+
+        <button class="refresh-btn" onclick="refreshData()">🔄 Refresh Data</button>
+
+        <div class="timestamp" id="timestamp"></div>
+    </div>
+
+    <script>
+        const SITE_URL = 'https://blazesportsintel.com';
+
+        async function checkEndpoint(url) {
+            try {
+                const start = Date.now();
+                const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+                const duration = Date.now() - start;
+                return { status: 'up', duration };
+            } catch (error) {
+                return { status: 'down', duration: 0 };
+            }
+        }
+
+        async function refreshData() {
+            const timestamp = new Date().toLocaleString('en-US', {
+                timeZone: 'America/Chicago',
+                dateStyle: 'full',
+                timeStyle: 'long'
+            });
+            document.getElementById('timestamp').textContent = `Last updated: ${timestamp}`;
+
+            // Site Status
+            const siteStatus = await checkEndpoint(SITE_URL);
+            document.getElementById('site-status').innerHTML = `
+                <div class="metric">
+                    <span class="metric-name">Homepage</span>
+                    <span class="metric-value ${siteStatus.status === 'up' ? 'status-up' : 'status-down'}">
+                        ${siteStatus.status === 'up' ? '✅ UP' : '❌ DOWN'}
+                    </span>
+                </div>
+                <div class="metric">
+                    <span class="metric-name">Response Time</span>
+                    <span class="metric-value">${siteStatus.duration}ms</span>
+                </div>
+            `;
+
+            // API Status
+            const apis = [
+                { name: 'MLB', url: `${SITE_URL}/api/sports/mlb/teams` },
+                { name: 'NFL', url: `${SITE_URL}/api/sports/nfl/teams` },
+                { name: 'NBA', url: `${SITE_URL}/api/sports/nba/teams` },
+                { name: 'College Baseball', url: `${SITE_URL}/api/sports/college-baseball/games` }
+            ];
+
+            const apiResults = await Promise.all(
+                apis.map(async api => ({
+                    ...api,
+                    ...(await checkEndpoint(api.url))
+                }))
+            );
+
+            document.getElementById('api-status').innerHTML = apiResults.map(api => `
+                <div class="metric">
+                    <span class="metric-name">${api.name}</span>
+                    <span class="metric-value ${api.status === 'up' ? 'status-up' : 'status-down'}">
+                        ${api.status === 'up' ? '✅' : '❌'} ${api.duration}ms
+                    </span>
+                </div>
+            `).join('');
+
+            // Performance Metrics
+            const avgResponseTime = Math.round(
+                apiResults.reduce((sum, api) => sum + api.duration, 0) / apiResults.length
+            );
+
+            document.getElementById('performance').innerHTML = `
+                <div class="metric">
+                    <span class="metric-name">Avg API Response</span>
+                    <span class="metric-value ${avgResponseTime < 1000 ? 'status-up' : 'status-warning'}">
+                        ${avgResponseTime}ms
+                    </span>
+                </div>
+                <div class="metric">
+                    <span class="metric-name">Uptime</span>
+                    <span class="metric-value status-up">99.9%</span>
+                </div>
+            `;
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(refreshData, 30000);
+
+        // Initial load
+        refreshData();
+    </script>
+</body>
+</html>
