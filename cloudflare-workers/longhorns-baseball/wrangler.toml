@@ -16,8 +16,10 @@ database_name = "longhorns-baseball-db-v2"
 database_id = "4c78d642-cca0-4da1-b4de-323b1b30fe47"
 
 # Cron trigger - Runs daily at 6:00 AM Central Time (12:00 UTC)
-[triggers]
-crons = ["0 12 * * *"]
+# Removed for initial deployment (free plan limit: 5 cron triggers)
+# Can be added manually after soak test
+# [triggers]
+# crons = ["0 12 * * *"]
 
 # Environment variables (optional)
 [vars]
@@ -25,9 +27,7 @@ TEAM_NAME = "Texas Longhorns"
 TEAM_ID = "251"
 TIMEZONE = "America/Chicago"
 
-# Limits and performance
-[limits]
-cpu_ms = 50
+# Limits and performance (removed for Free plan compatibility)
 
 # Route configuration (optional - for custom domain)
 # [[routes]]
@@ -42,13 +42,7 @@ name = "longhorns-baseball-tracker-dev"
 [env.production]
 name = "longhorns-baseball-tracker"
 
-# Build configuration
-[build]
-command = ""
-
-[build.upload]
-format = "modules"
-main = "./worker.js"
+# Build configuration (deprecated section removed - using main field at top level)
 
 # Enable observability
 [observability]
