@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { orchestrator } from '@bsi/api';
+import { LeagueOrchestrator } from '@bsi/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +33,11 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Create orchestrator with runtime API keys
+    const orchestrator = new LeagueOrchestrator({
+      sportsDataIOKey: process.env.SPORTSDATAIO_API_KEY,
+    });
 
     // Search across all leagues
     const results = await orchestrator.search(query);

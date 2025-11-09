@@ -10,9 +10,9 @@ export class NBAAdapter {
   private readonly apiKey: string;
   private readonly baseUrl = 'https://api.sportsdata.io/v3/nba';
 
-  constructor() {
+  constructor(apiKey?: string) {
     this.apiKey = validateApiKey(
-      process.env.SPORTSDATAIO_API_KEY,
+      apiKey || process.env.SPORTSDATAIO_API_KEY,
       'SportsDataIO (NBA)'
     );
   }
