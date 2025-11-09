@@ -32,7 +32,7 @@ export class NBAAdapter {
         throw new Error(`NBA API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const teams: Team[] = data.map((team: any) => ({
         id: team.TeamID.toString(),
@@ -70,7 +70,7 @@ export class NBAAdapter {
         throw new Error(`NBA API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const standings: Standing[] = data.map((team: any) => ({
         team: {
@@ -115,7 +115,7 @@ export class NBAAdapter {
         throw new Error(`NBA API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const games: Game[] = data.map((game: any) => ({
         id: game.GameID.toString(),

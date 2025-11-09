@@ -35,7 +35,7 @@ export class CollegeBaseballAdapter {
         throw new Error(`ESPN API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const games: CollegeBaseballGame[] = await Promise.all(
         (data.events || []).map(async (event: any) => {
@@ -108,7 +108,7 @@ export class CollegeBaseballAdapter {
       throw new Error(`ESPN box score error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
 
     const battingLines: BattingLine[] = [];
     const pitchingLines: PitchingLine[] = [];
@@ -173,7 +173,7 @@ export class CollegeBaseballAdapter {
         throw new Error(`ESPN API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       return {
         data: data.standings || [],
