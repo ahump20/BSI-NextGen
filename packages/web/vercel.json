@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "buildCommand": "cd ../.. && pnpm build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && pnpm install",
+  "env": {
+    "SPORTSDATAIO_API_KEY": "@sportsdataio_api_key"
+  },
+  "regions": ["iad1"],
+  "github": {
+    "silent": true
+  }
+}
