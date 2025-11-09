@@ -101,10 +101,13 @@ export class NFLAdapter {
   /**
    * Get scores for a specific week
    */
-  async getGames(season: number = 2025, week: number = 1): Promise<ApiResponse<Game[]>> {
+  async getGames(params?: { season?: number; week?: number } | number): Promise<ApiResponse<Game[]>> {
+    // Support both object param and legacy number param for backwards compatibility
+    const season = typeof params === 'object' ? (params?.season ?? 2025) : (params ?? 2025);
+    const weekNum = typeof params === 'object' ? (params?.week ?? 1) : 1;
     return retryWithBackoff(async () => {
       const response = await fetch(
-        `${this.baseUrl}/scores/json/ScoresByWeek/${season}/${week}`,
+        `${this.baseUrl}/scores/json/ScoresByWeek/${season}/${weekNum}`,
         {
           headers: {
             'Ocp-Apim-Subscription-Key': this.apiKey,

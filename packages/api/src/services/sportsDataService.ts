@@ -81,13 +81,13 @@ export class SportsDataService {
       case 'MLB':
         return this.mlb.getGames(options?.date);
       case 'NFL':
-        return this.nfl.getGames(options?.season || 2025, options?.week || 1);
+        return this.nfl.getGames({ season: options?.season || 2025, week: options?.week || 1 });
       case 'NBA':
         return this.nba.getGames(options?.date);
       case 'NCAA_FOOTBALL':
-        return this.ncaaFootball.getGames(options?.week, options?.season || 2025);
+        return this.ncaaFootball.getGames({ week: options?.week, season: options?.season || 2025 });
       case 'COLLEGE_BASEBALL':
-        return this.collegeBaseball.getGamesWithBoxScores(options?.date);
+        return this.collegeBaseball.getGames({ date: options?.date });
       default:
         throw new Error(`Unsupported sport: ${sport}`);
     }
@@ -99,10 +99,10 @@ export class SportsDataService {
   async getAllLiveGames(): Promise<ApiResponse<Game[]>> {
     const [mlbGames, nflGames, nbaGames, ncaaGames, cbGames] = await Promise.allSettled([
       this.mlb.getGames(),
-      this.nfl.getGames(2025, 1),
+      this.nfl.getGames({ season: 2025, week: 1 }),
       this.nba.getGames(),
       this.ncaaFootball.getGames(),
-      this.collegeBaseball.getGamesWithBoxScores(),
+      this.collegeBaseball.getGames(),
     ]);
 
     const allGames: Game[] = [];
