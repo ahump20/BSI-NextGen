@@ -205,66 +205,69 @@ export default function HomePage() {
             </div>
           </Link>
 
-          {/* MLB - Coming Soon */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-gray-200 opacity-75">
+          {/* MLB - Active */}
+          <Link
+            href="/sports/mlb"
+            className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200 transform hover:scale-105 overflow-hidden border-2 border-red-100"
+          >
             <div className="bg-gradient-to-br from-red-600 to-orange-600 p-6 text-white">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-2xl font-bold">MLB</h4>
-                <span className="px-3 py-1 bg-gray-800 text-white text-xs font-bold rounded-full">
-                  SOON
+                <span className="px-3 py-1 bg-green-400 text-gray-900 text-xs font-bold rounded-full">
+                  ACTIVE
                 </span>
               </div>
               <p className="text-red-100 text-sm">
-                Real-time stats and advanced analytics
+                Real-time stats from official MLB API
               </p>
             </div>
             <div className="p-6">
               <ul className="space-y-2 text-sm">
-                <li className="flex items-center text-gray-500">
+                <li className="flex items-center text-gray-700">
                   <svg
-                    className="w-5 h-5 text-gray-400 mr-2"
+                    className="w-5 h-5 text-green-500 mr-2"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
                     <path
                       fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                       clipRule="evenodd"
                     />
                   </svg>
                   Live scores and standings
                 </li>
-                <li className="flex items-center text-gray-500">
+                <li className="flex items-center text-gray-700">
                   <svg
-                    className="w-5 h-5 text-gray-400 mr-2"
+                    className="w-5 h-5 text-green-500 mr-2"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
                     <path
                       fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  Pythagorean win projections
+                  Division standings
                 </li>
-                <li className="flex items-center text-gray-500">
+                <li className="flex items-center text-gray-700">
                   <svg
-                    className="w-5 h-5 text-gray-400 mr-2"
+                    className="w-5 h-5 text-green-500 mr-2"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
                     <path
                       fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  Advanced player metrics
+                  Detailed linescores
                 </li>
               </ul>
             </div>
-          </div>
+          </Link>
 
           {/* NFL - Coming Soon */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-gray-200 opacity-75">
