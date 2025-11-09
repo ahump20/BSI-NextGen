@@ -78,7 +78,38 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Retry with exponential backoff
+ * Fetch with timeout
+ * Wraps fetch with AbortController to enforce timeout
+ */
+export async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = 10000 // 10 seconds default
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms: ${url}`);
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Retry with exponential backoff and timeout
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
