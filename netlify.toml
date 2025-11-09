@@ -1,10 +1,13 @@
 [build]
-  # Default build command for the monorepo
-  # CI='' prevents warnings from being treated as errors in CI environment
-  command = "CI='' pnpm install --frozen-lockfile && pnpm build"
+  # Set base directory to packages/web for the Next.js app
+  base = "packages/web"
 
-  # Publish Next.js output directory
-  publish = "packages/web/.next"
+  # Build command will run from packages/web directory
+  # Go up two levels to install all workspace dependencies, then build
+  command = "cd ../.. && CI='' pnpm install --frozen-lockfile && pnpm build"
+
+  # Publish Next.js output directory (relative to base)
+  publish = ".next"
 
   # Use pnpm for package management
   [build.environment]
@@ -17,18 +20,18 @@
 
 # Production context: all deploys from the main branch
 [context.production]
-  command = "CI='' pnpm install --frozen-lockfile && pnpm build"
-  publish = "packages/web/.next"
+  command = "cd ../.. && CI='' pnpm install --frozen-lockfile && pnpm build"
+  publish = ".next"
 
 # Deploy Preview context: all deploys from pull requests
 [context.deploy-preview]
-  command = "CI='' pnpm install --frozen-lockfile && pnpm build"
-  publish = "packages/web/.next"
+  command = "cd ../.. && CI='' pnpm install --frozen-lockfile && pnpm build"
+  publish = ".next"
 
 # Branch deploy context: all deploys from non-production branches
 [context.branch-deploy]
-  command = "CI='' pnpm install --frozen-lockfile && pnpm build"
-  publish = "packages/web/.next"
+  command = "cd ../.. && CI='' pnpm install --frozen-lockfile && pnpm build"
+  publish = ".next"
 
 # Redirect rules (optional - customize as needed)
 [[redirects]]
@@ -45,11 +48,3 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-
-# Plugin to manage build cache
-# Note: This plugin is available by default in Netlify and doesn't require separate installation
-# If builds fail unexpectedly, you can clear the cache via Netlify UI
-[[plugins]]
-  package = "netlify-plugin-cache"
-  [plugins.inputs]
-    paths = ["node_modules", ".pnpm-store"]
