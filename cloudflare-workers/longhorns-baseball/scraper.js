@@ -1,10 +1,18 @@
 /**
- * Texas Longhorns Baseball Stats Scraper
- * Scrapes texassports.com for real-time player statistics
+ * Texas Longhorns Baseball Stats Scraper - Game-by-Game Edition
+ * Fetches individual game box scores instead of season aggregates
  * Includes retry logic, exponential backoff, and User-Agent compliance
+ *
+ * CRITICAL FIX: Now fetches game-by-game data with full context:
+ * - Opponent
+ * - Game date
+ * - Home/away status
+ * - Game result (win/loss/in-progress)
  */
 
 const TEXAS_TEAM_ID = '251'; // Texas Longhorns ESPN team ID
+const CURRENT_SEASON = new Date().getFullYear();
+
 const SCRAPE_CONFIG = {
   maxRetries: 3,
   baseDelay: 1000, // 1 second
@@ -80,138 +88,222 @@ function normalizePlayerName(name) {
 }
 
 /**
- * Scrape current season batting statistics
+ * Parse game date and determine home/away status
  */
-async function scrapeBattingStats() {
+function parseGameContext(game) {
+  const competition = game.competitions?.[0];
+  if (!competition) return null;
+
+  const homeTeam = competition.competitors?.find(c => c.homeAway === 'home');
+  const awayTeam = competition.competitors?.find(c => c.homeAway === 'away');
+  const texasIsHome = homeTeam?.team?.id === TEXAS_TEAM_ID;
+  const opponent = texasIsHome ? awayTeam : homeTeam;
+
+  return {
+    gameId: game.id,
+    gameDate: new Date(game.date).toISOString().split('T')[0], // YYYY-MM-DD
+    opponent: opponent?.team?.displayName || 'Unknown',
+    opponentId: opponent?.team?.id || null,
+    homeAway: texasIsHome ? 'home' : 'away',
+    status: game.status?.type?.completed ? 'final' : 'in_progress',
+    texasScore: texasIsHome ? homeTeam?.score : awayTeam?.score,
+    opponentScore: texasIsHome ? awayTeam?.score : homeTeam?.score,
+    result: null, // Will be computed after we know scores
+  };
+}
+
+/**
+ * Fetch current season game schedule
+ */
+async function fetchGameSchedule() {
   return retryWithBackoff(async () => {
-    // ESPN Stats API for Texas Longhorns baseball roster
-    const url = `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams/${TEXAS_TEAM_ID}/roster`;
+    const url = `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams/${TEXAS_TEAM_ID}/schedule?season=${CURRENT_SEASON}`;
 
     const response = await fetchWithTimeout(url);
 
     if (!response.ok) {
-      throw new Error(`ESPN API error: ${response.status} ${response.statusText}`);
+      throw new Error(`ESPN Schedule API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    const events = data.events || [];
 
-    // Get current season games for context
-    const gamesUrl = `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams/${TEXAS_TEAM_ID}/schedule`;
-    const gamesResponse = await fetchWithTimeout(gamesUrl);
-    const gamesData = await gamesResponse.json();
+    // Filter for completed games only
+    const completedGames = events.filter(game => {
+      const status = game.status?.type?.completed;
+      return status === true;
+    });
 
-    // Extract player statistics
-    const battingStats = [];
-    const athletes = data.athletes || [];
+    console.log(`Found ${completedGames.length} completed games out of ${events.length} total`);
 
-    for (const athlete of athletes) {
-      if (!athlete.position || athlete.position.abbreviation === 'P') {
-        continue; // Skip pitchers in batting stats
+    return completedGames.map(game => {
+      const context = parseGameContext(game);
+      if (!context) return null;
+
+      // Determine game result
+      if (context.texasScore > context.opponentScore) {
+        context.result = 'W';
+      } else if (context.texasScore < context.opponentScore) {
+        context.result = 'L';
+      } else {
+        context.result = 'T'; // Rare in baseball, but possible
       }
 
-      // Get detailed stats from athlete profile
-      const statsUrl = `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/athletes/${athlete.id}/statistics`;
+      return context;
+    }).filter(Boolean);
+  });
+}
 
-      try {
-        const statsResponse = await fetchWithTimeout(statsUrl);
-        const statsData = await statsResponse.json();
+/**
+ * Fetch box score for a specific game
+ */
+async function fetchGameBoxScore(gameId) {
+  return retryWithBackoff(async () => {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/summary?event=${gameId}`;
 
-        const currentSeasonStats = statsData.statistics?.find(
-          s => s.season === new Date().getFullYear() && s.type === 'batting'
-        );
+    const response = await fetchWithTimeout(url);
 
-        if (currentSeasonStats && currentSeasonStats.stats) {
-          const stats = currentSeasonStats.stats;
-
-          // Only include players with at-bats
-          const atBats = parseInt(stats.AB || 0);
-          if (atBats === 0) continue;
-
-          battingStats.push({
-            player_name: normalizePlayerName(athlete.displayName),
-            stat_type: 'batting',
-            at_bats: atBats,
-            runs: parseInt(stats.R || 0),
-            hits: parseInt(stats.H || 0),
-            doubles: parseInt(stats['2B'] || 0),
-            triples: parseInt(stats['3B'] || 0),
-            home_runs: parseInt(stats.HR || 0),
-            rbi: parseInt(stats.RBI || 0),
-            walks: parseInt(stats.BB || 0),
-            strikeouts: parseInt(stats.SO || 0),
-            stolen_bases: parseInt(stats.SB || 0),
-            caught_stealing: parseInt(stats.CS || 0),
-          });
-        }
-      } catch (error) {
-        console.warn(`Failed to fetch stats for ${athlete.displayName}:`, error.message);
-      }
+    if (!response.ok) {
+      throw new Error(`ESPN Box Score API error: ${response.status} ${response.statusText}`);
     }
 
+    const data = await response.json();
+    return data.boxscore || null;
+  });
+}
+
+/**
+ * Extract batting stats from box score
+ */
+function extractBattingStats(boxscore, gameContext) {
+  const battingStats = [];
+
+  if (!boxscore || !boxscore.players) {
+    console.warn(`No box score data for game ${gameContext.gameId}`);
     return battingStats;
-  });
+  }
+
+  // Find Texas team in box score
+  const texasTeam = boxscore.players.find(team => team.team?.id === TEXAS_TEAM_ID);
+  if (!texasTeam) {
+    console.warn(`Texas not found in box score for game ${gameContext.gameId}`);
+    return battingStats;
+  }
+
+  // Get batting statistics
+  const battingSection = texasTeam.statistics?.find(section =>
+    section.name === 'batting' || section.type === 'batting'
+  );
+
+  if (!battingSection || !battingSection.athletes) {
+    console.warn(`No batting stats for Texas in game ${gameContext.gameId}`);
+    return battingStats;
+  }
+
+  for (const athlete of battingSection.athletes) {
+    const stats = athlete.stats || [];
+
+    // ESPN box scores return stats as array of strings
+    // Typical order: AB, R, H, RBI, BB, SO, 2B, 3B, HR, SB, CS
+    const [ab, r, h, rbi, bb, so, doubles, triples, hr, sb, cs] = stats.map(s => parseInt(s) || 0);
+
+    // Only include players with at-bats
+    if (ab === 0) continue;
+
+    battingStats.push({
+      player_name: normalizePlayerName(athlete.athlete?.displayName || 'Unknown'),
+      stat_type: 'batting',
+      team_id: TEXAS_TEAM_ID,
+      season: CURRENT_SEASON,
+      game_date: gameContext.gameDate,
+      opponent: gameContext.opponent,
+      opponent_id: gameContext.opponentId,
+      home_away: gameContext.homeAway,
+      game_result: gameContext.result,
+      at_bats: ab,
+      runs: r,
+      hits: h,
+      doubles: doubles,
+      triples: triples,
+      home_runs: hr,
+      rbi: rbi,
+      walks: bb,
+      strikeouts: so,
+      stolen_bases: sb,
+      caught_stealing: cs,
+    });
+  }
+
+  return battingStats;
 }
 
 /**
- * Scrape current season pitching statistics
+ * Extract pitching stats from box score
  */
-async function scrapePitchingStats() {
-  return retryWithBackoff(async () => {
-    const url = `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams/${TEXAS_TEAM_ID}/roster`;
+function extractPitchingStats(boxscore, gameContext) {
+  const pitchingStats = [];
 
-    const response = await fetchWithTimeout(url);
-
-    if (!response.ok) {
-      throw new Error(`ESPN API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    const pitchingStats = [];
-    const athletes = data.athletes || [];
-
-    for (const athlete of athletes) {
-      // Get detailed stats from athlete profile
-      const statsUrl = `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/athletes/${athlete.id}/statistics`;
-
-      try {
-        const statsResponse = await fetchWithTimeout(statsUrl);
-        const statsData = await statsResponse.json();
-
-        const currentSeasonStats = statsData.statistics?.find(
-          s => s.season === new Date().getFullYear() && s.type === 'pitching'
-        );
-
-        if (currentSeasonStats && currentSeasonStats.stats) {
-          const stats = currentSeasonStats.stats;
-
-          // Only include pitchers with innings pitched
-          const inningsPitched = parseFloat(stats.IP || 0);
-          if (inningsPitched === 0) continue;
-
-          pitchingStats.push({
-            player_name: normalizePlayerName(athlete.displayName),
-            stat_type: 'pitching',
-            innings_pitched: inningsPitched,
-            hits_allowed: parseInt(stats.H || 0),
-            runs_allowed: parseInt(stats.R || 0),
-            earned_runs: parseInt(stats.ER || 0),
-            walks_allowed: parseInt(stats.BB || 0),
-            strikeouts_pitched: parseInt(stats.SO || 0),
-            home_runs_allowed: parseInt(stats.HR || 0),
-          });
-        }
-      } catch (error) {
-        console.warn(`Failed to fetch pitching stats for ${athlete.displayName}:`, error.message);
-      }
-    }
-
+  if (!boxscore || !boxscore.players) {
+    console.warn(`No box score data for game ${gameContext.gameId}`);
     return pitchingStats;
-  });
+  }
+
+  // Find Texas team in box score
+  const texasTeam = boxscore.players.find(team => team.team?.id === TEXAS_TEAM_ID);
+  if (!texasTeam) {
+    console.warn(`Texas not found in box score for game ${gameContext.gameId}`);
+    return pitchingStats;
+  }
+
+  // Get pitching statistics
+  const pitchingSection = texasTeam.statistics?.find(section =>
+    section.name === 'pitching' || section.type === 'pitching'
+  );
+
+  if (!pitchingSection || !pitchingSection.athletes) {
+    console.warn(`No pitching stats for Texas in game ${gameContext.gameId}`);
+    return pitchingStats;
+  }
+
+  for (const athlete of pitchingSection.athletes) {
+    const stats = athlete.stats || [];
+
+    // ESPN box scores return stats as array of strings
+    // Typical order: IP, H, R, ER, BB, SO, HR, PC-ST (pitch count), ERA
+    const [ip, h, r, er, bb, so, hr] = stats.map((s, idx) => {
+      // IP is a float, others are integers
+      if (idx === 0) return parseFloat(s) || 0;
+      return parseInt(s) || 0;
+    });
+
+    // Only include pitchers with innings pitched
+    if (ip === 0) continue;
+
+    pitchingStats.push({
+      player_name: normalizePlayerName(athlete.athlete?.displayName || 'Unknown'),
+      stat_type: 'pitching',
+      team_id: TEXAS_TEAM_ID,
+      season: CURRENT_SEASON,
+      game_date: gameContext.gameDate,
+      opponent: gameContext.opponent,
+      opponent_id: gameContext.opponentId,
+      home_away: gameContext.homeAway,
+      game_result: gameContext.result,
+      innings_pitched: ip,
+      hits_allowed: h,
+      runs_allowed: r,
+      earned_runs: er,
+      walks_allowed: bb,
+      strikeouts_pitched: so,
+      home_runs_allowed: hr,
+    });
+  }
+
+  return pitchingStats;
 }
 
 /**
- * Compute advanced sabermetrics
+ * Compute advanced sabermetrics (same as before)
  */
 function computeAdvancedStats(stats) {
   if (stats.stat_type === 'batting') {
@@ -255,22 +347,71 @@ function computeAdvancedStats(stats) {
 }
 
 /**
- * Main scrape function - gets all Texas Longhorns stats
+ * Main scrape function - gets all Texas Longhorns game-by-game stats
  */
 async function scrapeAllStats() {
   const startTime = Date.now();
 
   try {
-    const [battingStats, pitchingStats] = await Promise.all([
-      scrapeBattingStats(),
-      scrapePitchingStats(),
-    ]);
+    // Step 1: Fetch game schedule
+    console.log('Fetching game schedule...');
+    const games = await fetchGameSchedule();
+    console.log(`Found ${games.length} completed games`);
 
-    // Compute advanced stats for all players
-    const allStats = [
-      ...battingStats.map(computeAdvancedStats),
-      ...pitchingStats.map(computeAdvancedStats),
-    ];
+    if (games.length === 0) {
+      return {
+        success: true,
+        data: [],
+        metadata: {
+          team: 'Texas Longhorns',
+          season: CURRENT_SEASON,
+          source: 'ESPN Box Score API',
+          scrapedAt: new Date().toISOString(),
+          duration: `${Date.now() - startTime}ms`,
+          gamesProcessed: 0,
+          playerStats: 0,
+        },
+      };
+    }
+
+    // Step 2: Fetch box scores for all games (with rate limiting)
+    const allStats = [];
+    let gamesProcessed = 0;
+
+    for (const gameContext of games) {
+      try {
+        console.log(`Fetching box score for ${gameContext.gameDate} vs ${gameContext.opponent}...`);
+
+        const boxscore = await fetchGameBoxScore(gameContext.gameId);
+
+        if (!boxscore) {
+          console.warn(`No box score available for game ${gameContext.gameId}`);
+          continue;
+        }
+
+        // Extract batting and pitching stats
+        const battingStats = extractBattingStats(boxscore, gameContext);
+        const pitchingStats = extractPitchingStats(boxscore, gameContext);
+
+        // Compute advanced stats
+        const gameStats = [
+          ...battingStats.map(computeAdvancedStats),
+          ...pitchingStats.map(computeAdvancedStats),
+        ];
+
+        allStats.push(...gameStats);
+        gamesProcessed++;
+
+        console.log(`✓ Game ${gamesProcessed}/${games.length}: ${battingStats.length} batting, ${pitchingStats.length} pitching`);
+
+        // Rate limiting: 100ms delay between box score requests
+        await sleep(100);
+
+      } catch (error) {
+        console.error(`Failed to process game ${gameContext.gameDate} vs ${gameContext.opponent}:`, error.message);
+        // Continue with next game
+      }
+    }
 
     const duration = Date.now() - startTime;
 
@@ -279,12 +420,15 @@ async function scrapeAllStats() {
       data: allStats,
       metadata: {
         team: 'Texas Longhorns',
-        source: 'ESPN Stats API',
+        season: CURRENT_SEASON,
+        source: 'ESPN Box Score API',
         scrapedAt: new Date().toISOString(),
         duration: `${duration}ms`,
-        playerCount: allStats.length,
-        battingCount: battingStats.length,
-        pitchingCount: pitchingStats.length,
+        gamesProcessed,
+        gamesTotal: games.length,
+        playerStats: allStats.length,
+        battingStats: allStats.filter(s => s.stat_type === 'batting').length,
+        pitchingStats: allStats.filter(s => s.stat_type === 'pitching').length,
       },
     };
   } catch (error) {
@@ -293,6 +437,7 @@ async function scrapeAllStats() {
       error: error.message,
       metadata: {
         team: 'Texas Longhorns',
+        season: CURRENT_SEASON,
         scrapedAt: new Date().toISOString(),
         duration: `${Date.now() - startTime}ms`,
       },
@@ -301,4 +446,11 @@ async function scrapeAllStats() {
 }
 
 // Export for Cloudflare Worker
-export { scrapeAllStats, scrapeBattingStats, scrapePitchingStats, computeAdvancedStats };
+export {
+  scrapeAllStats,
+  fetchGameSchedule,
+  fetchGameBoxScore,
+  extractBattingStats,
+  extractPitchingStats,
+  computeAdvancedStats
+};
