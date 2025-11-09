@@ -36,3 +36,24 @@ body {
     @apply p-3;
   }
 }
+
+/* Notification animations */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out forwards;
+}
+
+/* PWA Install Prompt */
+.pwa-install-prompt {
+  @apply fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-gradient-to-r from-orange-600 to-red-600 text-white p-4 rounded-lg shadow-2xl z-50;
+}

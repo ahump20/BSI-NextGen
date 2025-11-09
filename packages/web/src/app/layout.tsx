@@ -1,11 +1,35 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { CommandPalette } from '@/components/CommandPalette';
+import { Header } from '@/components/Header';
+import { PreferencesProvider } from '@/contexts/PreferencesContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
+import { NotificationContainer } from '@/components/NotificationContainer';
+import { PreferencesPanel } from '@/components/PreferencesPanel';
+import { LiveScoreIndicator } from '@/components/LiveScoreIndicator';
+import { PWAInstaller } from '@/components/PWAInstaller';
 
 export const metadata: Metadata = {
   title: 'Blaze Sports Intel - Real Sports Data, Mobile-First',
   description: 'Professional sports intelligence platform with real-time data for MLB, NFL, NBA, NCAA Football, and College Baseball. Filling the ESPN gap.',
   keywords: 'sports data, MLB, NFL, NBA, college baseball, NCAA football, real-time scores',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Blaze Sports Intel',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#ea580c',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({
@@ -15,48 +39,34 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
       <body className="bg-gray-950 text-white min-h-screen">
-        <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <Link href="/" className="text-2xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
-                  Blaze Sports Intel
-                </Link>
-                <p className="text-sm text-gray-400">
-                  Real Data. Mobile-First. ESPN Gap Filled.
+        <NotificationProvider>
+          <PreferencesProvider>
+            <Header />
+            <CommandPalette />
+            <NotificationContainer />
+            <PreferencesPanel />
+            <LiveScoreIndicator />
+            <PWAInstaller />
+            <main className="container mx-auto px-4 py-6">
+              {children}
+            </main>
+            <footer className="bg-gray-900 border-t border-gray-800 mt-12">
+              <div className="container mx-auto px-4 py-6 text-center text-sm text-gray-400">
+                <p>
+                  Data from MLB Stats API, SportsDataIO, ESPN API | America/Chicago Timezone
+                </p>
+                <p className="mt-2">
+                  Blaze Sports Intel © 2025 | Built with real data, no placeholders | Enhanced with Desktop Commander
                 </p>
               </div>
-              <nav className="flex flex-wrap gap-2 text-sm font-medium">
-                <Link
-                  href="/"
-                  className="px-4 py-2 rounded-lg bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
-                >
-                  Home Dashboard
-                </Link>
-                <Link
-                  href="/mlb"
-                  className="px-4 py-2 rounded-lg bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
-                >
-                  MLB Scoreboard
-                </Link>
-              </nav>
-            </div>
-          </div>
-        </header>
-        <main className="container mx-auto px-4 py-6">
-          {children}
-        </main>
-        <footer className="bg-gray-900 border-t border-gray-800 mt-12">
-          <div className="container mx-auto px-4 py-6 text-center text-sm text-gray-400">
-            <p>
-              Data from MLB Stats API, SportsDataIO, ESPN API | America/Chicago Timezone
-            </p>
-            <p className="mt-2">
-              Blaze Sports Intel © 2025 | Built with real data, no placeholders
-            </p>
-          </div>
-        </footer>
+            </footer>
+          </PreferencesProvider>
+        </NotificationProvider>
       </body>
     </html>
   );
