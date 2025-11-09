@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -17,12 +18,30 @@ export default function RootLayout({
       <body className="bg-gray-950 text-white min-h-screen">
         <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
           <div className="container mx-auto px-4 py-4">
-            <h1 className="text-2xl font-bold text-orange-500">
-              Blaze Sports Intel
-            </h1>
-            <p className="text-sm text-gray-400">
-              Real Data. Mobile-First. ESPN Gap Filled.
-            </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <Link href="/" className="text-2xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
+                  Blaze Sports Intel
+                </Link>
+                <p className="text-sm text-gray-400">
+                  Real Data. Mobile-First. ESPN Gap Filled.
+                </p>
+              </div>
+              <nav className="flex flex-wrap gap-2 text-sm font-medium">
+                <Link
+                  href="/"
+                  className="px-4 py-2 rounded-lg bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
+                >
+                  Home Dashboard
+                </Link>
+                <Link
+                  href="/mlb"
+                  className="px-4 py-2 rounded-lg bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
+                >
+                  MLB Scoreboard
+                </Link>
+              </nav>
+            </div>
           </div>
         </header>
         <main className="container mx-auto px-4 py-6">
