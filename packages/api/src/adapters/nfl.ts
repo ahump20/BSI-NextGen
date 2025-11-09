@@ -4,7 +4,7 @@
  */
 
 import type { Team, Game, Standing, ApiResponse } from '@bsi/shared';
-import { validateApiKey, retryWithBackoff, getChicagoTimestamp } from '@bsi/shared';
+import { validateApiKey, retryWithBackoff, getChicagoTimestamp, fetchWithTimeout } from '@bsi/shared';
 
 export class NFLAdapter {
   private readonly apiKey: string;
@@ -22,11 +22,15 @@ export class NFLAdapter {
    */
   async getTeams(): Promise<ApiResponse<Team[]>> {
     return retryWithBackoff(async () => {
-      const response = await fetch(`${this.baseUrl}/scores/json/Teams`, {
-        headers: {
-          'Ocp-Apim-Subscription-Key': this.apiKey,
+      const response = await fetchWithTimeout(
+        `${this.baseUrl}/scores/json/Teams`,
+        {
+          headers: {
+            'Ocp-Apim-Subscription-Key': this.apiKey,
+          },
         },
-      });
+        10000
+      );
 
       if (!response.ok) {
         throw new Error(`NFL API error: ${response.statusText}`);
@@ -60,11 +64,15 @@ export class NFLAdapter {
    */
   async getStandings(season: number = 2025): Promise<ApiResponse<Standing[]>> {
     return retryWithBackoff(async () => {
-      const response = await fetch(`${this.baseUrl}/scores/json/Standings/${season}`, {
-        headers: {
-          'Ocp-Apim-Subscription-Key': this.apiKey,
+      const response = await fetchWithTimeout(
+        `${this.baseUrl}/scores/json/Standings/${season}`,
+        {
+          headers: {
+            'Ocp-Apim-Subscription-Key': this.apiKey,
+          },
         },
-      });
+        10000
+      );
 
       if (!response.ok) {
         throw new Error(`NFL API error: ${response.statusText}`);
@@ -106,13 +114,14 @@ export class NFLAdapter {
     const season = typeof params === 'object' ? (params?.season ?? 2025) : (params ?? 2025);
     const weekNum = typeof params === 'object' ? (params?.week ?? 1) : 1;
     return retryWithBackoff(async () => {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${this.baseUrl}/scores/json/ScoresByWeek/${season}/${weekNum}`,
         {
           headers: {
             'Ocp-Apim-Subscription-Key': this.apiKey,
           },
-        }
+        },
+        10000
       );
 
       if (!response.ok) {

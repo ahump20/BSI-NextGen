@@ -11,7 +11,7 @@ import type {
   PitcherInfo,
   LinescoreSummary,
 } from '@bsi/shared';
-import { validateApiKey, retryWithBackoff, getChicagoTimestamp } from '@bsi/shared';
+import { validateApiKey, retryWithBackoff, getChicagoTimestamp, fetchWithTimeout } from '@bsi/shared';
 
 export class MLBAdapter {
   private readonly apiKey: string;
@@ -32,7 +32,7 @@ export class MLBAdapter {
    */
   async getTeams(): Promise<ApiResponse<Team[]>> {
     return retryWithBackoff(async () => {
-      const response = await fetch(`${this.baseUrl}/teams?sportId=1`);
+      const response = await fetchWithTimeout(`${this.baseUrl}/teams?sportId=1`, {}, 10000);
 
       if (!response.ok) {
         throw new Error(`MLB API error: ${response.statusText}`);
@@ -70,7 +70,7 @@ export class MLBAdapter {
         ? `${this.baseUrl}/standings?leagueId=103,104&season=2025&standingsTypes=regularSeason&divisionId=${divisionId}`
         : `${this.baseUrl}/standings?leagueId=103,104&season=2025&standingsTypes=regularSeason`;
 
-      const response = await fetch(url);
+      const response = await fetchWithTimeout(url, {}, 10000);
 
       if (!response.ok) {
         throw new Error(`MLB API error: ${response.statusText}`);
@@ -118,7 +118,7 @@ export class MLBAdapter {
       const targetDate = date || new Date().toISOString().split('T')[0];
       const url = `${this.baseUrl}/schedule?sportId=1&date=${targetDate}`;
 
-      const response = await fetch(url);
+      const response = await fetchWithTimeout(url, {}, 10000);
 
       if (!response.ok) {
         throw new Error(`MLB API error: ${response.statusText}`);
