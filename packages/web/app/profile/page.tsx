@@ -2,6 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { Avatar } from '@/components/Avatar';
 
 /**
  * User Profile Page
@@ -47,19 +48,13 @@ function ProfileContent() {
           <div className="px-8 py-6 -mt-16">
             {/* Avatar */}
             <div className="flex items-end mb-6">
-              {user.picture ? (
-                <img
+              <div className="border-4 border-white rounded-full shadow-lg">
+                <Avatar
                   src={user.picture}
-                  alt={user.name || user.email}
-                  className="w-24 h-24 rounded-full border-4 border-white shadow-lg"
+                  name={user.name || user.email}
+                  size="lg"
                 />
-              ) : (
-                <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
-                  <span className="text-3xl font-bold text-white">
-                    {(user.name || user.email).charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
+              </div>
               <div className="ml-4 mb-2">
                 <h2 className="text-2xl font-bold text-gray-900">
                   {user.name || 'User'}
