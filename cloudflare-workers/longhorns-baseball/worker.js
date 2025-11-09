@@ -49,7 +49,7 @@ function handleOptions() {
 }
 
 /**
- * Store stats in D1 database
+ * Store stats in D1 database (Updated for game-by-game data)
  */
 async function storeStats(db, stats) {
   const insertedCount = { batting: 0, pitching: 0 };
@@ -57,31 +57,45 @@ async function storeStats(db, stats) {
 
   for (const stat of stats) {
     try {
+      // Common fields for both batting and pitching
+      const baseQuery = `
+        INSERT OR REPLACE INTO player_stats (
+          player_name, player_espn_id, stat_type, team_id, season,
+          game_date, opponent, opponent_id, home_away, game_result,
+      `;
+
       const query = stat.stat_type === 'batting'
-        ? `
-          INSERT OR REPLACE INTO player_stats (
-            player_name, stat_type, game_date,
+        ? baseQuery + `
             at_bats, runs, hits, doubles, triples, home_runs, rbi,
-            walks, strikeouts, stolen_bases, caught_stealing,
-            opponent, source_url
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            walks, strikeouts, stolen_bases, caught_stealing, hit_by_pitch,
+            sacrifice_flies, source_url
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
-        : `
-          INSERT OR REPLACE INTO player_stats (
-            player_name, stat_type, game_date,
+        : baseQuery + `
             innings_pitched, hits_allowed, runs_allowed, earned_runs,
-            walks_allowed, strikeouts_pitched, home_runs_allowed,
-            opponent, source_url
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            walks_allowed, strikeouts_pitched, home_runs_allowed, source_url
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
-      const today = new Date().toISOString().split('T')[0];
+      // Get team_id from teams table (default to 1 for Texas Longhorns)
+      const teamResult = await db.prepare(
+        'SELECT id FROM teams WHERE espn_team_id = ? LIMIT 1'
+      ).bind(stat.team_id || '251').first();
+
+      const teamId = teamResult?.id || 1;
 
       const params = stat.stat_type === 'batting'
         ? [
             stat.player_name,
+            stat.player_espn_id || null,
             stat.stat_type,
-            today,
+            teamId,
+            stat.season || new Date().getFullYear(),
+            stat.game_date,
+            stat.opponent || 'Unknown',
+            stat.opponent_id || null,
+            stat.home_away || 'neutral',
+            stat.game_result || null,
             stat.at_bats || 0,
             stat.runs || 0,
             stat.hits || 0,
@@ -93,13 +107,21 @@ async function storeStats(db, stats) {
             stat.strikeouts || 0,
             stat.stolen_bases || 0,
             stat.caught_stealing || 0,
-            'Season Totals',
-            'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams/251',
+            stat.hit_by_pitch || 0,
+            stat.sacrifice_flies || 0,
+            stat.source_url || `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball`,
           ]
         : [
             stat.player_name,
+            stat.player_espn_id || null,
             stat.stat_type,
-            today,
+            teamId,
+            stat.season || new Date().getFullYear(),
+            stat.game_date,
+            stat.opponent || 'Unknown',
+            stat.opponent_id || null,
+            stat.home_away || 'neutral',
+            stat.game_result || null,
             stat.innings_pitched || 0,
             stat.hits_allowed || 0,
             stat.runs_allowed || 0,
@@ -107,8 +129,7 @@ async function storeStats(db, stats) {
             stat.walks_allowed || 0,
             stat.strikeouts_pitched || 0,
             stat.home_runs_allowed || 0,
-            'Season Totals',
-            'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams/251',
+            stat.source_url || `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball`,
           ];
 
       await db.prepare(query).bind(...params).run();
