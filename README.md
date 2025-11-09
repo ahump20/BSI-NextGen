@@ -220,6 +220,42 @@ All timestamps in **America/Chicago** timezone.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## 🧪 Testing
+
+### Mobile Regression Tests
+
+Prevent mobile performance degradation with automated testing:
+
+```bash
+# Create performance baseline
+.claude/tests/mobile-regression.sh --create-baseline
+
+# Run performance regression tests
+.claude/tests/mobile-regression.sh --performance
+
+# Run visual regression tests with Playwright
+npx playwright test tests/mobile-visual-regression.spec.ts
+
+# Run all regression tests
+.claude/tests/mobile-regression.sh --all
+```
+
+### Playwright Tests
+
+```bash
+# Install Playwright browsers
+npx playwright install
+
+# Run all tests
+npx playwright test
+
+# Run tests in UI mode
+npx playwright test --ui
+
+# Show test report
+npx playwright show-report
+```
+
 ## 📄 License
 
 MIT License - see LICENSE file for details
