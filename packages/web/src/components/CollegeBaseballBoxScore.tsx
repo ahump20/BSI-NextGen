@@ -233,6 +233,3 @@ function formatInning(inning: number): string {
   return `${inning}th`;
 }
 
-function formatHalfInning(half: 'Top' | 'Bottom'): string {
-  return half === 'Top' ? 'Top' : 'Bottom';
-}
