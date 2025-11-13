@@ -106,6 +106,57 @@ pnpm clean
 pnpm clean && pnpm install
 ```
 
+### Blaze Trends (Cloudflare Worker)
+
+**Purpose:** Real-time sports news monitoring with AI-powered trend analysis
+
+```bash
+# Local development
+pnpm trends:dev              # Start worker (http://localhost:8787)
+
+# Deployment
+pnpm trends:deploy           # Deploy to Cloudflare
+
+# Monitoring
+pnpm trends:tail             # View real-time logs
+pnpm trends:health           # Health check all endpoints
+
+# Database management
+pnpm trends:db list          # List recent trends
+pnpm trends:db stats         # Database statistics
+pnpm trends:db errors        # View error logs
+pnpm trends:db help          # Show all db commands
+
+# Initial setup
+pnpm trends:setup            # Run setup wizard
+```
+
+**Key Features:**
+- AI-powered trend identification with OpenAI GPT-4 Turbo
+- Multi-sport news aggregation via Brave Search API
+- Automated monitoring every 15 minutes (cron)
+- Edge computing with Cloudflare Workers
+- D1 database for persistence
+- KV caching for <10ms response times
+
+**API Endpoints:**
+- `GET /health` - Health check
+- `GET /api/trends` - Get all trends
+- `GET /api/trends?sport=college_baseball` - Filter by sport
+- `GET /api/trends/:id` - Get specific trend
+- `GET /cron/monitor` - Manual monitoring trigger
+
+**Documentation:**
+- `cloudflare-workers/blaze-trends/README.md` - Technical overview
+- `cloudflare-workers/blaze-trends/DEPLOYMENT.md` - Deployment guide
+- `cloudflare-workers/blaze-trends/scripts/README.md` - Script documentation
+- `BLAZE-TRENDS-IMPLEMENTATION.md` - Complete implementation summary
+
+**Frontend Integration:**
+- `/trends` page in Next.js app
+- Components: `TrendCard`, `SportFilter`
+- Types: `packages/web/types/trends.ts`
+
 ---
 
 ## Architecture

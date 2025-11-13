@@ -295,7 +295,7 @@ async function fetchNewsArticles(sport: string, apiKey: string): Promise<NewsArt
     throw new Error(`Brave API error: ${response.status}`);
   }
 
-  const data = await response.json();
+  const data = await response.json() as { results?: any[] };
 
   return (data.results || []).map((article: any) => ({
     id: hashString(article.url),
@@ -364,8 +364,8 @@ Rules:
     throw new Error(`OpenAI API error: ${response.status}`);
   }
 
-  const data = await response.json();
-  const content = data.choices[0]?.message?.content || '[]';
+  const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+  const content = data.choices?.[0]?.message?.content || '[]';
 
   // Parse JSON response
   let parsedTrends;
