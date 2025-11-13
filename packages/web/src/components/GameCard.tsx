@@ -21,7 +21,7 @@ export function GameCard({ game, onSelect, isActive }: GameCardProps) {
       className={`game-card ${onSelect ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500' : ''} ${
         isActive ? 'border-orange-500 shadow-lg shadow-orange-500/20' : ''
       }`}
-      onClick={handleSelect}
+      onClick={onSelect ? handleSelect : undefined}
       onKeyDown={event => {
         if (!onSelect) return;
         if (event.key === 'Enter' || event.key === ' ') {
