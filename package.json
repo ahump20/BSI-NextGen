@@ -12,6 +12,7 @@
     "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf packages/*/dist packages/*/.next packages/*/node_modules node_modules",
+    "test:sportsdataio": "tsx scripts/test-sportsdataio.ts",
     "trends:dev": "cd cloudflare-workers/blaze-trends && npm run dev",
     "trends:deploy": "cd cloudflare-workers/blaze-trends && npm run deploy",
     "trends:tail": "cd cloudflare-workers/blaze-trends && npm run tail",
@@ -23,11 +24,13 @@
     "@playwright/test": "^1.56.1",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "dotenv": "^17.2.3",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "lighthouse": "^13.0.1",
     "prettier": "^3.2.5",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },
   "engines": {
