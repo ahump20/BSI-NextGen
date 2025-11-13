@@ -1,0 +1,54 @@
+name: Deploy Blaze Trends Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cloudflare-workers/blaze-trends/**'
+      - '.github/workflows/deploy-blaze-trends.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare Workers
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: cloudflare-workers/blaze-trends
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: cloudflare-workers/blaze-trends/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare-workers/blaze-trends
+
+      - name: Deployment notification
+        if: success()
+        run: |
+          echo "✅ Blaze Trends worker deployed successfully!"
+          echo "📍 Worker URL: https://blaze-trends.YOUR_SUBDOMAIN.workers.dev"
+          echo "🔥 Trends API: /api/trends"
+          echo "⏰ Cron: Monitoring every 15 minutes"
+
+      - name: Deployment failed notification
+        if: failure()
+        run: |
+          echo "❌ Blaze Trends deployment failed!"
+          echo "Check logs above for details."
