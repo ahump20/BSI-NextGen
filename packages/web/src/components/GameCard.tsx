@@ -32,6 +32,7 @@ export function GameCard({ game, onSelect, isActive }: GameCardProps) {
       role={onSelect ? 'button' : undefined}
       tabIndex={onSelect ? 0 : undefined}
       aria-pressed={onSelect ? Boolean(isActive) : undefined}
+      aria-label={onSelect ? `Select ${game.awayTeam.name} at ${game.homeTeam.name} game` : undefined}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
