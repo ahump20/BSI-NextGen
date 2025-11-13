@@ -25,7 +25,6 @@ BSI-NextGen is configured to work seamlessly with Claude Code on the web through
 │   ├── setup.sh                 # Automatic setup script (runs on session start)
 │   └── network-check.sh         # Network API validation script
 └── tests/
-    └── mobile-regression.sh     # Mobile regression test suite
 ```
 
 ---
