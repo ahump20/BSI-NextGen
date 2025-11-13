@@ -5,7 +5,8 @@
     "rootDir": "./src",
     "strict": false,
     "noImplicitAny": false,
-    "strictNullChecks": false
+    "strictNullChecks": false,
+    "types": ["jest", "node"]
   },
   "include": ["src/**/*"],
   "references": [
