@@ -76,7 +76,10 @@ type FusionPayload =
       dataSource: string;
       timestamp: string;
       cached?: boolean;
-      scoreboard?: any;
+      scoreboard?: {
+        games?: Array<{ game?: NcaaGame; [key: string]: unknown }>;
+        [key: string]: unknown;
+      };
       upcomingGame?: NcaaGame | null;
     }
   | {
@@ -428,7 +431,7 @@ export default async function CollegeFusionPage({
 
       <section className="di-section fusion-footer">
         <p className="fusion-footer-note">
-          Scoreboard data powered by ncaa-api; season analytics from Blaze's
+          Scoreboard data powered by ncaa-api; season analytics from Blaze&apos;s
           real NCAA orchestrator. Tune <code>sport</code>, <code>teamId</code>,{' '}
           <code>year</code>, and <code>week</code> via URL query for different
           teams/slates.
