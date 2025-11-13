@@ -4,12 +4,117 @@
  * ESPN shows ONLY the score and inning - we show everything
  */
 
-import type { CollegeBaseballGame, ApiResponse, BattingLine, PitchingLine } from '@bsi/shared';
-import { validateApiKey, retryWithBackoff, getChicagoTimestamp } from '@bsi/shared';
+import type {
+  CollegeBaseballGame,
+  ApiResponse,
+  BattingLine,
+  PitchingLine,
+  CollegeBaseballBoxScore,
+  LinescoreFrame,
+  ScoringPlay,
+} from '@bsi/shared';
+import { retryWithBackoff, getChicagoTimestamp } from '@bsi/shared';
+
+type ESPNLinescore = {
+  value?: number | string;
+  displayValue?: string;
+};
+
+type ESPNCompetitor = {
+  homeAway?: 'home' | 'away';
+  score?: string | number;
+  team?: {
+    id?: string;
+    displayName?: string;
+    abbreviation?: string;
+    location?: string;
+    logo?: string;
+  };
+  linescores?: ESPNLinescore[];
+};
+
+type ESPNCompetition = {
+  competitors?: ESPNCompetitor[];
+  venue?: {
+    fullName?: string;
+  };
+  conferenceCompetition?: boolean;
+};
+
+type ESPNStatus = {
+  type?: {
+    name?: string;
+    state?: string;
+    shortDetail?: string;
+    detail?: string;
+  };
+};
+
+type ESPNEvent = {
+  id: string;
+  date: string;
+  status?: ESPNStatus;
+  competitions?: ESPNCompetition[];
+};
+
+type ESPNBoxscoreAthlete = {
+  athlete?: {
+    displayName?: string;
+    position?: {
+      abbreviation?: string;
+    };
+    statistics?: Array<{
+      name?: string;
+      displayValue?: string;
+    }>;
+  };
+  stats?: string[];
+};
+
+type ESPNBoxscoreStatistic = {
+  name?: string;
+  athletes?: ESPNBoxscoreAthlete[];
+};
+
+type ESPNBoxscorePlayer = {
+  team?: {
+    homeAway?: 'home' | 'away';
+  };
+  statistics?: ESPNBoxscoreStatistic[];
+};
+
+type ESPNScoringPlay = {
+  period?: {
+    number?: number;
+    displayValue?: string;
+  };
+  half?: string;
+  text?: string;
+  scoringPlay?: {
+    text?: string;
+  };
+  team?: {
+    homeAway?: 'home' | 'away';
+  };
+  awayScore?: number | string;
+  homeScore?: number | string;
+  outs?: number;
+  outsAfterPlay?: number;
+};
+
+type ESPNScoreboardResponse = {
+  events?: ESPNEvent[];
+};
+
+type ESPNBoxscoreResponse = {
+  boxscore?: {
+    players?: ESPNBoxscorePlayer[];
+  };
+  scoringPlays?: ESPNScoringPlay[];
+};
 
 export class CollegeBaseballAdapter {
   private readonly espnBaseUrl = 'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball';
-  private readonly ncaaBaseUrl = 'https://stats.ncaa.org/rankings';
 
   constructor() {
     // ESPN API is public, no key needed
@@ -35,34 +140,39 @@ export class CollegeBaseballAdapter {
         throw new Error(`ESPN API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data: ESPNScoreboardResponse = await response.json();
 
       const games: CollegeBaseballGame[] = await Promise.all(
-        (data.events || []).map(async (event: any) => {
+        (data.events || []).map(async event => {
+          const competition = event.competitions?.[0];
+          const homeCompetitor = competition?.competitors?.find(competitor => competitor.homeAway === 'home');
+          const awayCompetitor = competition?.competitors?.find(competitor => competitor.homeAway === 'away');
+
           const game: CollegeBaseballGame = {
             id: event.id,
             sport: 'COLLEGE_BASEBALL',
             date: event.date,
-            status: this.mapGameStatus(event.status?.type?.name),
-            conference: event.competitions?.[0]?.conferenceCompetition ? 'Yes' : 'No',
+            status: this.mapGameStatus(event.status),
+            conference: competition?.conferenceCompetition ? 'Conference Game' : 'Non-Conference',
             homeTeam: {
-              id: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.id || '',
-              name: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.displayName || '',
-              abbreviation: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.abbreviation || '',
-              city: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.location || '',
-              logo: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.logo || '',
+              id: homeCompetitor?.team?.id || '',
+              name: homeCompetitor?.team?.displayName || '',
+              abbreviation: homeCompetitor?.team?.abbreviation || '',
+              city: homeCompetitor?.team?.location || '',
+              logo: homeCompetitor?.team?.logo || '',
             },
             awayTeam: {
-              id: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.id || '',
-              name: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.displayName || '',
-              abbreviation: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.abbreviation || '',
-              city: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.location || '',
-              logo: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.logo || '',
+              id: awayCompetitor?.team?.id || '',
+              name: awayCompetitor?.team?.displayName || '',
+              abbreviation: awayCompetitor?.team?.abbreviation || '',
+              city: awayCompetitor?.team?.location || '',
+              logo: awayCompetitor?.team?.logo || '',
             },
-            homeScore: parseInt(event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.score || '0'),
-            awayScore: parseInt(event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.score || '0'),
-            period: event.status?.period ? `Inning ${event.status.period}` : undefined,
-            venue: event.competitions?.[0]?.venue?.fullName,
+            homeScore: this.parseScore(homeCompetitor?.score),
+            awayScore: this.parseScore(awayCompetitor?.score),
+            period: event.status?.type?.shortDetail || event.status?.type?.detail || undefined,
+            venue: competition?.venue?.fullName,
+            linescore: this.buildLinescore(competition?.competitors),
           };
 
           // Fetch full box score if game is final or live
@@ -94,7 +204,7 @@ export class CollegeBaseballAdapter {
    * Get FULL box score - batting and pitching lines
    * THIS IS THE KEY DIFFERENTIATOR FROM ESPN
    */
-  private async getBoxScore(gameId: string): Promise<{ battingLines: BattingLine[]; pitchingLines: PitchingLine[] }> {
+  private async getBoxScore(gameId: string): Promise<CollegeBaseballBoxScore> {
     const url = `${this.espnBaseUrl}/summary?event=${gameId}`;
 
     const response = await fetch(url, {
@@ -108,19 +218,23 @@ export class CollegeBaseballAdapter {
       throw new Error(`ESPN box score error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: ESPNBoxscoreResponse = await response.json();
 
-    const battingLines: BattingLine[] = [];
-    const pitchingLines: PitchingLine[] = [];
+    const battingLines: Record<'home' | 'away', BattingLine[]> = { home: [], away: [] };
+    const pitchingLines: Record<'home' | 'away', PitchingLine[]> = { home: [], away: [] };
 
     // Extract batting statistics
-    data.boxscore?.players?.forEach((team: any) => {
-      team.statistics?.forEach((statGroup: any) => {
+    data.boxscore?.players?.forEach(team => {
+      const side: 'home' | 'away' = team.team?.homeAway === 'home' ? 'home' : 'away';
+
+      team.statistics?.forEach(statGroup => {
         if (statGroup.name === 'Batting') {
-          statGroup.athletes?.forEach((athlete: any) => {
+          statGroup.athletes?.forEach(athlete => {
             const stats = athlete.stats || [];
-            battingLines.push({
+            battingLines[side].push({
               player: athlete.athlete?.displayName || 'Unknown',
+              team: side,
+              position: athlete.athlete?.position?.abbreviation,
               ab: parseInt(stats[0] || '0'),
               r: parseInt(stats[1] || '0'),
               h: parseInt(stats[2] || '0'),
@@ -132,10 +246,13 @@ export class CollegeBaseballAdapter {
         }
 
         if (statGroup.name === 'Pitching') {
-          statGroup.athletes?.forEach((athlete: any) => {
+          statGroup.athletes?.forEach(athlete => {
             const stats = athlete.stats || [];
-            pitchingLines.push({
+            const decisionStat = athlete.athlete?.statistics?.find(stat => stat.name === 'decision');
+            pitchingLines[side].push({
               player: athlete.athlete?.displayName || 'Unknown',
+              team: side,
+              decision: decisionStat?.displayValue || null,
               ip: parseFloat(stats[0] || '0'),
               h: parseInt(stats[1] || '0'),
               r: parseInt(stats[2] || '0'),
@@ -148,13 +265,33 @@ export class CollegeBaseballAdapter {
       });
     });
 
-    return { battingLines, pitchingLines };
+    const scoringPlays: ScoringPlay[] = (data.scoringPlays || []).map(play => ({
+      inning: play.period?.number || 0,
+      halfInning: (play.period?.displayValue || play.half || '')
+        .toString()
+        .toLowerCase()
+        .includes('bot')
+        ? 'Bottom'
+        : 'Top',
+      description: play.text || play.scoringPlay?.text || '',
+      scoringTeam: play.team?.homeAway === 'home' ? 'home' : 'away',
+      awayScore: typeof play.awayScore === 'number' ? play.awayScore : parseInt(play.awayScore || '0'),
+      homeScore: typeof play.homeScore === 'number' ? play.homeScore : parseInt(play.homeScore || '0'),
+      outs: play.outs || play.outsAfterPlay || undefined,
+    }));
+
+    return {
+      batting: battingLines,
+      pitching: pitchingLines,
+      scoringPlays,
+      lastUpdated: getChicagoTimestamp(),
+    };
   }
 
   /**
    * Get conference standings
    */
-  async getStandings(conference?: string): Promise<ApiResponse<any[]>> {
+  async getStandings(conference?: string): Promise<ApiResponse<Record<string, unknown>[]>> {
     return retryWithBackoff(async () => {
       // ESPN doesn't provide great standings for college baseball
       // We'll need to aggregate from game results or use NCAA direct
@@ -186,21 +323,60 @@ export class CollegeBaseballAdapter {
     });
   }
 
-  private mapGameStatus(status: string): CollegeBaseballGame['status'] {
-    switch (status?.toLowerCase()) {
-      case 'status.type.final':
-        return 'final';
-      case 'status.type.inprogress':
-        return 'live';
-      case 'status.type.scheduled':
-      case 'status.type.pre':
-        return 'scheduled';
-      case 'status.type.postponed':
-        return 'postponed';
-      case 'status.type.canceled':
-        return 'cancelled';
-      default:
-        return 'scheduled';
+  private mapGameStatus(status: ESPNStatus | string | undefined): CollegeBaseballGame['status'] {
+    const raw = (typeof status === 'string' ? status : status?.type?.name || status?.type?.state || '').toLowerCase();
+
+    if (raw.includes('final')) {
+      return 'final';
     }
+
+    if (raw.includes('inprogress') || raw.includes('in_progress') || raw.includes('live')) {
+      return 'live';
+    }
+
+    if (raw.includes('postponed')) {
+      return 'postponed';
+    }
+
+    if (raw.includes('cancelled') || raw.includes('canceled')) {
+      return 'cancelled';
+    }
+
+    return 'scheduled';
+  }
+
+  private buildLinescore(competitors: ESPNCompetitor[] | undefined): LinescoreFrame[] | undefined {
+    if (!competitors) {
+      return undefined;
+    }
+
+    const home = competitors.find(competitor => competitor.homeAway === 'home');
+    const away = competitors.find(competitor => competitor.homeAway === 'away');
+
+    const homeLines = home?.linescores || [];
+    const awayLines = away?.linescores || [];
+    const frames: LinescoreFrame[] = [];
+
+    const totalFrames = Math.max(homeLines.length, awayLines.length);
+    for (let i = 0; i < totalFrames; i++) {
+      const homeFrame = homeLines[i] || {};
+      const awayFrame = awayLines[i] || {};
+      frames.push({
+        inning: homeFrame.displayValue || awayFrame.displayValue || `${i + 1}`,
+        home: this.parseScore(homeFrame.value),
+        away: this.parseScore(awayFrame.value),
+      });
+    }
+
+    return frames.length > 0 ? frames : undefined;
+  }
+
+  private parseScore(value: string | number | undefined): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    const parsed = parseInt(value || '0', 10);
+    return Number.isNaN(parsed) ? 0 : parsed;
   }
 }

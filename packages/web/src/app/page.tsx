@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Game, Standing } from '@bsi/shared';
+import type { Game, Standing, CollegeBaseballGame } from '@bsi/shared';
 import { GameCard } from '../components/GameCard';
 import { StandingsTable } from '../components/StandingsTable';
 import { SportTabs } from '../components/SportTabs';
+import { CollegeBaseballBoxScore } from '../components/CollegeBaseballBoxScore';
 
 export default function HomePage() {
   const [selectedSport, setSelectedSport] = useState<'MLB' | 'NFL' | 'NBA' | 'NCAA_FOOTBALL' | 'COLLEGE_BASEBALL'>('COLLEGE_BASEBALL');
@@ -12,6 +13,7 @@ export default function HomePage() {
   const [standings, setStandings] = useState<Standing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedGameId, setExpandedGameId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,7 +25,31 @@ export default function HomePage() {
         const gamesRes = await fetch(`/api/sports/${selectedSport.toLowerCase()}/games`);
         if (!gamesRes.ok) throw new Error('Failed to fetch games');
         const gamesData = await gamesRes.json();
-        setGames(gamesData.data || []);
+        const fetchedGames: Game[] = gamesData.data || [];
+        setGames(fetchedGames);
+
+        if (selectedSport === 'COLLEGE_BASEBALL') {
+          setExpandedGameId(prev => {
+            const collegeGames = fetchedGames.filter(isCollegeBaseballGame);
+
+            if (collegeGames.length === 0) {
+              return null;
+            }
+
+            if (prev && collegeGames.some(game => game.id === prev)) {
+              return prev;
+            }
+
+            const withBox = collegeGames.find(game => game.boxScore);
+            if (withBox) {
+              return withBox.id;
+            }
+
+            return collegeGames[0]?.id ?? null;
+          });
+        } else {
+          setExpandedGameId(null);
+        }
 
         // Fetch standings
         const standingsRes = await fetch(`/api/sports/${selectedSport.toLowerCase()}/standings`);
@@ -44,6 +70,16 @@ export default function HomePage() {
 
     return () => clearInterval(interval);
   }, [selectedSport]);
+
+  const isCollegeBaseballGame = (game: Game): game is CollegeBaseballGame => {
+    return game.sport === 'COLLEGE_BASEBALL';
+  };
+
+  const collegeBaseballGames = games.filter(isCollegeBaseballGame);
+  const expandedCollegeGame =
+    selectedSport === 'COLLEGE_BASEBALL'
+      ? collegeBaseballGames.find(game => game.id === expandedGameId) || collegeBaseballGames.find(game => game.boxScore) || null
+      : null;
 
   return (
     <div className="space-y-6">
@@ -92,7 +128,16 @@ export default function HomePage() {
             ) : (
               <div className="space-y-3">
                 {games.slice(0, 10).map(game => (
-                  <GameCard key={game.id} game={game} />
+                  <GameCard
+                    key={game.id}
+                    game={game}
+                    onSelect={
+                      selectedSport === 'COLLEGE_BASEBALL'
+                        ? selectedGame => setExpandedGameId(selectedGame.id)
+                        : undefined
+                    }
+                    isActive={selectedSport === 'COLLEGE_BASEBALL' && expandedGameId === game.id}
+                  />
                 ))}
               </div>
             )}
@@ -107,24 +152,9 @@ export default function HomePage() {
             )}
           </section>
 
-          {selectedSport === 'COLLEGE_BASEBALL' && games.length > 0 && (
+          {selectedSport === 'COLLEGE_BASEBALL' && expandedCollegeGame && (
             <section className="sport-card">
-              <h3 className="text-xl font-bold mb-4 text-orange-500">
-                🔥 ESPN Gap Filled: Full Box Scores
-              </h3>
-              <p className="text-sm text-gray-400 mb-4">
-                ESPN only shows the score and inning. We show batting lines, pitching lines,
-                and complete game statistics - everything ESPN refuses to provide.
-              </p>
-              <div className="text-sm text-green-400">
-                ✓ Complete batting statistics for all players
-                <br />
-                ✓ Full pitching lines with IP, H, R, ER, BB, K
-                <br />
-                ✓ Game recaps and previews
-                <br />
-                ✓ Conference standings with complete records
-              </div>
+              <CollegeBaseballBoxScore game={expandedCollegeGame} />
             </section>
           )}
         </>

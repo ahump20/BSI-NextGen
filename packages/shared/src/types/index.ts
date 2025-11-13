@@ -112,14 +112,27 @@ export interface CacheConfig {
 export interface CollegeBaseballGame extends Game {
   sport: 'COLLEGE_BASEBALL';
   conference: string;
-  boxScore?: {
-    battingLines: BattingLine[];
-    pitchingLines: PitchingLine[];
-  };
+  linescore?: LinescoreFrame[];
+  boxScore?: CollegeBaseballBoxScore;
+}
+
+export interface LinescoreFrame {
+  inning: string;
+  home: number;
+  away: number;
+}
+
+export interface CollegeBaseballBoxScore {
+  batting: Record<'home' | 'away', BattingLine[]>;
+  pitching: Record<'home' | 'away', PitchingLine[]>;
+  scoringPlays: ScoringPlay[];
+  lastUpdated: string;
 }
 
 export interface BattingLine {
   player: string;
+  team: 'home' | 'away';
+  position?: string;
   ab: number;
   r: number;
   h: number;
@@ -130,10 +143,22 @@ export interface BattingLine {
 
 export interface PitchingLine {
   player: string;
+  team: 'home' | 'away';
+  decision?: 'W' | 'L' | 'SV' | null;
   ip: number;
   h: number;
   r: number;
   er: number;
   bb: number;
   so: number;
+}
+
+export interface ScoringPlay {
+  inning: number;
+  halfInning: 'Top' | 'Bottom';
+  description: string;
+  scoringTeam: 'home' | 'away';
+  awayScore: number;
+  homeScore: number;
+  outs?: number;
 }

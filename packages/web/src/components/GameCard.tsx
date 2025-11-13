@@ -2,14 +2,37 @@ import type { Game } from '@bsi/shared';
 
 interface GameCardProps {
   game: Game;
+  onSelect?: (game: Game) => void;
+  isActive?: boolean;
 }
 
-export function GameCard({ game }: GameCardProps) {
+export function GameCard({ game, onSelect, isActive }: GameCardProps) {
   const isLive = game.status === 'live';
   const isFinal = game.status === 'final';
 
+  const handleSelect = () => {
+    if (onSelect) {
+      onSelect(game);
+    }
+  };
+
   return (
-    <div className="game-card">
+    <div
+      className={`game-card ${onSelect ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500' : ''} ${
+        isActive ? 'border-orange-500 shadow-lg shadow-orange-500/20' : ''
+      }`}
+      onClick={handleSelect}
+      onKeyDown={event => {
+        if (!onSelect) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleSelect();
+        }
+      }}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      aria-pressed={onSelect ? Boolean(isActive) : undefined}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {isLive && <span className="live-indicator"></span>}
