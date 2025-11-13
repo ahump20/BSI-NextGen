@@ -1,0 +1,37 @@
+{
+  "name": "blaze-trends-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for Blaze Trends - Real-time sports highlights and AI analysis",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "db:create": "wrangler d1 create blaze-trends-db",
+    "db:init": "wrangler d1 execute blaze-trends-db --file=./schema.sql",
+    "db:query": "wrangler d1 execute blaze-trends-db --command",
+    "kv:create": "wrangler kv:namespace create BLAZE_TRENDS_CACHE",
+    "kv:create:preview": "wrangler kv:namespace create BLAZE_TRENDS_CACHE --preview",
+    "secret:openai": "wrangler secret put OPENAI_API_KEY",
+    "secret:brave": "wrangler secret put BRAVE_API_KEY",
+    "cf-typegen": "wrangler types"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "sports",
+    "ai",
+    "trends"
+  ],
+  "author": "Blaze Sports Intel",
+  "license": "PROPRIETARY",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "@types/node": "^22.10.2",
+    "wrangler": "^3.94.0",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "hono": "^4.6.14"
+  }
+}

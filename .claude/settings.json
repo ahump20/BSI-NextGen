@@ -1,0 +1,33 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/scripts/setup.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "environment": {
+    "description": "BSI-NextGen requires pnpm, Node.js 18+, and access to sports data APIs",
+    "requiredDomains": [
+      "statsapi.mlb.com",
+      "api.sportsdata.io",
+      "sportsdata.io",
+      "site.api.espn.com",
+      "d1baseball.com",
+      "auth0.com",
+      "*.auth0.com"
+    ],
+    "notes": [
+      "This project is a TypeScript monorepo using pnpm workspaces",
+      "SessionStart hook will install dependencies and build packages",
+      "API keys must be configured in environment variables (see .env.example)",
+      "Network access required for sports data APIs (MLB, NFL, NBA, NCAA, ESPN)"
+    ]
+  }
+}
