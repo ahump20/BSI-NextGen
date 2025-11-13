@@ -4,54 +4,59 @@ Your platform is **100% production-ready**. Here's the fastest way to get it liv
 
 ---
 
-## Option 1: Vercel (5 Minutes - RECOMMENDED)
+## Option 1: Cloudflare Pages (10 Minutes - YOUR CHOICE ✅)
 
-### Step 1: Import from GitHub
+### Step 1: Add GitHub Secret (2 minutes)
 
-1. Go to **https://vercel.com/new**
-2. Click **"Import Git Repository"**
-3. Search for: `ahump20/BSI-NextGen`
-4. Click **"Import"**
+1. Go to **https://github.com/ahump20/BSI-NextGen/settings/secrets/actions**
+2. Click **"New repository secret"**
+3. Name: `CLOUDFLARE_API_TOKEN`
+4. Value: `r-2jlIcjxuS-INveZJAaJS-IzwtJeh6HvH9qi9Fi`
+5. Click **"Add secret"**
 
-### Step 2: Configure
+### Step 2: Connect GitHub to Cloudflare (5 minutes)
 
-**Root Directory:** `packages/web`
+1. Go to **https://dash.cloudflare.com/a12cb329d84130460eed99b816e4d0d3/pages**
+2. Click **"Create application"** → **"Pages"** → **"Connect to Git"**
+3. Select **GitHub** and authorize Cloudflare Pages
+4. Choose repository: **`ahump20/BSI-NextGen`**
+5. Click **"Begin setup"**
+
+### Step 3: Configure Build
+
+**Project name:** `blazesportsintel`
+**Production branch:** `main`
 
 **Build Settings:**
-- Framework Preset: `Next.js` (auto-detected)
-- Build Command: `cd ../.. && pnpm build`
-- Output Directory: `.next`
-- Install Command: `cd ../.. && pnpm install`
+- Build command: `pnpm build`
+- Build output directory: `packages/web/.next`
+- Root directory: `/` (leave blank)
 
-### Step 3: Environment Variables
+### Step 4: Environment Variables
 
-Click **"Environment Variables"** and add:
+Click **"Add variable"** for each:
 
 ```
-Name: SPORTSDATAIO_API_KEY
-Value: 6ca2adb39404482da5406f0a6cd7aa37
+SPORTSDATAIO_API_KEY = 6ca2adb39404482da5406f0a6cd7aa37
+NEXT_PUBLIC_APP_URL = https://blazesportsintel.pages.dev
+NODE_ENV = production
 ```
 
-### Step 4: Deploy
+### Step 5: Deploy
 
-Click **"Deploy"**
+Click **"Save and Deploy"**
 
-**Done!** Your site will be live at `https://bsi-nextgen.vercel.app` in 2-3 minutes.
+**Done!** Your site will be live at `https://blazesportsintel.pages.dev` in 3-5 minutes.
 
-### Step 5: Custom Domain (Optional)
+### Step 6: Custom Domain (Optional)
 
-1. Go to Project Settings → Domains
-2. Add: `blazesportsintel.com`
-3. Update your DNS:
-   ```
-   Type: CNAME
-   Name: www
-   Value: cname.vercel-dns.com
+1. Go to Project → **"Custom domains"**
+2. Click **"Set up a custom domain"**
+3. Enter: `blazesportsintel.com`
+4. DNS auto-configured if domain is on Cloudflare
+5. Enable SSL/TLS → Full (strict)
 
-   Type: A
-   Name: @
-   Value: 76.76.21.21
-   ```
+**Future deployments are automatic** - just push to main branch!
 
 ---
 
@@ -196,15 +201,23 @@ c670ef4 - feat: Complete production deployment infrastructure
 
 ---
 
-## THE ABSOLUTE FASTEST WAY
+## THE ABSOLUTE FASTEST WAY (Cloudflare Pages)
 
-1. **Right now:** Go to https://vercel.com/new
-2. **Import:** `ahump20/BSI-NextGen`
-3. **Root dir:** `packages/web`
-4. **Add env:** `SPORTSDATAIO_API_KEY=6ca2adb39404482da5406f0a6cd7aa37`
-5. **Click Deploy**
+1. **Add GitHub Secret:** https://github.com/ahump20/BSI-NextGen/settings/secrets/actions
+   - Name: `CLOUDFLARE_API_TOKEN`
+   - Value: `r-2jlIcjxuS-INveZJAaJS-IzwtJeh6HvH9qi9Fi`
 
-**Done. Live in 3 minutes.** 🚀
+2. **Connect to Cloudflare:** https://dash.cloudflare.com/a12cb329d84130460eed99b816e4d0d3/pages
+   - Create application → Connect to Git → Select `ahump20/BSI-NextGen`
+   - Build command: `pnpm build`
+   - Output: `packages/web/.next`
+   - Add env vars (see Step 4 above)
+
+3. **Click "Save and Deploy"**
+
+**Done. Live in 5 minutes.** 🚀
+
+**Future deploys:** Just `git push` - automatic deployment!
 
 ---
 
