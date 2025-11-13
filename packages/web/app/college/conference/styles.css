@@ -1,0 +1,235 @@
+/* packages/web/app/college/conference/styles.css */
+
+.conference-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.conference-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.conference-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.conference-error,
+.conference-empty {
+  border-radius: var(--di-radius);
+  border: 1px solid rgba(220, 38, 38, 0.6);
+  background: rgba(220, 38, 38, 0.15);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.conference-empty {
+  border-color: rgba(148, 163, 184, 0.6);
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.conference-error strong {
+  font-size: 1.1rem;
+}
+
+.conference-error code,
+.conference-empty code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+}
+
+/* Table */
+
+.conference-table-wrapper {
+  overflow-x: auto;
+  background: linear-gradient(
+    145deg,
+    rgba(17, 24, 39, 0.92),
+    rgba(15, 23, 42, 0.88)
+  );
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: var(--di-radius);
+  padding: 1rem;
+}
+
+.conference-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.conference-table thead {
+  border-bottom: 2px solid rgba(251, 191, 36, 0.5);
+}
+
+.conference-table th {
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgb(251, 191, 36);
+}
+
+.conference-table-rank {
+  width: 40px;
+  text-align: center !important;
+}
+
+.conference-table-team {
+  min-width: 180px;
+}
+
+.conference-table-stat {
+  text-align: center !important;
+  min-width: 80px;
+}
+
+.conference-table-streak {
+  min-width: 120px;
+}
+
+.conference-table-row {
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  transition: background-color 0.2s;
+}
+
+.conference-table-row:hover {
+  background-color: rgba(51, 65, 85, 0.3);
+}
+
+.conference-table-row:last-child {
+  border-bottom: none;
+}
+
+.conference-table td {
+  padding: 0.75rem 0.5rem;
+}
+
+.conference-team-link {
+  color: rgb(226, 232, 240);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.conference-team-link:hover {
+  color: rgb(251, 191, 36);
+  text-decoration: underline;
+}
+
+/* Badges */
+
+.conference-diff-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.12);
+  min-width: 50px;
+}
+
+.conference-diff-badge.is-positive {
+  border-color: rgba(34, 197, 94, 0.6);
+  background: rgba(34, 197, 94, 0.18);
+  color: rgb(134, 239, 172);
+}
+
+.conference-diff-badge.is-negative {
+  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(239, 68, 68, 0.18);
+  color: rgb(252, 165, 165);
+}
+
+/* Legend */
+
+.conference-legend {
+  background: linear-gradient(
+    145deg,
+    rgba(17, 24, 39, 0.92),
+    rgba(15, 23, 42, 0.88)
+  );
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: var(--di-radius);
+  padding: 1.25rem;
+}
+
+.conference-legend h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  color: rgb(251, 191, 36);
+}
+
+.conference-legend dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.conference-legend dl > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.conference-legend dt {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: rgb(226, 232, 240);
+}
+
+.conference-legend dd {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--di-text-muted);
+  line-height: 1.5;
+}
+
+/* Footer Note */
+
+.conference-footer-note {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--di-text-muted);
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .conference-table {
+    font-size: 0.75rem;
+  }
+
+  .conference-table th,
+  .conference-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .conference-table-team {
+    min-width: 120px;
+  }
+
+  .conference-table-stat {
+    min-width: 60px;
+  }
+
+  .conference-diff-badge {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.35rem;
+    min-width: 40px;
+  }
+}
