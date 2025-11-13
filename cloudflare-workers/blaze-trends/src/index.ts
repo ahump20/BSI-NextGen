@@ -80,8 +80,8 @@ const SPORTS_CONFIG = {
   },
 };
 
-// Exclusions
-const EXCLUDED_KEYWORDS = ['soccer', 'football' /* when context is soccer */, 'premier league', 'champions league', 'la liga', 'serie a', 'bundesliga'];
+// Exclusions - applied conditionally based on sport
+const SOCCER_EXCLUSIONS = ['soccer', 'football', 'premier league', 'champions league', 'la liga', 'serie a', 'bundesliga'];
 
 // ============================================================================
 // API Routes
@@ -276,7 +276,13 @@ async function fetchNewsArticles(sport: string, apiKey: string): Promise<NewsArt
   if (!config) return [];
 
   const searchQuery = config.keywords.join(' OR ');
-  const excludeQuery = EXCLUDED_KEYWORDS.map(kw => `-${kw}`).join(' ');
+  
+  // Only apply soccer exclusions for non-football sports
+  const isFootballSport = sport === 'nfl' || sport === 'college_football';
+  const excludeQuery = isFootballSport 
+    ? SOCCER_EXCLUSIONS.filter(kw => kw !== 'football').map(kw => `-${kw}`).join(' ')
+    : SOCCER_EXCLUSIONS.map(kw => `-${kw}`).join(' ');
+  
   const fullQuery = `${searchQuery} ${excludeQuery}`;
 
   const url = new URL('https://api.search.brave.com/res/v1/news/search');
