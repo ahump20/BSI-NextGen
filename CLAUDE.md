@@ -81,6 +81,9 @@ npx playwright show-report  # Show test results
 .claude/tests/mobile-regression.sh --create-baseline
 .claude/tests/mobile-regression.sh --performance
 .claude/tests/mobile-regression.sh --all
+
+# SportsDataIO Integration Test
+pnpm test:sportsdataio        # Test NFL and NBA API integration
 ```
 
 ### Code Quality
@@ -914,6 +917,7 @@ cp .env.example .env
 - `README.md` - Project overview and quick start
 - `QUICK_START.md` - Detailed setup instructions
 - `DEPLOYMENT.md` - Deployment procedures
+- `SPORTSDATAIO_INTEGRATION.md` - SportsDataIO API integration guide
 - `docs/IMPLEMENTATION_SUMMARY.md` - Infrastructure implementation roadmap
 - `docs/INFRASTRUCTURE.md` - Complete architecture mapping
 - `docs/OPERATIONAL_RUNBOOKS.md` - Operations procedures
