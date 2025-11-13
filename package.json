@@ -11,7 +11,13 @@
     "lint": "eslint \"packages/**/*.{js,jsx,ts,tsx}\"",
     "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf packages/*/dist packages/*/.next packages/*/node_modules node_modules"
+    "clean": "rm -rf packages/*/dist packages/*/.next packages/*/node_modules node_modules",
+    "trends:dev": "cd cloudflare-workers/blaze-trends && npm run dev",
+    "trends:deploy": "cd cloudflare-workers/blaze-trends && npm run deploy",
+    "trends:tail": "cd cloudflare-workers/blaze-trends && npm run tail",
+    "trends:setup": "cd cloudflare-workers/blaze-trends && ./scripts/setup-local.sh",
+    "trends:health": "cd cloudflare-workers/blaze-trends && ./scripts/monitor-health.sh all",
+    "trends:db": "cd cloudflare-workers/blaze-trends && ./scripts/db-utils.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
