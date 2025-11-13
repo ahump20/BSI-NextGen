@@ -508,7 +508,7 @@ curl -H "Ocp-Apim-Subscription-Key: YOUR_KEY_HERE" \
 npx playwright --version
 
 # Check browsers installed
-npx playwright list-files
+npx playwright list
 ```
 
 **Solutions:**
