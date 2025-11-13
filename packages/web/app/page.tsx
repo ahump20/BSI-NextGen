@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
+import { NcaaFusionCard } from '@/components/NcaaFusionCard';
 
 /**
  * Homepage
@@ -385,6 +386,9 @@ export default function HomePage() {
               </ul>
             </div>
           </Link>
+
+          {/* NCAA Fusion - NEW */}
+          <NcaaFusionCard />
         </div>
       </section>
 
