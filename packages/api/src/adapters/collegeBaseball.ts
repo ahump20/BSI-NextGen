@@ -249,10 +249,15 @@ export class CollegeBaseballAdapter {
           statGroup.athletes?.forEach(athlete => {
             const stats = athlete.stats || [];
             const decisionStat = athlete.athlete?.statistics?.find(stat => stat.name === 'decision');
+            const rawDecision = decisionStat?.displayValue || null;
+            const decision: 'W' | 'L' | 'SV' | null =
+              rawDecision === 'W' || rawDecision === 'L' || rawDecision === 'SV'
+                ? rawDecision
+                : null;
             pitchingLines[side].push({
               player: athlete.athlete?.displayName || 'Unknown',
               team: side,
-              decision: decisionStat?.displayValue || null,
+              decision,
               ip: parseFloat(stats[0] || '0'),
               h: parseInt(stats[1] || '0'),
               r: parseInt(stats[2] || '0'),
