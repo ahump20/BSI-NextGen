@@ -567,7 +567,7 @@ pnpm install --frozen-lockfile
 
 ### External Links
 
-- **Claude Code Documentation:** https://docs.claude.com/en/docs/claude-code
+- **Claude Code Documentation:** https://docs.anthropic.com/claude/docs/claude-code
 - **pnpm Workspaces:** https://pnpm.io/workspaces
 - **Next.js 14:** https://nextjs.org/docs
 - **Playwright:** https://playwright.dev/
