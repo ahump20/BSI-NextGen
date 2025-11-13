@@ -73,12 +73,12 @@ type NcaaGame = {
 
 type ScoreboardWrapper = {
   game?: NcaaGame;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 type ScoreboardResponse = {
   games?: ScoreboardWrapper[];
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 type FusionSuccess = {
