@@ -1,5 +1,9 @@
 // packages/web/app/college/fusion/page.tsx
 import './styles.css';
+import {
+  calculateLeverageIndex,
+  type LeverageIndexInputs
+} from '@/lib/leverage-index';
 
 type FusionPayload =
   | {
@@ -167,6 +171,29 @@ export default async function CollegeFusionPage({
   const expectedWins = pyth?.expectedWins ?? null;
   const winDeltaLabel = winDelta(actualWins, expectedWins);
 
+  // Calculate Leverage Index if we have an upcoming game
+  let leverageIndex = null;
+  if (upcomingGame && overall) {
+    // Determine opponent rank
+    const teamAbbr = team.abbreviation?.toLowerCase();
+    const isHome = upcomingGame.home?.names?.short?.toLowerCase() === teamAbbr;
+    const opponent = isHome ? upcomingGame.away : upcomingGame.home;
+    const opponentRank = opponent?.rank ?? null;
+
+    const leverageInputs: LeverageIndexInputs = {
+      wins: overall.wins,
+      losses: overall.losses,
+      ties: overall.ties,
+      actualWins: overall.wins,
+      expectedWins: pyth?.expectedWins ?? null,
+      opponentRank,
+      streakValue: momentum?.streakValue ?? null,
+      isHomeGame: isHome
+    };
+
+    leverageIndex = calculateLeverageIndex(leverageInputs);
+  }
+
   return (
     <main className="di-page">
       <section className="di-section fusion-header">
@@ -328,6 +355,60 @@ export default async function CollegeFusionPage({
                   </dd>
                 </div>
               </dl>
+              {leverageIndex && (
+                <div className="fusion-leverage">
+                  <div className="fusion-leverage-header">
+                    <span className="fusion-leverage-label">Leverage Index</span>
+                    <span
+                      className="fusion-leverage-badge"
+                      style={{
+                        backgroundColor: leverageIndex.color,
+                        color: 'white'
+                      }}
+                    >
+                      {leverageIndex.index}/10
+                    </span>
+                  </div>
+                  <div className="fusion-leverage-status">
+                    <strong>{leverageIndex.label}</strong> —{' '}
+                    {leverageIndex.description}
+                  </div>
+                  <div className="fusion-leverage-factors">
+                    <div className="fusion-leverage-factor">
+                      <span className="fusion-leverage-factor-label">
+                        Standing
+                      </span>
+                      <span className="fusion-leverage-factor-value">
+                        {leverageIndex.factors.standingImpact}/10
+                      </span>
+                    </div>
+                    <div className="fusion-leverage-factor">
+                      <span className="fusion-leverage-factor-label">
+                        Pythagorean
+                      </span>
+                      <span className="fusion-leverage-factor-value">
+                        {leverageIndex.factors.pythagoreanPressure}/10
+                      </span>
+                    </div>
+                    <div className="fusion-leverage-factor">
+                      <span className="fusion-leverage-factor-label">
+                        Opponent
+                      </span>
+                      <span className="fusion-leverage-factor-value">
+                        {leverageIndex.factors.opponentStrength}/10
+                      </span>
+                    </div>
+                    <div className="fusion-leverage-factor">
+                      <span className="fusion-leverage-factor-label">
+                        Momentum
+                      </span>
+                      <span className="fusion-leverage-factor-value">
+                        {leverageIndex.factors.momentumFactor}/10
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </article>

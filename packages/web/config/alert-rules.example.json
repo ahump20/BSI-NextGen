@@ -1,0 +1,90 @@
+{
+  "alertRules": [
+    {
+      "id": "duke-pyth-overperform",
+      "name": "Duke Pythagorean Overperformance",
+      "description": "Alert when Duke basketball is overperforming by 2+ wins",
+      "condition": "pythagorean_over",
+      "threshold": 2.0,
+      "priority": "high",
+      "enabled": true,
+      "sport": "basketball",
+      "teamIds": ["150"],
+      "channels": ["webhook", "email"],
+      "webhookUrl": "https://your-webhook-endpoint.com/alerts",
+      "emailRecipients": ["alerts@example.com"],
+      "cooldownMinutes": 1440
+    },
+    {
+      "id": "sec-leverage-critical",
+      "name": "SEC Critical Leverage Games",
+      "description": "Alert for any SEC team with critical leverage game",
+      "condition": "leverage_critical",
+      "threshold": 8.0,
+      "priority": "critical",
+      "enabled": true,
+      "sport": "basketball",
+      "conferences": ["SEC"],
+      "channels": ["webhook"],
+      "webhookUrl": "https://your-webhook-endpoint.com/alerts",
+      "cooldownMinutes": 720
+    },
+    {
+      "id": "ranked-matchups-top10",
+      "name": "Top 10 Ranked Matchups",
+      "description": "Alert when any team faces a top 10 opponent",
+      "condition": "ranked_opponent",
+      "threshold": 10,
+      "priority": "high",
+      "enabled": true,
+      "channels": ["webhook"],
+      "webhookUrl": "https://your-webhook-endpoint.com/alerts",
+      "cooldownMinutes": 1440
+    },
+    {
+      "id": "win-streak-milestone",
+      "name": "Win Streak Milestone",
+      "description": "Alert when any team hits a 7-game win streak",
+      "condition": "win_streak",
+      "threshold": 7,
+      "priority": "medium",
+      "enabled": true,
+      "channels": ["webhook"],
+      "webhookUrl": "https://your-webhook-endpoint.com/alerts",
+      "cooldownMinutes": 2880
+    },
+    {
+      "id": "efficiency-elite-football",
+      "name": "Elite Football Efficiency",
+      "description": "Alert when football team reaches +15 efficiency differential",
+      "condition": "efficiency_high",
+      "threshold": 15.0,
+      "priority": "medium",
+      "enabled": true,
+      "sport": "football",
+      "channels": ["webhook"],
+      "webhookUrl": "https://your-webhook-endpoint.com/alerts",
+      "cooldownMinutes": 1440
+    }
+  ],
+  "globalSettings": {
+    "enabled": true,
+    "defaultCooldownMinutes": 1440,
+    "maxAlertsPerDay": 50,
+    "batchingWindowMinutes": 15
+  },
+  "webhooks": {
+    "defaultUrl": "https://your-webhook-endpoint.com/alerts",
+    "format": "json",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer your-token-here"
+    }
+  },
+  "email": {
+    "from": "alerts@blazesportsintel.com",
+    "replyTo": "support@blazesportsintel.com",
+    "smtpHost": "smtp.example.com",
+    "smtpPort": 587
+  }
+}

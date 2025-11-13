@@ -3,6 +3,45 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
+// Season-aware defaults calculator (inline for edge runtime)
+function getSeasonDefaults(sport: string): { year: string; week: string } {
+  const now = new Date();
+  const month = now.getMonth(); // 0-11
+  const year = now.getFullYear();
+
+  if (sport === 'basketball') {
+    // Basketball: Nov-April
+    if (month >= 10 || month <= 3) {
+      const seasonYear = month >= 10 ? year + 1 : year;
+      const seasonStartDate = month >= 10 ? new Date(year, 10, 1) : new Date(year - 1, 10, 1);
+      const daysSinceStart = Math.floor((now.getTime() - seasonStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      const week = Math.max(1, Math.min(Math.floor(daysSinceStart / 7) + 1, 180));
+      return { year: seasonYear.toString(), week: week.toString() };
+    }
+    return { year: year.toString(), week: '150' };
+  } else if (sport === 'football') {
+    // Football: Aug/Sep-Jan
+    if ((month >= 8 && month <= 11) || month === 0) {
+      const seasonYear = month === 0 ? year - 1 : year;
+      const seasonStartDate = month >= 8 ? new Date(year, 7, 25) : new Date(year - 1, 7, 25);
+      const daysSinceStart = Math.floor((now.getTime() - seasonStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      const week = Math.max(1, Math.min(Math.floor(daysSinceStart / 7) + 1, 20));
+      return { year: seasonYear.toString(), week: week.toString() };
+    }
+    const lastSeasonYear = month >= 2 ? year - 1 : year - 1;
+    return { year: lastSeasonYear.toString(), week: '15' };
+  } else {
+    // Baseball: Feb-June
+    if (month >= 1 && month <= 5) {
+      const seasonStartDate = new Date(year, 1, 14);
+      const daysSinceStart = Math.floor((now.getTime() - seasonStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      const week = Math.max(1, Math.min(Math.floor(daysSinceStart / 7) + 1, 20));
+      return { year: year.toString(), week: week.toString() };
+    }
+    return { year: month >= 6 ? year.toString() : (year - 1).toString(), week: '18' };
+  }
+}
+
 const REAL_API_BASE_URL = process.env.REAL_API_BASE_URL;
 const NCAA_API_BASE_URL = process.env.NCAA_API_BASE_URL ?? 'https://ncaa-api.henrygd.me';
 
@@ -100,9 +139,10 @@ export async function GET(req: NextRequest) {
     );
 
     // 2) Scoreboard from ncaa-api (ncaa.com proxy)
-    // You can make these date/week parameters configurable via query params later.
-    const year = url.searchParams.get('year') ?? '2024';
-    const weekOrDay = url.searchParams.get('week') ?? '1';
+    // Use season-aware defaults if year/week not specified
+    const defaults = getSeasonDefaults(sport);
+    const year = url.searchParams.get('year') ?? defaults.year;
+    const weekOrDay = url.searchParams.get('week') ?? defaults.week;
 
     const scoreboardPath =
       sport === 'football'

@@ -224,6 +224,82 @@
   border-bottom: none;
 }
 
+/* Leverage Index */
+
+.fusion-leverage {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(51, 65, 85, 0.7);
+}
+
+.fusion-leverage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.fusion-leverage-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--di-text-muted);
+  font-weight: 600;
+}
+
+.fusion-leverage-badge {
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.fusion-leverage-status {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.fusion-leverage-status strong {
+  font-weight: 700;
+}
+
+.fusion-leverage-factors {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .fusion-leverage-factors {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.fusion-leverage-factor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 0.375rem;
+  border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.fusion-leverage-factor-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--di-text-muted);
+}
+
+.fusion-leverage-factor-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgb(251, 191, 36);
+}
+
 /* Footer */
 
 .fusion-footer {

@@ -192,15 +192,61 @@ The dashboard gracefully handles:
 - **Parallel Fetching** - Analytics + scoreboard in parallel
 - **Static-First** - Server components with 25s revalidation
 
+## Enhancements (Implemented ✅)
+
+### 1. Leverage Index Calculator ✅
+
+Automatically calculates game importance (0-10 scale) based on:
+- Standing position (near .500 = high pressure)
+- Pythagorean differential (regression/redemption pressure)
+- Opponent strength (ranked teams = high leverage)
+- Momentum factor (streaks create pressure)
+
+**Location:** `packages/web/lib/leverage-index.ts`
+**Display:** Integrated into upcoming game card on fusion dashboard
+
+### 2. Season-Aware Defaults ✅
+
+Intelligent date/week defaults based on current date:
+- **Basketball (2025-26):** Auto-detects current week (Nov-April)
+- **Football (2024):** Season ended, defaults to week 15
+- **Baseball (2025):** Season ended, defaults to week 18
+
+**Location:** Inline in `packages/web/app/api/edge/ncaa/fusion/route.ts` + standalone util in `packages/web/lib/season-defaults.ts`
+
+### 3. Alert Rules Framework ✅
+
+Complete notification system for automated alerts:
+- 10 alert condition types (Pythagorean, leverage, streaks, efficiency, etc.)
+- Configurable thresholds and priorities
+- Multi-channel delivery (webhook, email, SMS, push)
+- Rate limiting with cooldown periods
+- Team/conference/sport targeting
+
+**Location:** `packages/web/lib/alert-rules.ts`
+**Documentation:** `packages/web/lib/ALERT_RULES_README.md`
+**Example Config:** `packages/web/config/alert-rules.example.json`
+
+### 4. Conference Dashboard ✅
+
+Multi-team comparison view:
+- Side-by-side team metrics
+- Sorted by Pythagorean differential
+- Efficiency and momentum tracking
+- Clickable team names → full fusion board
+
+**Location:** `/college/conference`
+**Usage:** `/college/conference?sport=basketball&teams=150,153,228&conference=ACC`
+
 ## Future Enhancements
 
-Potential additions mentioned by the user:
+Potential additions for future development:
 
-1. **Alert Rules** - Webhook/notification when metrics hit thresholds
-2. **Leverage Index** - Game importance scoring based on standings + momentum
-3. **Historical Comparison** - Compare current metrics to past seasons
-4. **Conference Dashboard** - Multi-team view for entire conference
-5. **Cloudflare Workers** - Move fusion logic to standalone worker
+1. **Historical Comparison** - Compare current metrics to past seasons
+2. **Cloudflare Worker** - Standalone fusion worker independent of Next.js
+3. **Real-time Updates** - WebSocket integration for live game updates
+4. **Betting Integrations** - Combine with line movements for value insights
+5. **Machine Learning** - Predictive alerts and outcome probabilities
 
 ## Troubleshooting
 
