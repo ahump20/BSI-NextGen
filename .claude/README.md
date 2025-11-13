@@ -361,7 +361,7 @@ npx playwright install
 npx playwright test
 
 # Run mobile regression tests
-.claude/tests/mobile-regression.sh --all
+# (mobile regression script not present)
 ```
 
 ### 6. Commit & Push
