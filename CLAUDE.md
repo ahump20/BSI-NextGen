@@ -850,7 +850,7 @@ cp .env.example .env
 
 ### Additional Resources
 
-- **Claude Code Documentation:** https://docs.claude.com/en/docs/claude-code
+- **Claude Code Documentation:** https://docs.anthropic.com/claude/docs/claude-code
 - **SessionStart Hooks:** `.claude/settings.json` configuration
 - **Setup Script:** `.claude/scripts/setup.sh` implementation
 - **Network Check:** `.claude/scripts/network-check.sh` for API validation
