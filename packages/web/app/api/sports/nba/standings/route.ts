@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NBAAdapter } from '@bsi/api';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('NBA-Standings-API');
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,7 +29,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[NBA Standings API] Error:', error);
+    logger.error('Error:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to fetch NBA standings',

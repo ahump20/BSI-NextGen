@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuth0Client } from '@bsi/api';
 import { randomBytes } from 'crypto';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('Auth-Login-API');
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -54,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('[Auth Login] Error:', error);
+    logger.error('Error:', error);
     return NextResponse.json(
       { error: 'Failed to initiate login' },
       { status: 500 }

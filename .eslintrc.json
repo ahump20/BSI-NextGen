@@ -11,6 +11,16 @@
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    ".next/",
+    "out/",
+    "build/",
+    "coverage/",
+    "*.config.js",
+    "*.config.ts"
+  ],
   "overrides": [
     {
       "files": ["*.ts", "*.tsx"],

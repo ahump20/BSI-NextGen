@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT } from '@bsi/api';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('Auth-Me-API');
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -49,7 +52,7 @@ export async function GET(request: NextRequest) {
       authenticated: true,
     });
   } catch (error) {
-    console.error('[Auth Me] Error:', error);
+    logger.error('Error:', error);
     return NextResponse.json(
       { error: 'Authentication failed' },
       { status: 500 }

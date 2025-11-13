@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { NFLAdapter } from '@bsi/api';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('NFL-Teams-API');
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,7 +23,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('[NFL Teams API] Error:', error);
+    logger.error('Error fetching NFL teams:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to fetch NFL teams',

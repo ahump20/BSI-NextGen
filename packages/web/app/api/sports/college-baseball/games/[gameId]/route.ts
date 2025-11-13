@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createNCAAAdapter } from '@bsi/api';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('CollegeBaseball-Games-API');
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +48,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('[NCAA Box Score API] Error:', error);
+    logger.error('Error:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to fetch box score',

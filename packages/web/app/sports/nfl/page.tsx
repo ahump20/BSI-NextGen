@@ -45,6 +45,7 @@ export default function NFLPage() {
         setGames(gamesData.data);
         setStandings(standingsData.data);
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error('Error fetching NFL data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load NFL data');
       } finally {

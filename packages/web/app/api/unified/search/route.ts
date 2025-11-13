@@ -10,6 +10,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { LeagueOrchestrator } from '@bsi/api';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('Unified-Search-API');
 
 export const dynamic = 'force-dynamic';
 
@@ -64,7 +67,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('[Unified Search API] Error:', error);
+    logger.error('Error:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Search failed',

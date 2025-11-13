@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuth0Client, createJWT } from '@bsi/api';
 import type { AuthUser } from '@bsi/shared';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('Auth-Callback-API');
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     // Check for OAuth errors
     if (error) {
-      console.error('[Auth Callback] OAuth error:', error, errorDescription);
+      logger.error('[Auth Callback] OAuth error:', error, errorDescription);
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/login?error=${encodeURIComponent(
           errorDescription || error
@@ -106,7 +109,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('[Auth Callback] Error:', error);
+    logger.error('Error:', error);
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/login?error=authentication_failed`
     );

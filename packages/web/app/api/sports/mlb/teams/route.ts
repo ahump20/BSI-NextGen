@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { MLBAdapter } from '@bsi/api';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('MLB-Teams-API');
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -10,7 +13,7 @@ export const runtime = 'nodejs';
  *
  * Returns all 30 MLB teams with basic information
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const adapter = new MLBAdapter();
     const response = await adapter.getTeams();
@@ -22,7 +25,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[MLB Teams API] Error:', error);
+    logger.error('Error fetching MLB teams:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to fetch MLB teams',

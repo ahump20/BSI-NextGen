@@ -44,6 +44,7 @@ export default function MLBPage() {
         setGames(gamesData.data);
         setStandings(standingsData.data);
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error('Error fetching MLB data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load MLB data');
       } finally {

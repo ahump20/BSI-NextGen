@@ -44,6 +44,7 @@ export default function NBAPage() {
         setGames(gamesData.data);
         setStandings(standingsData.data);
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error('Error fetching NBA data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load NBA data');
       } finally {
