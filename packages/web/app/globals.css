@@ -6,6 +6,10 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+
+  /* Diamond Insights Design System */
+  --di-radius: 0.5rem;
+  --di-text-muted: rgb(148, 163, 184);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -13,6 +17,9 @@
     --foreground-rgb: 255, 255, 255;
     --background-start-rgb: 0, 0, 0;
     --background-end-rgb: 0, 0, 0;
+
+    /* Diamond Insights Design System - Dark Mode */
+    --di-text-muted: rgb(148, 163, 184);
   }
 }
 
@@ -29,5 +36,68 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/* Diamond Insights Design System - Base Styles */
+.di-page {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: linear-gradient(
+    to bottom,
+    rgb(15, 23, 42),
+    rgb(17, 24, 39)
+  );
+  color: rgb(226, 232, 240);
+}
+
+@media (min-width: 768px) {
+  .di-page {
+    padding: 3rem 2rem;
+  }
+}
+
+.di-section {
+  max-width: 1280px;
+  margin: 0 auto;
+  margin-bottom: 2rem;
+}
+
+.di-kicker {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgb(251, 191, 36);
+  margin-bottom: 0.5rem;
+}
+
+.di-page-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  background: linear-gradient(to right, rgb(251, 191, 36), rgb(245, 158, 11));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@media (min-width: 768px) {
+  .di-page-title {
+    font-size: 3rem;
+  }
+}
+
+.di-page-subtitle {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgb(203, 213, 225);
+  max-width: 48rem;
+}
+
+@media (min-width: 768px) {
+  .di-page-subtitle {
+    font-size: 1.125rem;
   }
 }
