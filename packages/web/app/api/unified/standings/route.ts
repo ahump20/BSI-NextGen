@@ -8,15 +8,18 @@
  * Timezone: America/Chicago
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { LeagueOrchestrator } from '@bsi/api';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('Unified-Standings-API');
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/unified/standings
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Create orchestrator with runtime API keys
     const orchestrator = new LeagueOrchestrator({
@@ -50,7 +53,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('[Unified Standings API] Error:', error);
+    logger.error('Error:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to fetch standings',

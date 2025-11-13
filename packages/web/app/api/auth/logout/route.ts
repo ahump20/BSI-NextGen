@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuth0Client } from '@bsi/api';
+import { createLogger } from '@bsi/shared';
+
+const logger = createLogger('Auth-Logout-API');
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -37,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('[Auth Logout] Error:', error);
+    logger.error('Error:', error);
 
     // Even if Auth0 logout fails, clear local session
     const response = NextResponse.redirect(

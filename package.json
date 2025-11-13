@@ -9,8 +9,15 @@
     "dev:api": "pnpm --filter @bsi/api dev",
     "preview": "pnpm --filter @bsi/web preview",
     "lint": "eslint \"packages/**/*.{js,jsx,ts,tsx}\"",
+    "lint:fix": "eslint \"packages/**/*.{js,jsx,ts,tsx}\" --fix",
     "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
     "clean": "rm -rf packages/*/dist packages/*/.next packages/*/node_modules node_modules"
   },
   "devDependencies": {
