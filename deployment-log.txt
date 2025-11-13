@@ -1,0 +1,39 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🔥 Blaze Sports Intel - Production Deployment
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[0;34mℹ[0m Step 1/10: Checking environment...
+[0;32m✓[0m Environment configured
+[0;34mℹ[0m Step 2/10: Checking dependencies...
+[0;32m✓[0m Dependencies verified
+[0;34mℹ[0m Step 3/10: Installing packages...
+Scope: all 6 workspace projects
+[?25l[?25l[?25l[?25l[?25l[36m?[39m [1mThe modules directory at "/Users/AustinHumphrey/BSI-NextGen/packages/mcp-sportsdata-io/node_modules" will be removed and reinstalled from scratch. Proceed?[22m [2m(Y/n)[22m [2m›[22m [36mtrue[39m[4D[36m?[39m [1mThe modules directory at "/Users/AustinHumphrey/BSI-NextGen/packages/shared/node_modules" will be removed and reinstalled from scratch. Proceed?[22m [2m(Y/n)[22m [2m›[22m [36mtrue[39m[4D[36m?[39m [1mThe modules directory at "/Users/AustinHumphrey/BSI-NextGen/packages/sports-dashboard/node_modules" will be removed and reinstalled from scratch. Proceed?[22m [2m(Y/n)[22m [2m›[22m [36mtrue[39m[4D[36m?[39m [1mThe modules directory at "/Users/AustinHumphrey/BSI-NextGen/packages/api/node_modules" will be removed and reinstalled from scratch. Proceed?[22m [2m(Y/n)[22m [2m›[22m [36mtrue[39m[4D[36m?[39m [1mThe modules directory at "/Users/AustinHumphrey/BSI-NextGen/packages/web/node_modules" will be removed and reinstalled from scratch. Proceed?[22m [2m(Y/n)[22m [2m›[22m [36mtrue[39m[4D[?25h[?25h[?25h[?25h[?25h[0;32m✓[0m Packages installed
+[0;34mℹ[0m Step 4/10: Running linter...
+[0;32m✓[0m Lint check passed
+[0;34mℹ[0m Step 5/10: Type checking...
+
+> bsi-nextgen@1.0.0 type-check /Users/AustinHumphrey/BSI-NextGen
+> tsc --noEmit
+
+[0;32m✓[0m Type check passed
+[0;34mℹ[0m Step 6/10: Building all packages...
+
+> bsi-nextgen@1.0.0 build /Users/AustinHumphrey/BSI-NextGen
+> pnpm --filter @bsi/shared build && pnpm --filter @bsi/api build && pnpm --filter @bsi/web build
+
+
+> @bsi/shared@1.0.0 build /Users/AustinHumphrey/BSI-NextGen/packages/shared
+> tsc
+
+
+> @bsi/api@1.0.0 build /Users/AustinHumphrey/BSI-NextGen/packages/api
+> tsc
+
+error TS2688: Cannot find type definition file for 'jest'.
+  The file is in the program because:
+    Entry point of type library 'jest' specified in compilerOptions
+/Users/AustinHumphrey/BSI-NextGen/packages/api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @bsi/api@1.0.0 build: `tsc`
+Exit status 2
+ ELIFECYCLE  Command failed with exit code 1.
