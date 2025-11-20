@@ -649,6 +649,68 @@ export class MLBIngestor {
 }
 ```
 
+### NFL Ingestor
+
+**Status:** ✅ Complete
+
+The NFL ingestor follows the same pattern as MLB but uses SportsDataIO API and handles week-based scheduling:
+
+**Key Features:**
+- Fetches games by week using SportsDataIO
+- Maps SportsDataIO status codes to internal statuses
+- Supports backfill for entire seasons (18 weeks)
+- Handles playoff games and bye weeks
+
+**API Integration:** `https://api.sportsdata.io/v3/nfl/scores/json/ScoresByWeek/{season}/{week}`
+
+### NBA Ingestor
+
+**Status:** ✅ Complete
+
+The NBA ingestor integrates with SportsDataIO and handles basketball-specific data:
+
+**Key Features:**
+- Fetches games by date using SportsDataIO
+- Tracks attendance and stadium information
+- Handles overtime games with quarter information
+- Supports date range ingestion for historical backfill
+- Season backfill from October through June (spans calendar years)
+
+**API Integration:** `https://api.sportsdata.io/v3/nba/scores/json/GamesByDate/{date}`
+
+**Unique Challenges:**
+- NBA seasons span two calendar years (e.g., 2024-2025 season)
+- Overtime games require proper quarter tracking
+- Status mapping includes F/OT (Final/Overtime)
+
+### NCAA Football Ingestor
+
+**Status:** ✅ Complete
+
+The NCAA Football ingestor uses ESPN's public API and handles college-specific data structures:
+
+**Key Features:**
+- Fetches games from ESPN API (no API key required)
+- Extracts home/away from nested competitions array
+- Handles conference-specific data
+- Supports week-specific ingestion and full season backfill
+- Tracks rankings and conference standings
+
+**API Integration:** `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard`
+
+**Unique Challenges:**
+- ESPN API uses nested JSON structure (games → competitions → competitors)
+- Must extract home/away teams from competitors array with `homeAway` field
+- Conference and division information embedded in team data
+- Week-based scheduling similar to NFL but with 15-week regular season
+
+**Implementation Pattern:**
+```typescript
+const competition = gameData.competitions[0];
+const homeCompetitor = competition.competitors.find(c => c.homeAway === 'home');
+const awayCompetitor = competition.competitors.find(c => c.homeAway === 'away');
+```
+
 ---
 
 ## Deployment Plan
