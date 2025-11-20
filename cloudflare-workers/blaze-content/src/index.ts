@@ -8,6 +8,8 @@
  */
 
 import { RSSIngestor } from './ingestors/rss-ingestor';
+import { ESPNAPIIngestor } from './ingestors/espn-api-ingestor';
+import { WebScraper } from './ingestors/web-scraper';
 import { ContentAnalyzer } from './analyzers/content-analyzer';
 import type {
   ContentSource,
@@ -374,13 +376,30 @@ async function processContentSource(
         break;
 
       case 'api':
-        // Future: API ingestors (ESPN, etc.)
-        console.warn(`[Content] API ingestor not implemented for: ${source.name}`);
+        // ESPN API ingestor
+        if (source.id.startsWith('espn-api-')) {
+          const espnIngestor = new ESPNAPIIngestor();
+          const leagueId = source.id.replace('espn-api-', '');
+          articles = await espnIngestor.fetch(leagueId);
+        } else {
+          console.warn(`[Content] Unknown API source: ${source.name}`);
+        }
         break;
 
       case 'scraper':
-        // Future: Web scraping
-        console.warn(`[Content] Scraper not implemented for: ${source.name}`);
+        // Web scraper for team sites
+        if (source.id.startsWith('team-site-')) {
+          const scraper = new WebScraper();
+          const teamSite = source.id.replace('team-site-', '') as any;
+          const config = WebScraper.getTeamSiteConfig(teamSite);
+          if (config) {
+            articles = await scraper.scrape(config);
+          } else {
+            console.warn(`[Content] Unknown team site: ${teamSite}`);
+          }
+        } else {
+          console.warn(`[Content] Unknown scraper source: ${source.name}`);
+        }
         break;
 
       default:

@@ -5,10 +5,12 @@ Cloudflare Worker that aggregates sports news and content from multiple sources,
 ## Features
 
 - **Automated Content Collection:** Runs every 5 minutes via cron trigger
-- **Multi-Source Support:** RSS feeds, APIs, web scraping
+- **Multi-Source Support:** RSS feeds (17), ESPN API (6), team site scrapers (3)
+- **ESPN API Integration:** Direct API access for MLB, NFL, NBA, NCAA Football, College Baseball, NCAA Basketball
+- **Web Scraping:** Official team sites (Cardinals, Dodgers, Yankees) with configurable selectors
 - **AI Analysis:** Workers AI (Llama 3 8B Instruct) for automatic categorization, sentiment analysis, and entity extraction
 - **Entity Extraction:** AI identifies teams, players, coaches, and keywords from article content
-- **Intelligent Deduplication:** URL-based duplicate prevention
+- **Intelligent Deduplication:** URL-based duplicate prevention across all sources
 - **Real-Time Trending:** Hourly trending topic updates based on AI-extracted entities
 - **RESTful API:** Content feeds, trending topics, and statistics
 
@@ -313,11 +315,80 @@ Get content ingestion statistics
 - Texas Longhorns Official (credibility: 90)
 - Burnt Orange Nation (credibility: 75)
 
+### ESPN API Sources (Phase 16.2)
+
+**Added:** 6 ESPN API sources for direct news integration
+
+**MLB:** `espn-api-mlb` (credibility: 95)
+**NFL:** `espn-api-nfl` (credibility: 95)
+**NBA:** `espn-api-nba` (credibility: 95)
+**NCAA Football:** `espn-api-ncaa-football` (credibility: 95)
+**College Baseball:** `espn-api-college-baseball` (credibility: 95) - **HIGH PRIORITY**
+**NCAA Basketball:** `espn-api-ncaa-basketball` (credibility: 95)
+
+**Advantages over RSS:**
+- More reliable (less prone to parsing errors)
+- Structured JSON responses
+- Richer metadata (author, images, categories)
+- Faster updates (no XML parsing overhead)
+
+### Team Site Scrapers (Phase 16.2)
+
+**Added:** 3 team site scrapers for official team news
+
+**Cardinals:** `team-site-cardinals` (credibility: 85)
+**Dodgers:** `team-site-dodgers` (credibility: 85)
+**Yankees:** `team-site-yankees` (credibility: 85)
+
+**Configurable Scraper:**
+Web scraper uses CSS selectors to extract article data:
+- Article container (`.article-item`)
+- Title (`.article-item__headline`)
+- Link (`a.article-item__link`)
+- Excerpt (`.article-item__preview`)
+- Author (`.article-item__contributor-name`)
+- Date (`.article-item__date`)
+- Image (`.article-item__image img`)
+
+**Adding Custom Scrapers:**
+```typescript
+const config = {
+  url: 'https://example.com/news',
+  leagueId: 'mlb',
+  baseUrl: 'https://example.com',
+  selectors: {
+    articleItem: 'article',
+    title: '.headline',
+    link: 'a.article-link',
+    excerpt: '.summary',
+    author: '.byline',
+    date: '.publish-date',
+    image: 'img.article-image',
+  },
+};
+
+const scraper = new WebScraper();
+const articles = await scraper.scrape(config);
+```
+
 ### Adding New Sources
 
+**RSS Feed:**
 ```sql
 INSERT INTO content_sources (id, name, type, url, credibility_score, fetch_interval_seconds)
-VALUES ('source-id', 'Source Name', 'rss', 'https://example.com/feed.xml', 85, 300);
+VALUES ('source-id', 'Source Name', 'rss', 'https://example.com/feed.xml', 85, 600);
+```
+
+**ESPN API:**
+```sql
+INSERT INTO content_sources (id, name, type, url, credibility_score, fetch_interval_seconds)
+VALUES ('espn-api-hockey', 'ESPN NHL API', 'api', 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/news', 95, 300);
+```
+
+**Team Scraper:**
+```sql
+INSERT INTO content_sources (id, name, type, url, credibility_score, fetch_interval_seconds)
+VALUES ('team-site-red-sox', 'Red Sox Official Site', 'scraper', 'https://www.mlb.com/redsox/news', 85, 600);
 ```
 
 ## Ingestion Schedule
