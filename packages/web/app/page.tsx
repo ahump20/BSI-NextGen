@@ -387,6 +387,198 @@ export default function HomePage() {
             </div>
           </Link>
 
+          {/* Youth Sports - NEW */}
+          <Link
+            href="/sports/youth-sports"
+            className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200 transform hover:scale-105 overflow-hidden border-2 border-orange-100"
+          >
+            <div className="bg-gradient-to-br from-orange-600 to-orange-700 p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-2xl font-bold">Youth Sports</h4>
+                <span className="px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full">
+                  NEW
+                </span>
+              </div>
+              <p className="text-orange-100 text-sm">
+                Texas HS Football • Perfect Game Baseball
+              </p>
+            </div>
+            <div className="p-6">
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  District standings & rankings
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Tournament schedules
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Top prospects & recruiting
+                </li>
+              </ul>
+            </div>
+          </Link>
+
+          {/* NCAA Football - NEW */}
+          <Link
+            href="/sports/ncaa-football"
+            className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200 transform hover:scale-105 overflow-hidden border-2 border-orange-100"
+          >
+            <div className="bg-gradient-to-br from-orange-700 to-orange-800 p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-2xl font-bold">NCAA Football</h4>
+                <span className="px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full">
+                  NEW
+                </span>
+              </div>
+              <p className="text-orange-100 text-sm">
+                Longhorns in SEC • Real-time Rankings
+              </p>
+            </div>
+            <div className="p-6">
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Team analytics & stats
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Pythagorean expectations
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Live conference standings
+                </li>
+              </ul>
+            </div>
+          </Link>
+
+          {/* NCAA Basketball - NEW */}
+          <Link
+            href="/sports/ncaa-basketball"
+            className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200 transform hover:scale-105 overflow-hidden border-2 border-blue-100"
+          >
+            <div className="bg-gradient-to-br from-blue-700 to-blue-800 p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-2xl font-bold">NCAA Basketball</h4>
+                <span className="px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full">
+                  NEW
+                </span>
+              </div>
+              <p className="text-blue-100 text-sm">
+                March Madness • Brackets & Analytics
+              </p>
+            </div>
+            <div className="p-6">
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Team analytics & metrics
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Efficiency ratings
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Conference standings
+                </li>
+              </ul>
+            </div>
+          </Link>
+
           {/* NCAA Fusion - NEW */}
           <NcaaFusionCard />
         </div>
