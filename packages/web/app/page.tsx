@@ -19,79 +19,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      {/* Header / Navigation */}
-      <header className="bg-white shadow-md">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-                <svg
-                  className="w-6 h-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  Blaze Sports Intel
-                </h1>
-                <p className="text-xs text-gray-600 hidden sm:block">
-                  Professional Sports Intelligence
-                </p>
-              </div>
-            </div>
-
-            {/* Auth Actions */}
-            <div className="flex items-center space-x-2">
-              {loading ? (
-                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              ) : authenticated && user ? (
-                <>
-                  <Link
-                    href="/profile"
-                    className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    <Avatar
-                      src={user.picture}
-                      name={user.name || user.email}
-                      size="sm"
-                    />
-                    <span className="text-sm font-medium text-gray-700">
-                      {user.name || user.email.split('@')[0]}
-                    </span>
-                  </Link>
-                  <Link
-                    href="/profile"
-                    className="sm:hidden"
-                  >
-                    <Avatar
-                      src={user.picture}
-                      name={user.name || user.email}
-                      size="md"
-                    />
-                  </Link>
-                </>
-              ) : (
-                <button
-                  onClick={() => login()}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-sm"
-                >
-                  Sign In
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-12 md:py-20">
@@ -123,6 +50,56 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* Command Center Callout */}
+      <section className="container mx-auto px-4 py-8">
+        <Link
+          href="/command-center"
+          className="block bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 overflow-hidden"
+        >
+          <div className="p-8 md:p-12 text-white">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <span className="text-6xl animate-pulse">🔥</span>
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold mb-2">
+                    Command Center
+                  </h2>
+                  <p className="text-lg text-white text-opacity-90">
+                    Multi-sport live scoreboard • All 7 sports in one place
+                  </p>
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <div className="px-6 py-3 bg-white bg-opacity-20 backdrop-blur-sm rounded-lg border-2 border-white border-opacity-30">
+                  <div className="text-sm font-semibold uppercase tracking-wide">
+                    Live Now
+                  </div>
+                  <div className="text-2xl font-bold">Auto-Updates</div>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-white bg-opacity-10 backdrop-blur-sm rounded-lg">
+                <div className="text-2xl mb-1">⚾</div>
+                <div className="text-sm font-semibold">MLB + College</div>
+              </div>
+              <div className="text-center p-3 bg-white bg-opacity-10 backdrop-blur-sm rounded-lg">
+                <div className="text-2xl mb-1">🏈</div>
+                <div className="text-sm font-semibold">NFL + NCAA</div>
+              </div>
+              <div className="text-center p-3 bg-white bg-opacity-10 backdrop-blur-sm rounded-lg">
+                <div className="text-2xl mb-1">🏀</div>
+                <div className="text-sm font-semibold">NBA + NCAA</div>
+              </div>
+              <div className="text-center p-3 bg-white bg-opacity-10 backdrop-blur-sm rounded-lg">
+                <div className="text-2xl mb-1">🌟</div>
+                <div className="text-sm font-semibold">Youth Sports</div>
+              </div>
+            </div>
+          </div>
+        </Link>
       </section>
 
       {/* Sports Navigation */}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Navigation } from '@/components/Navigation';
 
 // Using system fonts as fallback to avoid network dependency during build
 const fontClass = 'font-sans';
@@ -32,7 +33,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={fontClass}>{children}</body>
+      <body className={fontClass}>
+        <Navigation />
+        {children}
+      </body>
     </html>
   );
 }
