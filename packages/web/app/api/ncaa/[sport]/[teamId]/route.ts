@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createSportsCache } from '@bsi/api/cache';
 
 export const runtime = 'edge';
 
@@ -160,37 +161,75 @@ export async function GET(
   }
 
   try {
-    // ESPN API base URLs by sport
-    const ESPN_BASE_URLS = {
-      football:
-        'https://site.api.espn.com/apis/site/v2/sports/football/college-football',
-      basketball:
-        'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball',
-      baseball:
-        'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball'
-    };
+    // Create cache instance (uses KV in production, memory in dev)
+    const cache = createSportsCache(
+      typeof process !== 'undefined' ? (process.env.SPORTS_CACHE as any) : undefined
+    );
 
-    const baseUrl =
-      ESPN_BASE_URLS[sport.toLowerCase() as keyof typeof ESPN_BASE_URLS];
+    // Wrap data fetching with caching
+    const response = await cache.wrap<NCAAResponse>(
+      async () => {
+        return await fetchNCAATeamData(sport, teamId);
+      },
+      {
+        sport: `ncaa_${sport.toLowerCase()}`,
+        endpoint: 'team',
+        params: { teamId },
+        ttl: 300, // 5 minutes
+      }
+    );
 
-    // Fetch team data
-    const teamUrl = `${baseUrl}/teams/${teamId}`;
-    const teamRes = await fetch(teamUrl, {
+    return NextResponse.json(response, {
+      status: 200,
       headers: {
-        'User-Agent': 'BlazeSportsIntel/1.0',
-        Accept: 'application/json'
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=300'
       }
     });
+  } catch (error) {
+    console.error('[NCAA API] Error:', error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : 'Failed to fetch NCAA data'
+      },
+      { status: 500 }
+    );
+  }
+}
 
-    if (!teamRes.ok) {
-      return NextResponse.json(
-        { error: `Failed to fetch team data: ${teamRes.status}` },
-        { status: 502 }
-      );
+// Extract data fetching logic into separate function
+async function fetchNCAATeamData(
+  sport: string,
+  teamId: string
+): Promise<NCAAResponse> {
+  // ESPN API base URLs by sport
+  const ESPN_BASE_URLS = {
+    football:
+      'https://site.api.espn.com/apis/site/v2/sports/football/college-football',
+    basketball:
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball',
+    baseball:
+      'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball'
+  };
+
+  const baseUrl =
+    ESPN_BASE_URLS[sport.toLowerCase() as keyof typeof ESPN_BASE_URLS];
+
+  // Fetch team data
+  const teamUrl = `${baseUrl}/teams/${teamId}`;
+  const teamRes = await fetch(teamUrl, {
+    headers: {
+      'User-Agent': 'BlazeSportsIntel/1.0',
+      Accept: 'application/json'
     }
+  });
 
-    const teamData = await teamRes.json();
-    const team = teamData.team;
+  if (!teamRes.ok) {
+    throw new Error(`Failed to fetch team data: ${teamRes.status}`);
+  }
+
+  const teamData = await teamRes.json();
+  const team = teamData.team;
 
     // Extract team info
     const teamInfo: TeamInfo = {
@@ -304,29 +343,14 @@ export async function GET(
       dataSource: 'ESPN'
     };
 
-    const response: NCAAResponse = {
-      sport,
-      team: teamInfo,
-      standings,
-      analytics,
-      dataSource: 'ESPN College Sports API',
-      timestamp: new Date().toISOString()
-    };
+  const response: NCAAResponse = {
+    sport,
+    team: teamInfo,
+    standings,
+    analytics,
+    dataSource: 'ESPN College Sports API',
+    timestamp: new Date().toISOString()
+  };
 
-    return NextResponse.json(response, {
-      status: 200,
-      headers: {
-        'Cache-Control': 'public, max-age=300, stale-while-revalidate=300'
-      }
-    });
-  } catch (error) {
-    console.error('[NCAA API] Error:', error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : 'Failed to fetch NCAA data'
-      },
-      { status: 500 }
-    );
-  }
+  return response;
 }
