@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
 
     const response = {
       success: true,
+      demo: true, // CRITICAL: Flag indicating this is simulated data
       data: demoTournaments,
       meta: {
         state,
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
         status,
         dataSource: 'Demo Data (Perfect Game API integration pending)',
         disclaimer:
-          'Demo data for development. Real Perfect Game integration requires API access.',
+          'DEMO MODE: All data is randomly generated for development purposes. DO NOT use for scouting or player evaluation.',
         lastUpdated: new Date().toISOString(),
         timezone: 'America/Chicago',
       },

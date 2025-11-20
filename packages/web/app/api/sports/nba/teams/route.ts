@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { NBAAdapter } from '@bsi/api';
+import { NBAESPNAdapter } from '@bsi/api';
 
 // Configure for Cloudflare Edge Runtime
 export const runtime = 'edge';
@@ -8,11 +8,13 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/sports/nba/teams
- * Fetch all NBA teams
+ * Fetch all NBA teams (2025-2026 season)
+ *
+ * Uses ESPN API for current roster data
  */
 export async function GET() {
   try {
-    const adapter = new NBAAdapter(process.env.SPORTSDATAIO_API_KEY);
+    const adapter = new NBAESPNAdapter();
     const response = await adapter.getTeams();
 
     return NextResponse.json(response, {

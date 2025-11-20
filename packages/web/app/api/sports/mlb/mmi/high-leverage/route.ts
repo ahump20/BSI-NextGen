@@ -5,7 +5,19 @@ import { HighMMISearchResponse, isMMIError } from '@bsi/shared';
 // Configure for Cloudflare Edge Runtime
 export const runtime = 'edge';
 
-const MMI_SERVICE_URL = process.env.MMI_SERVICE_URL || 'http://localhost:8001';
+/**
+ * MMI Service URL from environment
+ * PRODUCTION: Must be set via Cloudflare environment variables
+ * DEVELOPMENT: Can use localhost
+ */
+const MMI_SERVICE_URL = process.env.MMI_SERVICE_URL;
+
+/**
+ * Check if MMI service is configured
+ */
+function isMMIServiceConfigured(): boolean {
+  return Boolean(MMI_SERVICE_URL && !MMI_SERVICE_URL.includes('localhost'));
+}
 
 /**
  * Request parameter validation schema
@@ -46,6 +58,19 @@ const HighMMISearchSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
+    // Check if MMI service is configured
+    if (!isMMIServiceConfigured()) {
+      return NextResponse.json(
+        {
+          error: 'MMI service not configured',
+          message: 'The Moment Mentality Index (MMI) service is currently unavailable. Please set MMI_SERVICE_URL environment variable.',
+          timestamp: new Date().toISOString(),
+          documentation: 'https://github.com/ahump20/BSI-NextGen/blob/main/packages/mmi/README.md',
+        },
+        { status: 503 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
 
     // Parse and validate query parameters

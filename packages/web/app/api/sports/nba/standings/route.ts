@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { NBAAdapter } from '@bsi/api';
+import { NBAESPNAdapter } from '@bsi/api';
 
 // Configure for Cloudflare Edge Runtime
 export const runtime = 'edge';
@@ -8,18 +8,15 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/sports/nba/standings
- * Fetch NBA standings for current season
+ * Fetch NBA standings for current 2025-2026 season
  *
- * Query params:
- * - season: Season year (default: 2025)
+ * Uses ESPN API for live current season data
+ * (SportsDataIO may have delayed season updates)
  */
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const season = searchParams.get('season') || '2025';
-
-    const adapter = new NBAAdapter(process.env.SPORTSDATAIO_API_KEY);
-    const response = await adapter.getStandings(season);
+    const adapter = new NBAESPNAdapter();
+    const response = await adapter.getStandings();
 
     return NextResponse.json(response, {
       headers: {

@@ -1,0 +1,55 @@
+apiVersion: slo/v1
+metadata:
+  name: data-freshness
+  team: data-engineering
+  service: sports-data-pipeline
+  description: Data freshness SLO for sports data ingestion
+spec:
+  objectives:
+    - name: live-game-freshness
+      description: Live game data is no more than 30 seconds stale
+      target: 99.5
+      indicator:
+        type: freshness
+        max_staleness_seconds: 30
+        data_sources:
+          - mlb_live_games
+          - nfl_live_games
+          - nba_live_games
+      window: 7d
+
+    - name: standings-freshness
+      description: Standings data is no more than 5 minutes stale
+      target: 99.9
+      indicator:
+        type: freshness
+        max_staleness_seconds: 300
+        data_sources:
+          - mlb_standings
+          - nfl_standings
+          - nba_standings
+      window: 30d
+
+    - name: team-data-freshness
+      description: Team and roster data is no more than 24 hours stale
+      target: 99.0
+      indicator:
+        type: freshness
+        max_staleness_seconds: 86400
+        data_sources:
+          - mlb_teams
+          - nfl_teams
+          - nba_teams
+      window: 30d
+
+  monitoring:
+    dashboard_url: "https://dash.cloudflare.com/analytics/bsi-nextgen-web/freshness"
+    alert_channels:
+      - type: slack
+        webhook_url: "{{SLACK_WEBHOOK_URL}}"
+        channel: "#data-alerts"
+
+  annotations:
+    runbook: "observability/RUNBOOK.md#data-freshness"
+    escalation_policy: "data-engineering-oncall"
+    business_impact: "Stale data degrades user trust and accuracy"

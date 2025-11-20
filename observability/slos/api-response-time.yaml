@@ -1,0 +1,64 @@
+apiVersion: slo/v1
+metadata:
+  name: api-response-time
+  team: platform-engineering
+  service: bsi-nextgen-api
+  description: API response time SLO for all sports data endpoints
+spec:
+  objectives:
+    - name: latency-p99-critical
+      description: 99% of critical API calls complete within 200ms
+      target: 99.0
+      indicator:
+        type: latency
+        percentile: 99
+        threshold_ms: 200
+        endpoints:
+          - /api/sports/mlb/games
+          - /api/sports/nfl/games
+          - /api/sports/nba/games
+      window: 30d
+
+    - name: latency-p95-standard
+      description: 95% of standard API calls complete within 500ms
+      target: 95.0
+      indicator:
+        type: latency
+        percentile: 95
+        threshold_ms: 500
+        endpoints:
+          - /api/sports/mlb/standings
+          - /api/sports/nfl/standings
+          - /api/sports/nba/standings
+      window: 30d
+
+    - name: error-rate-5xx
+      description: Less than 0.5% of API calls result in 5xx errors
+      target: 99.5
+      indicator:
+        type: error_rate
+        threshold_percent: 0.5
+        status_codes: [500, 502, 503, 504]
+      window: 30d
+
+    - name: error-rate-4xx
+      description: Less than 2% of API calls result in 4xx errors (excluding 429)
+      target: 98.0
+      indicator:
+        type: error_rate
+        threshold_percent: 2.0
+        status_codes: [400, 401, 403, 404, 422]
+      window: 30d
+
+  monitoring:
+    dashboard_url: "https://dash.cloudflare.com/analytics/bsi-nextgen-web/api"
+    alert_channels:
+      - type: slack
+        webhook_url: "{{SLACK_WEBHOOK_URL}}"
+      - type: email
+        destination: "api-alerts@blazesportsintel.com"
+
+  annotations:
+    runbook: "observability/RUNBOOK.md#api-response-time"
+    escalation_policy: "platform-engineering-oncall"
+    business_impact: "API failures prevent users from viewing sports data"
