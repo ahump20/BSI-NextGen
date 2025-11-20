@@ -80,13 +80,6 @@ export async function GET(
       url.searchParams.set('season', validated.season.toString());
     }
 
-    console.log('[MMI API] Fetching game MMI:', {
-      gameId: validated.gameId,
-      role: validated.role,
-      season: validated.season,
-      url: url.toString(),
-    });
-
     // Call MMI Python service with timeout
     const response = await fetch(url.toString(), {
       headers: {
@@ -132,12 +125,6 @@ export async function GET(
         timezone: 'America/Chicago',
       },
     };
-
-    console.log('[MMI API] Success:', {
-      gameId: validated.gameId,
-      pitchCount: enrichedData.pitches.length,
-      playerCount: enrichedData.player_summaries.length,
-    });
 
     // Determine cache strategy based on game status
     // TODO: Check if game is completed for longer cache
