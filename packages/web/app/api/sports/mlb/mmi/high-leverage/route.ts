@@ -94,20 +94,6 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log('[MMI High-Leverage API] Search parameters:', {
-      threshold: validated.threshold,
-      limit: validated.limit,
-      filters: {
-        dateRange: validated.startDate && validated.endDate
-          ? `${validated.startDate} to ${validated.endDate}`
-          : 'All dates',
-        teamId: validated.teamId || 'All teams',
-        playerId: validated.playerId || 'All players',
-        season: validated.season || 'All seasons',
-      },
-      url: url.toString(),
-    });
-
     // Call MMI Python service
     const response = await fetch(url.toString(), {
       headers: {
@@ -140,12 +126,6 @@ export async function GET(request: NextRequest) {
       console.error('[MMI High-Leverage API] Service returned error:', data);
       return NextResponse.json(data, { status: 500 });
     }
-
-    console.log('[MMI High-Leverage API] Success:', {
-      momentCount: data.moments.length,
-      threshold: validated.threshold,
-      filters: validated,
-    });
 
     // Shorter cache for search results (data changes frequently)
     const cacheControl = 'public, max-age=60, s-maxage=120'; // 1min browser, 2min CDN

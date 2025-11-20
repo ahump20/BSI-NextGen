@@ -21,5 +21,15 @@
         "outputDirectory": ".next"
       }
     }
-  ]
+  ],
+  "error": {
+    "name": "Error",
+    "stack": "Error: EEXIST: file already exists, symlink '_not-found.func' -> '/Users/AustinHumphrey/BSI-NextGen/packages/web/.vercel/output/functions/_not-found.rsc.func'",
+    "message": "EEXIST: file already exists, symlink '_not-found.func' -> '/Users/AustinHumphrey/BSI-NextGen/packages/web/.vercel/output/functions/_not-found.rsc.func'",
+    "errno": -17,
+    "code": "EEXIST",
+    "syscall": "symlink",
+    "path": "_not-found.func",
+    "dest": "/Users/AustinHumphrey/BSI-NextGen/packages/web/.vercel/output/functions/_not-found.rsc.func"
+  }
 }

@@ -127,8 +127,6 @@ export async function GET(request: NextRequest) {
     ...(checks.error && { error: checks.error }),
   };
 
-  console.log('[MMI Health] Health check:', response);
-
   return NextResponse.json(response, {
     status: allHealthy ? 200 : 503,
     headers: {

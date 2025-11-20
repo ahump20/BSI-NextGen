@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
     status,
     timestamp: new Date().toISOString(),
     timezone: 'America/Chicago',
-    uptime_seconds: process.uptime ? Math.floor(process.uptime()) : null,
     response_time_ms: responseTime,
     checks,
     version: '1.0.0',
