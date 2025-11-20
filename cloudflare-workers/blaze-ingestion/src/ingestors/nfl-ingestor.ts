@@ -40,7 +40,7 @@ export class NFLIngestor {
 
     try {
       // Get current season and week
-      const currentSeason = 2025; // TODO: Calculate dynamically
+      const currentSeason = this.getCurrentSeason();
       const currentWeek = this.getCurrentWeek();
 
       console.log(`[NFL Ingestor] Fetching games for ${currentSeason} Week ${currentWeek}`);
@@ -172,11 +172,24 @@ export class NFLIngestor {
   }
 
   /**
+   * Get current NFL season year
+   * NFL seasons span calendar years (Sep-Feb), so we use the year the season started
+   */
+  private getCurrentSeason(): number {
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    // NFL season runs Sep-Feb
+    // If Jan-Jul, use previous year; Aug-Dec use current year
+    return month < 7 ? now.getFullYear() - 1 : now.getFullYear();
+  }
+
+  /**
    * Get current NFL week (simplified - should account for playoffs)
    */
   private getCurrentWeek(): number {
     const now = new Date();
-    const seasonStart = new Date('2025-09-04'); // NFL season typically starts early September
+    const currentSeason = this.getCurrentSeason();
+    const seasonStart = new Date(`${currentSeason}-09-04`); // NFL season typically starts early September
 
     if (now < seasonStart) {
       return 1; // Preseason

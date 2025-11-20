@@ -49,6 +49,48 @@ class SportsDataIOServer {
     });
   }
 
+  /**
+   * Get current date in YYYY-MM-DD format for API calls
+   * Uses America/Chicago timezone
+   */
+  private getCurrentDate(): string {
+    const now = new Date();
+    const chicagoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+    return chicagoTime.toISOString().split('T')[0];
+  }
+
+  /**
+   * Get current season year based on sport calendar
+   * @param sport - Sport type to determine season boundary
+   */
+  private getCurrentSeason(sport: 'MLB' | 'NFL' | 'CFB' | 'CBB' | 'NCAABB'): number {
+    const now = new Date();
+    const chicagoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+    const month = chicagoTime.getMonth(); // 0-11
+
+    switch (sport) {
+      case 'MLB':
+        // MLB season: Feb-Oct, use current year if Jan-Oct, else next year
+        return month < 10 ? chicagoTime.getFullYear() : chicagoTime.getFullYear() + 1;
+
+      case 'NFL':
+        // NFL season: Sep-Feb, use prev year if Jan-Jul, current year Aug-Dec
+        return month < 7 ? chicagoTime.getFullYear() - 1 : chicagoTime.getFullYear();
+
+      case 'CFB':
+        // College Football: Aug-Jan, use prev year if Jan-Jul, current year Aug-Dec
+        return month < 7 ? chicagoTime.getFullYear() - 1 : chicagoTime.getFullYear();
+
+      case 'CBB':
+      case 'NCAABB':
+        // College Basketball: Nov-Apr, use prev year if Apr-Oct, current year Nov-Mar
+        return month < 4 || month >= 10 ? chicagoTime.getFullYear() : chicagoTime.getFullYear() - 1;
+
+      default:
+        return chicagoTime.getFullYear();
+    }
+  }
+
   private setupToolHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: this.getTools(),
@@ -462,98 +504,107 @@ class SportsDataIOServer {
   private parseCollegeBaseballIntent(instruction: string): string[] {
     const endpoints: string[] = [];
     const lower = instruction.toLowerCase();
+    const currentDate = this.getCurrentDate();
+    const currentSeason = this.getCurrentSeason('MLB'); // CBB follows similar calendar
 
     if (lower.includes("score") || lower.includes("game")) {
-      endpoints.push("/scores/json/GamesByDate/2024-05-15"); // Dynamic date
+      endpoints.push(`/scores/json/GamesByDate/${currentDate}`);
     }
     if (lower.includes("roster") || lower.includes("team")) {
       endpoints.push("/scores/json/Teams");
     }
     if (lower.includes("standings") || lower.includes("conference")) {
-      endpoints.push("/scores/json/Standings/2024");
+      endpoints.push(`/scores/json/Standings/${currentSeason}`);
     }
     if (lower.includes("player") || lower.includes("stats")) {
       endpoints.push("/stats/json/Players");
     }
     if (lower.includes("schedule")) {
-      endpoints.push("/scores/json/Games/2024");
+      endpoints.push(`/scores/json/Games/${currentSeason}`);
     }
 
-    return endpoints.length > 0 ? endpoints : ["/scores/json/GamesByDate/2024-05-15"];
+    return endpoints.length > 0 ? endpoints : [`/scores/json/GamesByDate/${currentDate}`];
   }
 
   private parseMLBIntent(instruction: string): string[] {
     const endpoints: string[] = [];
     const lower = instruction.toLowerCase();
+    const currentDate = this.getCurrentDate();
+    const currentSeason = this.getCurrentSeason('MLB');
 
     if (lower.includes("score") || lower.includes("game")) {
-      endpoints.push("/scores/json/GamesByDate/2024-05-15");
+      endpoints.push(`/scores/json/GamesByDate/${currentDate}`);
     }
     if (lower.includes("standings")) {
-      endpoints.push("/scores/json/Standings/2024");
+      endpoints.push(`/scores/json/Standings/${currentSeason}`);
     }
     if (lower.includes("player") || lower.includes("stats")) {
       endpoints.push("/stats/json/Players");
     }
     if (lower.includes("schedule")) {
-      endpoints.push("/scores/json/Games/2024");
+      endpoints.push(`/scores/json/Games/${currentSeason}`);
     }
 
-    return endpoints.length > 0 ? endpoints : ["/scores/json/GamesByDate/2024-05-15"];
+    return endpoints.length > 0 ? endpoints : [`/scores/json/GamesByDate/${currentDate}`];
   }
 
   private parseNFLIntent(instruction: string): string[] {
     const endpoints: string[] = [];
     const lower = instruction.toLowerCase();
+    const currentSeason = this.getCurrentSeason('NFL');
 
     if (lower.includes("score") || lower.includes("game")) {
-      endpoints.push("/scores/json/ScoresByWeek/2024/1");
+      endpoints.push(`/scores/json/ScoresByWeek/${currentSeason}/1`);
     }
     if (lower.includes("standings")) {
-      endpoints.push("/scores/json/Standings/2024");
+      endpoints.push(`/scores/json/Standings/${currentSeason}`);
     }
     if (lower.includes("schedule")) {
-      endpoints.push("/scores/json/Schedules/2024");
+      endpoints.push(`/scores/json/Schedules/${currentSeason}`);
     }
     if (lower.includes("injury")) {
-      endpoints.push("/scores/json/Injuries/2024");
+      endpoints.push(`/scores/json/Injuries/${currentSeason}`);
     }
 
-    return endpoints.length > 0 ? endpoints : ["/scores/json/ScoresByWeek/2024/1"];
+    return endpoints.length > 0 ? endpoints : [`/scores/json/ScoresByWeek/${currentSeason}/1`];
   }
 
   private parseCollegeFootballIntent(instruction: string): string[] {
     const endpoints: string[] = [];
     const lower = instruction.toLowerCase();
+    const currentDate = this.getCurrentDate();
+    const currentSeason = this.getCurrentSeason('CFB');
 
     if (lower.includes("score") || lower.includes("game")) {
-      endpoints.push("/scores/json/GamesByDate/2024-09-15");
+      endpoints.push(`/scores/json/GamesByDate/${currentDate}`);
     }
     if (lower.includes("rankings") || lower.includes("poll")) {
-      endpoints.push("/scores/json/Rankings/2024/1");
+      endpoints.push(`/scores/json/Rankings/${currentSeason}/1`);
     }
     if (lower.includes("standings") || lower.includes("conference")) {
-      endpoints.push("/scores/json/Standings/2024");
+      endpoints.push(`/scores/json/Standings/${currentSeason}`);
     }
 
-    return endpoints.length > 0 ? endpoints : ["/scores/json/GamesByDate/2024-09-15"];
+    return endpoints.length > 0 ? endpoints : [`/scores/json/GamesByDate/${currentDate}`];
   }
 
   private parseNCAABasketballIntent(instruction: string): string[] {
     const endpoints: string[] = [];
     const lower = instruction.toLowerCase();
+    const currentDate = this.getCurrentDate();
+    const currentSeason = this.getCurrentSeason('NCAABB');
 
     if (lower.includes("score") || lower.includes("game")) {
-      endpoints.push("/scores/json/GamesByDate/2024-03-15");
+      endpoints.push(`/scores/json/GamesByDate/${currentDate}`);
     }
     if (lower.includes("tournament") || lower.includes("bracket")) {
-      endpoints.push("/scores/json/Tournament/2024");
+      endpoints.push(`/scores/json/Tournament/${currentSeason}`);
     }
     if (lower.includes("standings")) {
-      endpoints.push("/scores/json/Standings/2024");
+      endpoints.push(`/scores/json/Standings/${currentSeason}`);
     }
 
-    return endpoints.length > 0 ? endpoints : ["/scores/json/GamesByDate/2024-03-15"];
+    return endpoints.length > 0 ? endpoints : [`/scores/json/GamesByDate/${currentDate}`];
   }
 
   private parseHistoricalIntent(instruction: string): any[] {

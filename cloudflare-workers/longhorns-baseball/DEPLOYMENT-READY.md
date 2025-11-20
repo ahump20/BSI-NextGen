@@ -160,7 +160,7 @@ await logValidationResults(db, validation);
 ```toml
 name = "longhorns-baseball-tracker"
 main = "worker.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 account_id = "a12cb329d84130460eed99b816e4d0d3"

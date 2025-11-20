@@ -18,6 +18,18 @@ export class NFLAdapter {
   }
 
   /**
+   * Get current NFL season year
+   * NFL season runs Sep-Feb, so we use the year the season started
+   */
+  private getCurrentSeason(): number {
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    // NFL season runs Sep-Feb
+    // If Jan-Jul, use previous year; Aug-Dec use current year
+    return month < 7 ? now.getFullYear() - 1 : now.getFullYear();
+  }
+
+  /**
    * Get all NFL teams
    */
   async getTeams(): Promise<ApiResponse<Team[]>> {
@@ -62,10 +74,11 @@ export class NFLAdapter {
   /**
    * Get NFL standings for current season
    */
-  async getStandings(season: number = 2025): Promise<ApiResponse<Standing[]>> {
+  async getStandings(season?: number): Promise<ApiResponse<Standing[]>> {
     return retryWithBackoff(async () => {
+      const activeSeason = season ?? this.getCurrentSeason();
       const response = await fetchWithTimeout(
-        `${this.baseUrl}/scores/json/Standings/${season}`,
+        `${this.baseUrl}/scores/json/Standings/${activeSeason}`,
         {
           headers: {
             'Ocp-Apim-Subscription-Key': this.apiKey,
@@ -111,7 +124,8 @@ export class NFLAdapter {
    */
   async getGames(params?: { season?: number; week?: number } | number): Promise<ApiResponse<Game[]>> {
     // Support both object param and legacy number param for backwards compatibility
-    const season = typeof params === 'object' ? (params?.season ?? 2025) : (params ?? 2025);
+    const currentSeason = this.getCurrentSeason();
+    const season = typeof params === 'object' ? (params?.season ?? currentSeason) : (params ?? currentSeason);
     const weekNum = typeof params === 'object' ? (params?.week ?? 1) : 1;
     return retryWithBackoff(async () => {
       const response = await fetchWithTimeout(

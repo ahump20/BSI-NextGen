@@ -14,6 +14,18 @@ export class NCAAFootballAdapter {
   }
 
   /**
+   * Get current NCAA Football season year
+   * CFB season runs Aug-Jan, so we use the year the season started
+   */
+  private getCurrentSeason(): number {
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    // CFB season runs Aug-Jan
+    // If Jan-Jul, use previous year; Aug-Dec use current year
+    return month < 7 ? now.getFullYear() - 1 : now.getFullYear();
+  }
+
+  /**
    * Get all FBS teams
    */
   async getTeams(group?: string): Promise<ApiResponse<Team[]>> {
@@ -121,7 +133,7 @@ export class NCAAFootballAdapter {
   async getGames(params?: { week?: number; season?: number } | number): Promise<ApiResponse<Game[]>> {
     // Support both object param and legacy number param for backwards compatibility
     const week = typeof params === 'object' ? params?.week : params;
-    const season = typeof params === 'object' ? (params?.season ?? 2025) : 2025;
+    const season = typeof params === 'object' ? (params?.season ?? this.getCurrentSeason()) : this.getCurrentSeason();
 
     return retryWithBackoff(async () => {
       const url = week

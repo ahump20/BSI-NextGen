@@ -131,11 +131,11 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('[MMI High-Leverage API] Validation error:', error.errors);
+      console.error('[MMI High-Leverage API] Validation error:', error.issues);
       return NextResponse.json(
         {
           error: 'Invalid search parameters',
-          details: error.errors,
+          details: error.issues,
           timestamp: new Date().toISOString(),
         },
         { status: 400 }
