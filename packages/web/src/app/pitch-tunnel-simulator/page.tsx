@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { PitchParams, calculateTrajectory, PitchTrajectory } from '@/lib/pitch-simulator/physics';
 import { PitchPreset, FOUR_SEAM_FASTBALL, CHANGEUP, PitchPreset as PitchPresetType } from '@/lib/pitch-simulator/presets';
 import { PitchControls } from '@/components/pitch-simulator/PitchControls';
 import { TunnelingPanel } from '@/components/pitch-simulator/TunnelingPanel';
 import { PitchStats } from '@/components/pitch-simulator/PitchStats';
+import { analytics } from '@bsi/shared';
+import { MonitoringErrorBoundary } from '@/components/monitoring/ErrorBoundary';
 
 // Dynamic import for 3D component (client-side only)
 const PitchVisualization3D = dynamic(
@@ -49,6 +51,13 @@ export default function PitchTunnelSimulator() {
 
   const [activeSlot, setActiveSlot] = useState(0);
 
+  // Track page view on mount
+  useEffect(() => {
+    analytics.track('page_view', {
+      path: '/pitch-tunnel-simulator'
+    });
+  }, []);
+
   // Current pitch being edited
   const currentPitch = pitches[activeSlot];
 
@@ -61,6 +70,15 @@ export default function PitchTunnelSimulator() {
       trajectory: calculateTrajectory(params),
     };
     setPitches(newPitches);
+
+    // Track parameter changes
+    analytics.track('pitch_parameters_changed', {
+      pitchSlot: activeSlot,
+      pitchType: newPitches[activeSlot].preset.name,
+      velocity: params.velocity,
+      spinRate: params.spinRate,
+      spinAxis: params.spinAxis
+    });
   };
 
   // Handle preset selection
@@ -73,6 +91,13 @@ export default function PitchTunnelSimulator() {
       visible: true,
     };
     setPitches(newPitches);
+
+    // Track preset selection
+    analytics.track('pitch_preset_selected', {
+      pitchSlot: activeSlot,
+      presetName: preset.name,
+      presetColor: preset.color
+    });
   };
 
   // Add new pitch
@@ -89,16 +114,29 @@ export default function PitchTunnelSimulator() {
       },
     ]);
     setActiveSlot(pitches.length);
+
+    // Track adding new pitch
+    analytics.track('pitch_added', {
+      totalPitches: pitches.length + 1,
+      presetName: newPreset.name
+    });
   };
 
   // Remove pitch
   const handleRemovePitch = (index: number) => {
     if (pitches.length <= 1) return; // Keep at least one pitch
+    const removedPitch = pitches[index];
     const newPitches = pitches.filter((_, i) => i !== index);
     setPitches(newPitches);
     if (activeSlot >= newPitches.length) {
       setActiveSlot(newPitches.length - 1);
     }
+
+    // Track removing pitch
+    analytics.track('pitch_removed', {
+      removedPitchType: removedPitch.preset.name,
+      remainingPitches: newPitches.length
+    });
   };
 
   // Toggle pitch visibility
@@ -106,6 +144,12 @@ export default function PitchTunnelSimulator() {
     const newPitches = [...pitches];
     newPitches[index].visible = !newPitches[index].visible;
     setPitches(newPitches);
+
+    // Track visibility toggle
+    analytics.track('pitch_visibility_toggled', {
+      pitchType: newPitches[index].preset.name,
+      visible: newPitches[index].visible
+    });
   };
 
   // Load preset combo
@@ -118,6 +162,12 @@ export default function PitchTunnelSimulator() {
     }));
     setPitches(newPitches);
     setActiveSlot(0);
+
+    // Track combo load
+    analytics.track('pitch_combo_loaded', {
+      pitchCount: comboPresets.length,
+      pitchTypes: comboPresets.map(p => p.name).join(', ')
+    });
   };
 
   // Prepare trajectories for 3D visualization
@@ -131,7 +181,8 @@ export default function PitchTunnelSimulator() {
   }, [pitches]);
 
   return (
-    <div className="min-h-screen bg-gray-900 py-4 md:py-8">
+    <MonitoringErrorBoundary>
+      <div className="min-h-screen bg-gray-900 py-4 md:py-8">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-6 md:mb-8">
@@ -172,7 +223,13 @@ export default function PitchTunnelSimulator() {
                   {(['catcher', 'batter', 'side', 'top', 'pitcher'] as CameraView[]).map((view) => (
                     <button
                       key={view}
-                      onClick={() => setCameraView(view)}
+                      onClick={() => {
+                        setCameraView(view);
+                        analytics.track('camera_view_changed', {
+                          fromView: cameraView,
+                          toView: view
+                        });
+                      }}
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         cameraView === view
                           ? 'bg-blue-600 text-white'
@@ -197,14 +254,26 @@ export default function PitchTunnelSimulator() {
                     max="2"
                     step="0.1"
                     value={animationSpeed}
-                    onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
+                    onChange={(e) => {
+                      const newSpeed = parseFloat(e.target.value);
+                      setAnimationSpeed(newSpeed);
+                      analytics.track('animation_speed_changed', {
+                        speed: newSpeed
+                      });
+                    }}
                     className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                   />
                 </div>
 
                 <div className="flex items-end gap-2">
                   <button
-                    onClick={() => setPaused(!paused)}
+                    onClick={() => {
+                      const newPausedState = !paused;
+                      setPaused(newPausedState);
+                      analytics.track('simulation_action', {
+                        action: newPausedState ? 'pause' : 'play'
+                      });
+                    }}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                   >
                     {paused ? '▶ Play' : '⏸ Pause'}
@@ -218,7 +287,13 @@ export default function PitchTunnelSimulator() {
                   <input
                     type="checkbox"
                     checked={showStrikeZone}
-                    onChange={(e) => setShowStrikeZone(e.target.checked)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setShowStrikeZone(checked);
+                      analytics.track('strike_zone_toggled', {
+                        visible: checked
+                      });
+                    }}
                     className="w-4 h-4 rounded text-blue-600"
                   />
                   <span className="text-sm text-gray-300">Strike Zone</span>
@@ -227,7 +302,13 @@ export default function PitchTunnelSimulator() {
                   <input
                     type="checkbox"
                     checked={showGrid}
-                    onChange={(e) => setShowGrid(e.target.checked)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setShowGrid(checked);
+                      analytics.track('grid_toggled', {
+                        visible: checked
+                      });
+                    }}
                     className="w-4 h-4 rounded text-blue-600"
                   />
                   <span className="text-sm text-gray-300">Grid</span>
@@ -261,7 +342,13 @@ export default function PitchTunnelSimulator() {
                     className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
                       activeSlot === index ? 'bg-gray-700' : 'bg-gray-750 hover:bg-gray-700'
                     }`}
-                    onClick={() => setActiveSlot(index)}
+                    onClick={() => {
+                      setActiveSlot(index);
+                      analytics.track('pitch_slot_selected', {
+                        slotIndex: index,
+                        pitchType: pitch.preset.name
+                      });
+                    }}
                   >
                     <div
                       className="w-4 h-4 rounded-full flex-shrink-0"
@@ -323,5 +410,6 @@ export default function PitchTunnelSimulator() {
         </div>
       </div>
     </div>
+    </MonitoringErrorBoundary>
   );
 }
