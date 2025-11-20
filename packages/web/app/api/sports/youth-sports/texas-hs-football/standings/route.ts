@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSportsCache } from '@bsi/api/cache';
+import { createSportsCache } from '@bsi/api';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
