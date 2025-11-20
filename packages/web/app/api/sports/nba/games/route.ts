@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { NBAAdapter } from '@bsi/api';
+import { NBAESPNAdapter } from '@bsi/api';
 
 // Configure for Cloudflare Edge Runtime
 export const runtime = 'edge';
@@ -8,10 +8,12 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/sports/nba/games
- * Fetch NBA games for a specific date
+ * Fetch NBA games for a specific date (2025-2026 season)
  *
  * Query params:
  * - date: Date in YYYY-MM-DD format (default: today)
+ *
+ * Uses ESPN API for current season live data
  */
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0];
     const date = searchParams.get('date') || today;
 
-    const adapter = new NBAAdapter(process.env.SPORTSDATAIO_API_KEY);
+    const adapter = new NBAESPNAdapter();
     const response = await adapter.getGames(date);
 
     // Cache based on game status

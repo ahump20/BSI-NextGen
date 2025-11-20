@@ -1,0 +1,7 @@
+name = "blazesportsintel"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "bsi_analytics"

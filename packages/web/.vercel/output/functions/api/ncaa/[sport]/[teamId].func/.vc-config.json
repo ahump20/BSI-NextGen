@@ -1,0 +1,18 @@
+{
+  "runtime": "edge",
+  "name": "api/ncaa/[sport]/[teamId]",
+  "deploymentTarget": "v8-worker",
+  "entrypoint": "index.js",
+  "assets": [],
+  "framework": {
+    "slug": "nextjs",
+    "version": "14.2.33"
+  },
+  "environment": {
+    "__NEXT_BUILD_ID": "AzwBPgRZEb-c_OwVMRqW0",
+    "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "xMXjr9/d2Nk3ZgXQvR/YH/pcccDgSPrOYXgGaoOfPNQ=",
+    "__NEXT_PREVIEW_MODE_ID": "4f29f94483f5da29775f24769738ae6e",
+    "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "922759d0f0ae7c10889e17f906f46b602aa5224e9aa9be62703659a9ae3dd33e",
+    "__NEXT_PREVIEW_MODE_SIGNING_KEY": "1f2120c09f219df34546464de3985e6ee7352c3da7ed6998a77db9a67fe7737d"
+  }
+}

@@ -7,9 +7,17 @@ export const runtime = 'edge';
 
 /**
  * MMI Service URL from environment
- * Default to localhost for development
+ * PRODUCTION: Must be set via Cloudflare environment variables
+ * DEVELOPMENT: Can use localhost
  */
-const MMI_SERVICE_URL = process.env.MMI_SERVICE_URL || 'http://localhost:8001';
+const MMI_SERVICE_URL = process.env.MMI_SERVICE_URL;
+
+/**
+ * Check if MMI service is configured
+ */
+function isMMIServiceConfigured(): boolean {
+  return Boolean(MMI_SERVICE_URL && !MMI_SERVICE_URL.includes('localhost'));
+}
 
 /**
  * Request parameter validation schema
@@ -43,6 +51,20 @@ export async function GET(
   { params }: { params: { gameId: string } }
 ) {
   try {
+    // Check if MMI service is configured
+    if (!isMMIServiceConfigured()) {
+      return NextResponse.json(
+        {
+          error: 'MMI service not configured',
+          message: 'The Moment Mentality Index (MMI) service is currently unavailable. Please set MMI_SERVICE_URL environment variable.',
+          gameId: params.gameId,
+          timestamp: new Date().toISOString(),
+          documentation: 'https://github.com/ahump20/BSI-NextGen/blob/main/packages/mmi/README.md',
+        },
+        { status: 503 }
+      );
+    }
+
     // Parse and validate request parameters
     const searchParams = request.nextUrl.searchParams;
     const validated = GameMMIParamsSchema.parse({

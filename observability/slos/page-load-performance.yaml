@@ -1,0 +1,58 @@
+apiVersion: slo/v1
+metadata:
+  name: page-load-performance
+  team: platform-engineering
+  service: bsi-nextgen-web
+  description: Page load performance SLO for all user-facing pages
+spec:
+  objectives:
+    - name: latency-p95
+      description: 95% of page loads complete within 2 seconds
+      target: 95.0
+      indicator:
+        type: latency
+        percentile: 95
+        threshold_ms: 2000
+        measurement: first_contentful_paint
+      window: 30d
+
+    - name: latency-p99
+      description: 99% of page loads complete within 4 seconds
+      target: 99.0
+      indicator:
+        type: latency
+        percentile: 99
+        threshold_ms: 4000
+        measurement: first_contentful_paint
+      window: 30d
+
+    - name: error-rate
+      description: Less than 0.1% of page loads result in errors
+      target: 99.9
+      indicator:
+        type: error_rate
+        threshold_percent: 0.1
+      window: 30d
+
+    - name: availability
+      description: Service is available 99.9% of the time
+      target: 99.9
+      indicator:
+        type: availability
+        success_criteria:
+          - status_code: [200, 201, 204, 301, 302, 304]
+          - response_time_ms: "<10000"
+      window: 30d
+
+  monitoring:
+    dashboard_url: "https://dash.cloudflare.com/analytics/bsi-nextgen-web"
+    alert_channels:
+      - type: email
+        destination: "alerts@blazesportsintel.com"
+      - type: pagerduty
+        service_key: "{{PAGERDUTY_SERVICE_KEY}}"
+
+  annotations:
+    runbook: "observability/RUNBOOK.md#page-load-performance"
+    escalation_policy: "platform-engineering-oncall"
+    business_impact: "Direct impact on user experience and engagement"

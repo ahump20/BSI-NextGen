@@ -1,0 +1,67 @@
+apiVersion: slo/v1
+metadata:
+  name: external-api-reliability
+  team: platform-engineering
+  service: external-api-integrations
+  description: External API reliability and circuit breaker SLO
+spec:
+  objectives:
+    - name: sportsdata-io-success-rate
+      description: SportsDataIO API calls succeed 99.5% of the time
+      target: 99.5
+      indicator:
+        type: success_rate
+        threshold_percent: 99.5
+        provider: sportsdata_io
+        endpoints:
+          - /v3/nfl/scores/json
+          - /v3/nba/scores/json
+      window: 30d
+
+    - name: mlb-stats-api-success-rate
+      description: MLB Stats API calls succeed 99.9% of the time
+      target: 99.9
+      indicator:
+        type: success_rate
+        threshold_percent: 99.9
+        provider: mlb_stats_api
+        endpoints:
+          - /api/v1/schedule
+          - /api/v1/standings
+      window: 30d
+
+    - name: espn-api-success-rate
+      description: ESPN API calls succeed 99.0% of the time
+      target: 99.0
+      indicator:
+        type: success_rate
+        threshold_percent: 99.0
+        provider: espn_api
+        endpoints:
+          - /apis/site/v2/sports/football/college-football
+          - /apis/site/v2/sports/baseball/college-baseball
+      window: 30d
+
+    - name: circuit-breaker-trips
+      description: Less than 5 circuit breaker trips per day per provider
+      target: 95.0
+      indicator:
+        type: event_count
+        max_events: 5
+        event_type: circuit_breaker_open
+        aggregation: per_day
+      window: 7d
+
+  monitoring:
+    dashboard_url: "https://dash.cloudflare.com/analytics/bsi-nextgen-web/external-apis"
+    alert_channels:
+      - type: pagerduty
+        service_key: "{{PAGERDUTY_SERVICE_KEY}}"
+      - type: slack
+        webhook_url: "{{SLACK_WEBHOOK_URL}}"
+        channel: "#api-alerts"
+
+  annotations:
+    runbook: "observability/RUNBOOK.md#external-api-reliability"
+    escalation_policy: "platform-engineering-oncall"
+    business_impact: "External API failures prevent data refresh and degrade UX"
