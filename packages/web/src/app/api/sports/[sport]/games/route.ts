@@ -3,11 +3,12 @@ import type { ApiResponse, Game } from '@bsi/shared';
 import { getSportsDataService, resolveSport } from '../utils';
 
 export async function GET(request: NextRequest, { params }: { params: { sport: string } }) {
-  const sport = resolveSport(params.sport);
+  const awaitedParams = await params;
+  const sport = resolveSport(awaitedParams.sport);
 
   if (!sport) {
     return NextResponse.json(
-      { error: `Unsupported sport: ${params.sport}` },
+      { error: `Unsupported sport: ${awaitedParams.sport}` },
       { status: 400 }
     );
   }
