@@ -18,6 +18,22 @@ export class NBAAdapter {
   }
 
   /**
+   * Get current NBA season year
+   * NBA season runs Oct-Jun, so we use the year the season started
+   */
+  private getCurrentSeason(): string {
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    // NBA season runs Oct-Jun
+    // If Jul-Sep (months 6-8), use current year; else use previous year if before Oct
+    return month >= 6 && month < 9
+      ? now.getFullYear().toString()
+      : month >= 9
+        ? now.getFullYear().toString()
+        : (now.getFullYear() - 1).toString();
+  }
+
+  /**
    * Get all NBA teams
    */
   async getTeams(): Promise<ApiResponse<Team[]>> {
@@ -58,9 +74,10 @@ export class NBAAdapter {
   /**
    * Get NBA standings for current season
    */
-  async getStandings(season: string = '2025'): Promise<ApiResponse<Standing[]>> {
+  async getStandings(season?: string): Promise<ApiResponse<Standing[]>> {
     return retryWithBackoff(async () => {
-      const response = await fetch(`${this.baseUrl}/scores/json/Standings/${season}`, {
+      const activeSeason = season ?? this.getCurrentSeason();
+      const response = await fetch(`${this.baseUrl}/scores/json/Standings/${activeSeason}`, {
         headers: {
           'Ocp-Apim-Subscription-Key': this.apiKey,
         },

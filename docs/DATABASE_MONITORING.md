@@ -346,7 +346,7 @@ Create `wrangler.toml` for monitoring worker:
 ```toml
 name = "blaze-db-monitor-production"
 main = "src/workers/db-monitor.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-01-01"
 
 # Scheduled monitoring - every 6 hours
 [triggers]

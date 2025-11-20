@@ -78,7 +78,7 @@ Update `wrangler.toml` for workers that need R2 access:
 # Example: blaze-storage worker
 name = "blaze-storage"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-01-01"
 
 # R2 Bucket Binding
 [[r2_buckets]]

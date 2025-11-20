@@ -56,7 +56,7 @@ The Texas Longhorns Baseball Cloudflare Worker has been **successfully deployed*
 ```toml
 name = "longhorns-baseball-tracker"
 account_id = "a12cb329d84130460eed99b816e4d0d3"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-01-01"
 ```
 
 **Version IDs:**

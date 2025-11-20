@@ -28,6 +28,18 @@ export class MLBAdapter {
   }
 
   /**
+   * Get current MLB season year
+   * MLB season runs Feb-Oct, so we use current year unless in Nov-Jan
+   */
+  private getCurrentSeason(): number {
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    // MLB season: Feb-Oct
+    // If in Nov-Jan (months 10-12, 0), use next year; else use current year
+    return month >= 10 ? now.getFullYear() + 1 : now.getFullYear();
+  }
+
+  /**
    * Get all MLB teams
    */
   async getTeams(): Promise<ApiResponse<Team[]>> {
@@ -66,9 +78,10 @@ export class MLBAdapter {
    */
   async getStandings(divisionId?: string): Promise<ApiResponse<Standing[]>> {
     return retryWithBackoff(async () => {
+      const currentSeason = this.getCurrentSeason();
       const url = divisionId
-        ? `${this.baseUrl}/standings?leagueId=103,104&season=2025&standingsTypes=regularSeason&divisionId=${divisionId}`
-        : `${this.baseUrl}/standings?leagueId=103,104&season=2025&standingsTypes=regularSeason`;
+        ? `${this.baseUrl}/standings?leagueId=103,104&season=${currentSeason}&standingsTypes=regularSeason&divisionId=${divisionId}`
+        : `${this.baseUrl}/standings?leagueId=103,104&season=${currentSeason}&standingsTypes=regularSeason`;
 
       const response = await fetchWithTimeout(url, {}, 10000);
 
