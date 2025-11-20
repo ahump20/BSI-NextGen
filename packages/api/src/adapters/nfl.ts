@@ -76,6 +76,7 @@ export class NFLAdapter {
    */
   async getStandings(season?: number): Promise<ApiResponse<Standing[]>> {
     return retryWithBackoff(async () => {
+      // Always use current season calculation for 2025-2026 season
       const activeSeason = season ?? this.getCurrentSeason();
       const response = await fetchWithTimeout(
         `${this.baseUrl}/scores/json/Standings/${activeSeason}`,
@@ -92,6 +93,9 @@ export class NFLAdapter {
       }
 
       const data = await response.json() as any;
+
+      // Log season being returned vs requested for debugging
+      console.log(`[NFL Adapter] Requested season: ${this.getCurrentSeason()}, Response count: ${data.length}`);
 
       const standings: Standing[] = data.map((team: any) => ({
         team: {
