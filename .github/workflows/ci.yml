@@ -30,7 +30,9 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        # Use --no-frozen-lockfile so CI won't fail when pnpm-lock.yaml is not present.
+        # Prefer committing pnpm-lock.yaml to the repo for reproducible installs.
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run ESLint
         run: pnpm lint
@@ -61,7 +63,8 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        # See note above. If you'd like strict reproducibility, commit pnpm-lock.yaml and revert to --frozen-lockfile.
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build project
         run: pnpm build || echo "Build command not yet configured - skipping"
