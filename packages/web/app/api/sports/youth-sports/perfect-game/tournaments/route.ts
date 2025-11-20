@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createSportsCache } from '@bsi/api/cache';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,7 +22,23 @@ export async function GET(request: NextRequest) {
     const ageGroup = searchParams.get('ageGroup') || '14U';
     const status = searchParams.get('status') || 'upcoming';
 
-    const demoTournaments = generateDemoTournaments(state, ageGroup, status);
+    // Create cache instance (Node.js runtime uses in-memory cache)
+    const cache = createSportsCache();
+
+    // Wrap data generation with caching (longer TTL for tournament schedules)
+    const demoTournaments = await cache.wrap(
+      async () => generateDemoTournaments(state, ageGroup, status),
+      {
+        sport: 'youth_sports',
+        endpoint: 'perfect_game_tournaments',
+        params: {
+          state: state || 'TX',
+          ageGroup: ageGroup || '14U',
+          status: status || 'upcoming',
+        },
+        ttl: 600, // 10 minutes
+      }
+    );
 
     const response = {
       success: true,

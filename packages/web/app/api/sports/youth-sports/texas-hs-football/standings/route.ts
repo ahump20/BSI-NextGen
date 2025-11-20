@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createSportsCache } from '@bsi/api/cache';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,7 +22,23 @@ export async function GET(request: NextRequest) {
     const district = searchParams.get('district');
     const region = searchParams.get('region');
 
-    const demoStandings = generateDemoStandings(classification, district, region);
+    // Create cache instance (Node.js runtime uses in-memory cache)
+    const cache = createSportsCache();
+
+    // Wrap data generation with caching
+    const demoStandings = await cache.wrap(
+      async () => generateDemoStandings(classification, district, region),
+      {
+        sport: 'youth_sports',
+        endpoint: 'txhsfb_standings',
+        params: {
+          classification: classification || '6A',
+          ...(district && { district }),
+          ...(region && { region }),
+        },
+        ttl: 300, // 5 minutes
+      }
+    );
 
     const response = {
       success: true,
