@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NBAAdapter } from '@bsi/api';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
 
 /**
  * GET /api/sports/nba/teams

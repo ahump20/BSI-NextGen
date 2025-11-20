@@ -12,6 +12,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LeagueOrchestrator } from '@bsi/api';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 export const dynamic = 'force-dynamic';
 
 /**

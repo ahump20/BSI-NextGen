@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuth0Client } from '@bsi/api';
-import { randomBytes } from 'crypto';
+
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
 
 /**
  * GET /api/auth/login
@@ -17,8 +18,10 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const returnTo = searchParams.get('returnTo') || '/';
 
-    // Generate CSRF state token
-    const state = randomBytes(32).toString('hex');
+    // Generate CSRF state token using Web Crypto API
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    const state = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 
     // Create Auth0 client
     const auth0 = createAuth0Client({

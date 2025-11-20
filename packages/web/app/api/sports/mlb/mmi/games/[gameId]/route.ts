@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { GameMMIResponse, isMMIError } from '@bsi/shared';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 /**
  * MMI Service URL from environment
  * Default to localhost for development

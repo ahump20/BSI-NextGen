@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAuth0Client, createJWT } from '@bsi/api';
 import type { AuthUser } from '@bsi/shared';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
 
 /**
  * GET /api/auth/callback

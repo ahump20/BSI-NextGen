@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MMIHealthResponse } from '@bsi/shared';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 const MMI_SERVICE_URL = process.env.MMI_SERVICE_URL || 'http://localhost:8001';
 
 /**

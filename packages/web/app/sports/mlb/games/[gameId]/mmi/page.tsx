@@ -1,6 +1,9 @@
 import { Metadata } from 'next';
 import { MMIDashboard } from '@/components/sports/mlb/MMIDashboard';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 interface PageProps {
   params: {
     gameId: string;

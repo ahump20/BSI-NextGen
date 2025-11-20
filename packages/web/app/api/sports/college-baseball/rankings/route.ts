@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createD1BaseballAdapter } from '@bsi/api';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 export const dynamic = 'force-dynamic';
 
 /**
