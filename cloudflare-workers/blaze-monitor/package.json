@@ -1,0 +1,38 @@
+{
+  "name": "blaze-monitor",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for database performance monitoring",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:production": "wrangler deploy --env production",
+    "tail": "wrangler tail",
+    "db:create": "wrangler d1 create blaze-monitor-db",
+    "db:execute": "wrangler d1 execute blaze-monitor-db --file=schema.sql",
+    "db:execute:remote": "wrangler d1 execute blaze-monitor-db --remote --file=schema.sql",
+    "db:query": "wrangler d1 execute blaze-monitor-db --command",
+    "kv:create": "wrangler kv:namespace create BLAZE_MONITOR_CACHE",
+    "kv:create:preview": "wrangler kv:namespace create BLAZE_MONITOR_CACHE --preview",
+    "setup": "./scripts/setup.sh",
+    "monitor": "curl -X POST http://localhost:8787/monitor",
+    "test:metrics": "curl -s http://localhost:8787/metrics | jq",
+    "test:databases": "curl -s http://localhost:8787/databases | jq",
+    "test:alerts": "curl -s http://localhost:8787/alerts | jq",
+    "test:health": "curl -s http://localhost:8787/health | jq"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "monitoring",
+    "database",
+    "performance",
+    "blaze-sports-intel"
+  ],
+  "author": "BlazeSportsIntel Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "wrangler": "^3.114.15"
+  }
+}

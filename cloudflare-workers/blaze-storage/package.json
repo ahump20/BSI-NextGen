@@ -1,0 +1,41 @@
+{
+  "name": "blaze-storage",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for R2 media storage management",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:production": "wrangler deploy --env production",
+    "tail": "wrangler tail",
+    "db:create": "wrangler d1 create blaze-storage-db",
+    "db:execute": "wrangler d1 execute blaze-storage-db --file=schema.sql",
+    "db:execute:remote": "wrangler d1 execute blaze-storage-db --remote --file=schema.sql",
+    "db:query": "wrangler d1 execute blaze-storage-db --command",
+    "kv:create": "wrangler kv:namespace create BLAZE_STORAGE_CACHE",
+    "kv:create:preview": "wrangler kv:namespace create BLAZE_STORAGE_CACHE --preview",
+    "r2:create": "wrangler r2 bucket create blazesports-media-production",
+    "r2:create:staging": "wrangler r2 bucket create blazesports-media-staging",
+    "r2:list": "wrangler r2 bucket list",
+    "r2:cors": "wrangler r2 bucket cors put blazesports-media-production --cors-config r2-cors.json",
+    "secret:jwt": "wrangler secret put JWT_SECRET",
+    "secret:auth0-domain": "wrangler secret put AUTH0_DOMAIN",
+    "setup": "./scripts/setup.sh",
+    "test:upload": "node scripts/test-upload.js",
+    "test:health": "curl -s http://localhost:8787/health | jq"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "r2",
+    "storage",
+    "media",
+    "blaze-sports-intel"
+  ],
+  "author": "BlazeSportsIntel Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "wrangler": "^3.114.15"
+  }
+}

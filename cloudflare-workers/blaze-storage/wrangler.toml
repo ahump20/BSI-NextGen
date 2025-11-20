@@ -1,0 +1,57 @@
+# Cloudflare Worker Configuration for Blaze Storage (R2 Media Management)
+
+name = "blaze-storage"
+main = "src/index.ts"
+compatibility_date = "2024-11-13"
+node_compat = true
+
+# Account details (replace with your account ID)
+# Run: wrangler whoami
+account_id = "YOUR_ACCOUNT_ID"
+
+# Worker settings
+workers_dev = true
+
+# Routes (configure after deployment)
+# routes = [
+#   { pattern = "media.blazesportsintel.com/*", zone_name = "blazesportsintel.com" }
+# ]
+
+# R2 Bucket Bindings
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "blazesports-media-production"
+preview_bucket_name = "blazesports-media-staging"
+
+# D1 Database binding (for media metadata)
+[[d1_databases]]
+binding = "DB"
+database_name = "blaze-storage-db"
+database_id = "YOUR_DATABASE_ID"  # Will be set after running: npm run db:create
+
+# KV Namespace binding (for caching)
+[[kv_namespaces]]
+binding = "BLAZE_STORAGE_CACHE"
+id = "YOUR_KV_NAMESPACE_ID"  # Will be set after running: npm run kv:create
+preview_id = "YOUR_KV_PREVIEW_ID"  # Will be set after running: npm run kv:create:preview
+
+# Environment variables
+# JWT_SECRET - Set via: npm run secret:jwt
+# AUTH0_DOMAIN - Set via: npm run secret:auth0-domain (optional)
+
+# Limits and settings
+[limits]
+cpu_ms = 30000  # 30 seconds max CPU time
+
+# Build configuration
+[build]
+command = ""
+
+# Development mode
+[env.development]
+name = "blaze-storage-dev"
+
+# Production environment
+[env.production]
+name = "blaze-storage-production"
+workers_dev = false

@@ -1,0 +1,31 @@
+{
+  "AllowedOrigins": [
+    "https://blazesportsintel.com",
+    "https://*.blazesportsintel.com",
+    "https://blazesportsintel.netlify.app",
+    "https://*.netlify.app",
+    "http://localhost:3000",
+    "http://localhost:8787"
+  ],
+  "AllowedMethods": [
+    "GET",
+    "PUT",
+    "POST",
+    "DELETE",
+    "HEAD"
+  ],
+  "AllowedHeaders": [
+    "Content-Type",
+    "Content-Length",
+    "Authorization",
+    "X-Requested-With",
+    "Range"
+  ],
+  "ExposeHeaders": [
+    "ETag",
+    "Content-Length",
+    "Content-Range",
+    "Accept-Ranges"
+  ],
+  "MaxAgeSeconds": 3600
+}
