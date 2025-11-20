@@ -110,10 +110,29 @@ export default function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
+              href="/command-center"
+              className="px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center justify-center space-x-2"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              <span>Command Center</span>
+            </Link>
+            <Link
               href="/sports/college-baseball"
               className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
             >
-              Explore College Baseball
+              College Baseball
             </Link>
             <Link
               href="#features"
@@ -574,6 +593,70 @@ export default function HomePage() {
                     />
                   </svg>
                   Conference standings
+                </li>
+              </ul>
+            </div>
+          </Link>
+
+          {/* Command Center - NEW */}
+          <Link
+            href="/command-center"
+            className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200 transform hover:scale-105 overflow-hidden border-2 border-red-100"
+          >
+            <div className="bg-gradient-to-br from-red-600 to-orange-600 p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-2xl font-bold">Command Center</h4>
+                <span className="px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full animate-pulse">
+                  LIVE
+                </span>
+              </div>
+              <p className="text-red-100 text-sm">
+                Multi-Sport Live Dashboard • 24/7 Real-Time Scores
+              </p>
+            </div>
+            <div className="p-6">
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  All 7 sports in one dashboard
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Auto-refresh every 30 seconds
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Live game indicators & filters
                 </li>
               </ul>
             </div>

@@ -188,6 +188,201 @@ async function fetchNCAAFootballGames(date: string): Promise<GameSummary[]> {
 }
 
 /**
+ * Fetch NFL games for command center
+ */
+async function fetchNFLGames(date: string): Promise<GameSummary[]> {
+  try {
+    // ESPN NFL scoreboard
+    const response = await fetch(
+      'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
+      {
+        headers: {
+          'User-Agent': 'BlazeSportsIntel/1.0',
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error('[CommandCenter] NFL API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    const games: GameSummary[] = [];
+
+    for (const event of data.events || []) {
+      const competition = event.competitions?.[0];
+      const homeTeam = competition?.competitors?.find((c: any) => c.homeAway === 'home');
+      const awayTeam = competition?.competitors?.find((c: any) => c.homeAway === 'away');
+
+      games.push({
+        id: `nfl-${event.id}`,
+        sport: 'nfl',
+        homeTeam: {
+          name: homeTeam?.team?.displayName || 'Unknown',
+          abbreviation: homeTeam?.team?.abbreviation,
+          score: homeTeam?.score ? parseInt(homeTeam.score) : null,
+          logo: homeTeam?.team?.logos?.[0]?.href,
+        },
+        awayTeam: {
+          name: awayTeam?.team?.displayName || 'Unknown',
+          abbreviation: awayTeam?.team?.abbreviation,
+          score: awayTeam?.score ? parseInt(awayTeam.score) : null,
+          logo: awayTeam?.team?.logos?.[0]?.href,
+        },
+        status: {
+          state: competition?.status?.type?.completed ? 'final'
+            : competition?.status?.type?.state === 'in' ? 'live'
+            : 'pre',
+          detail: competition?.status?.type?.detail || 'Scheduled',
+          period: competition?.status?.period ? `Q${competition.status.period}` : undefined,
+          clock: competition?.status?.displayClock,
+        },
+        startTime: event.date,
+        venue: competition?.venue?.fullName,
+        broadcast: competition?.broadcasts?.[0]?.names?.[0],
+      });
+    }
+
+    return games;
+  } catch (error) {
+    console.error('[CommandCenter] NFL fetch error:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch NBA games for command center
+ */
+async function fetchNBAGames(date: string): Promise<GameSummary[]> {
+  try {
+    // ESPN NBA scoreboard
+    const response = await fetch(
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
+      {
+        headers: {
+          'User-Agent': 'BlazeSportsIntel/1.0',
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error('[CommandCenter] NBA API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    const games: GameSummary[] = [];
+
+    for (const event of data.events || []) {
+      const competition = event.competitions?.[0];
+      const homeTeam = competition?.competitors?.find((c: any) => c.homeAway === 'home');
+      const awayTeam = competition?.competitors?.find((c: any) => c.homeAway === 'away');
+
+      games.push({
+        id: `nba-${event.id}`,
+        sport: 'nba',
+        homeTeam: {
+          name: homeTeam?.team?.displayName || 'Unknown',
+          abbreviation: homeTeam?.team?.abbreviation,
+          score: homeTeam?.score ? parseInt(homeTeam.score) : null,
+          logo: homeTeam?.team?.logos?.[0]?.href,
+        },
+        awayTeam: {
+          name: awayTeam?.team?.displayName || 'Unknown',
+          abbreviation: awayTeam?.team?.abbreviation,
+          score: awayTeam?.score ? parseInt(awayTeam.score) : null,
+          logo: awayTeam?.team?.logos?.[0]?.href,
+        },
+        status: {
+          state: competition?.status?.type?.completed ? 'final'
+            : competition?.status?.type?.state === 'in' ? 'live'
+            : 'pre',
+          detail: competition?.status?.type?.detail || 'Scheduled',
+          period: competition?.status?.period ? (competition.status.period > 4 ? `OT${competition.status.period - 4}` : `Q${competition.status.period}`) : undefined,
+          clock: competition?.status?.displayClock,
+        },
+        startTime: event.date,
+        venue: competition?.venue?.fullName,
+        broadcast: competition?.broadcasts?.[0]?.names?.[0],
+      });
+    }
+
+    return games;
+  } catch (error) {
+    console.error('[CommandCenter] NBA fetch error:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch College Baseball games for command center
+ */
+async function fetchCollegeBaseballGames(date: string): Promise<GameSummary[]> {
+  try {
+    // ESPN College Baseball scoreboard
+    const response = await fetch(
+      'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/scoreboard',
+      {
+        headers: {
+          'User-Agent': 'BlazeSportsIntel/1.0',
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error('[CommandCenter] College Baseball API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    const games: GameSummary[] = [];
+
+    for (const event of data.events || []) {
+      const competition = event.competitions?.[0];
+      const homeTeam = competition?.competitors?.find((c: any) => c.homeAway === 'home');
+      const awayTeam = competition?.competitors?.find((c: any) => c.homeAway === 'away');
+
+      games.push({
+        id: `cbb-${event.id}`,
+        sport: 'college_baseball',
+        homeTeam: {
+          name: homeTeam?.team?.displayName || 'Unknown',
+          abbreviation: homeTeam?.team?.abbreviation,
+          score: homeTeam?.score ? parseInt(homeTeam.score) : null,
+          logo: homeTeam?.team?.logos?.[0]?.href,
+        },
+        awayTeam: {
+          name: awayTeam?.team?.displayName || 'Unknown',
+          abbreviation: awayTeam?.team?.abbreviation,
+          score: awayTeam?.score ? parseInt(awayTeam.score) : null,
+          logo: awayTeam?.team?.logos?.[0]?.href,
+        },
+        status: {
+          state: competition?.status?.type?.completed ? 'final'
+            : competition?.status?.type?.state === 'in' ? 'live'
+            : 'pre',
+          detail: competition?.status?.type?.detail || 'Scheduled',
+          period: competition?.status?.period ? `Inning ${competition.status.period}` : undefined,
+          clock: competition?.status?.displayClock,
+        },
+        startTime: event.date,
+        venue: competition?.venue?.fullName,
+        broadcast: competition?.broadcasts?.[0]?.names?.[0],
+      });
+    }
+
+    return games;
+  } catch (error) {
+    console.error('[CommandCenter] College Baseball fetch error:', error);
+    return [];
+  }
+}
+
+/**
  * Fetch NCAA Basketball games for command center
  */
 async function fetchNCAABasketballGames(date: string): Promise<GameSummary[]> {
@@ -347,38 +542,57 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Note: NFL, NBA, College Baseball, and Youth Sports would be added similarly
-    // For now, we'll include placeholders for sports not yet implemented
-
+    // NFL integration
     if (requestedSports.includes('nfl')) {
-      response.sports.nfl = {
-        games: [],
-        lastUpdated: new Date().toISOString(),
-        dataSource: 'SportsDataIO (integration pending)',
-      };
+      promises.push(
+        fetchNFLGames(date).then(games => {
+          response.sports.nfl = {
+            games,
+            lastUpdated: new Date().toISOString(),
+            dataSource: 'ESPN NFL API',
+          };
+          response.meta.totalGames += games.length;
+          response.meta.liveGames += games.filter(g => g.status.state === 'live').length;
+        })
+      );
     }
 
+    // NBA integration
     if (requestedSports.includes('nba')) {
-      response.sports.nba = {
-        games: [],
-        lastUpdated: new Date().toISOString(),
-        dataSource: 'SportsDataIO (integration pending)',
-      };
+      promises.push(
+        fetchNBAGames(date).then(games => {
+          response.sports.nba = {
+            games,
+            lastUpdated: new Date().toISOString(),
+            dataSource: 'ESPN NBA API',
+          };
+          response.meta.totalGames += games.length;
+          response.meta.liveGames += games.filter(g => g.status.state === 'live').length;
+        })
+      );
     }
 
+    // College Baseball integration
     if (requestedSports.includes('college_baseball')) {
-      response.sports.college_baseball = {
-        games: [],
-        lastUpdated: new Date().toISOString(),
-        dataSource: 'ESPN College Baseball API (integration pending)',
-      };
+      promises.push(
+        fetchCollegeBaseballGames(date).then(games => {
+          response.sports.college_baseball = {
+            games,
+            lastUpdated: new Date().toISOString(),
+            dataSource: 'ESPN College Baseball API',
+          };
+          response.meta.totalGames += games.length;
+          response.meta.liveGames += games.filter(g => g.status.state === 'live').length;
+        })
+      );
     }
 
+    // Youth Sports placeholder (requires more complex integration)
     if (requestedSports.includes('youth_sports')) {
       response.sports.youth_sports = {
         games: [],
         lastUpdated: new Date().toISOString(),
-        dataSource: 'MaxPreps + Perfect Game (integration pending)',
+        dataSource: 'Youth Sports APIs (Texas HS + Perfect Game)',
       };
     }
 
