@@ -1,0 +1,27 @@
+{
+  "name": "bsi-news-ingestion",
+  "version": "1.0.0",
+  "description": "Blaze Sports Intel - News Ingestion Worker for RSS Feeds",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "trigger:manual": "curl https://bsi-news-ingestion.WORKER_SUBDOMAIN.workers.dev/ingest",
+    "sources": "curl https://bsi-news-ingestion.WORKER_SUBDOMAIN.workers.dev/sources"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "d1",
+    "rss",
+    "news",
+    "sports"
+  ],
+  "author": "Blaze Sports Intel",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20231218.0",
+    "wrangler": "^3.78.0"
+  }
+}

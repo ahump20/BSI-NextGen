@@ -59,8 +59,9 @@ export class D1Client {
 
   /**
    * Execute a SQL query
+   * Public method for custom queries
    */
-  private async query<T>(sql: string, params: any[] = []): Promise<D1Result<T>> {
+  async query<T>(sql: string, params: any[] = []): Promise<D1Result<T>> {
     if (!this.isAvailable()) {
       return {
         success: false,

@@ -1,0 +1,15 @@
+# Blaze Sports Intel - News Ingestion Worker Configuration
+name = "bsi-news-ingestion"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+# D1 Database binding (same database as data ingestion)
+[[d1_databases]]
+binding = "DB"
+database_name = "bsi-sports-data"
+database_id = "YOUR_D1_DATABASE_ID" # Replace with actual D1 database ID
+
+# Cron triggers - run every 30 minutes
+[triggers]
+crons = ["*/30 * * * *"]

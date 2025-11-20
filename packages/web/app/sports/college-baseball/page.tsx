@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { NCAAGame } from '@bsi/shared';
+import { NewsFeed } from '@/components/NewsFeed';
 
 export default function CollegeBaseballPage() {
   const [games, setGames] = useState<NCAAGame[]>([]);
@@ -197,6 +198,17 @@ export default function CollegeBaseballPage() {
           ))}
         </div>
       )}
+
+      {/* College Baseball News Section */}
+      <div className="mt-12">
+        <NewsFeed
+          sport="COLLEGE_BASEBALL"
+          limit={12}
+          layout="grid"
+          columns={3}
+          title="College Baseball News"
+        />
+      </div>
 
       <div className="mt-8 pt-6 border-t border-gray-200">
         <p className="text-xs text-gray-500 text-center">
