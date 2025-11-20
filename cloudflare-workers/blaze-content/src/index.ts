@@ -8,6 +8,7 @@
  */
 
 import { RSSIngestor } from './ingestors/rss-ingestor';
+import { ContentAnalyzer } from './analyzers/content-analyzer';
 import type {
   ContentSource,
   Article,
@@ -388,10 +389,13 @@ async function processContentSource(
 
     result.fetched = articles.length;
 
-    // Upsert articles
+    // Initialize AI analyzer
+    const analyzer = new ContentAnalyzer(env.AI);
+
+    // Upsert articles with AI analysis
     for (const article of articles) {
       try {
-        const inserted = await upsertArticle(env.BLAZE_DB, source.id, article);
+        const inserted = await upsertArticle(env.BLAZE_DB, source.id, article, analyzer);
         if (inserted) {
           result.inserted++;
         } else {
@@ -413,12 +417,13 @@ async function processContentSource(
 }
 
 /**
- * Upsert article (insert or skip if duplicate)
+ * Upsert article with AI analysis (insert or skip if duplicate)
  */
 async function upsertArticle(
   db: D1Database,
   sourceId: string,
-  article: Article
+  article: Article,
+  analyzer: ContentAnalyzer
 ): Promise<boolean> {
   // Check for duplicate by URL
   const existing = await db
@@ -434,12 +439,36 @@ async function upsertArticle(
   const articleId = crypto.randomUUID();
   const publishedAt = Math.floor(new Date(article.publishedAt).getTime() / 1000);
 
+  // Run AI analysis on article content
+  let analysis;
+  try {
+    const contentForAnalysis = article.excerpt || article.contentHtml || article.title;
+    analysis = await analyzer.analyze(article.title, contentForAnalysis, article.leagueId);
+
+    console.log(`[Content] AI analysis for "${article.title}":`, {
+      category: analysis.category,
+      sentiment: analysis.sentiment,
+      trending_score: analysis.trending_score,
+      topics_count: analysis.topics.length,
+    });
+  } catch (error) {
+    console.error(`[Content] AI analysis failed for "${article.title}":`, error);
+    // Use fallback analysis
+    analysis = {
+      category: 'other',
+      sentiment: 'neutral',
+      trending_score: 0,
+      topics: [],
+    };
+  }
+
+  // Insert article with AI-generated metadata
   await db
     .prepare(
       `INSERT INTO content_articles
        (id, source_id, external_id, title, excerpt, content_html, author,
-        published_at, url, image_url, league_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        published_at, url, image_url, category, sentiment, trending_score, league_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       articleId,
@@ -452,16 +481,38 @@ async function upsertArticle(
       publishedAt,
       article.url,
       article.imageUrl || null,
+      analysis.category,
+      analysis.sentiment,
+      analysis.trending_score,
       article.leagueId || null
     )
     .run();
 
-  console.log(`[Content] Inserted article: ${articleId} - ${article.title}`);
+  // Insert extracted topics
+  for (const topic of analysis.topics) {
+    const topicId = crypto.randomUUID();
+    try {
+      await db
+        .prepare(
+          `INSERT INTO content_topics
+           (id, article_id, topic_type, topic_value, confidence)
+           VALUES (?, ?, ?, ?, ?)`
+        )
+        .bind(topicId, articleId, topic.type, topic.value, topic.confidence)
+        .run();
+    } catch (error) {
+      console.error(`[Content] Failed to insert topic for article ${articleId}:`, error);
+    }
+  }
+
+  console.log(
+    `[Content] Inserted article: ${articleId} - ${article.title} (${analysis.category}, ${analysis.topics.length} topics)`
+  );
   return true;
 }
 
 /**
- * Update trending topics based on recent articles
+ * Update trending topics based on recent articles and AI-extracted topics
  */
 async function updateTrendingTopics(env: Env): Promise<void> {
   console.log('[Content] Updating trending topics...');
@@ -470,35 +521,36 @@ async function updateTrendingTopics(env: Env): Promise<void> {
   const oneHourAgo = now - 3600;
 
   try {
-    // Get topics from recent articles (simplified version without content_topics for now)
-    // In future, we'll extract topics with AI analysis
-
-    // For now, just track articles by category as "topics"
-    const recentArticles = await env.BLAZE_DB.prepare(
+    // Extract trending topics from content_topics table
+    // This uses AI-extracted entities (teams, players, coaches) instead of just categories
+    const recentTopics = await env.BLAZE_DB.prepare(
       `SELECT
-        category as topic_value,
-        'category' as topic_type,
-        league_id,
-        COUNT(*) as article_count,
-        AVG(CASE sentiment
+        ct.topic_value,
+        ct.topic_type,
+        a.league_id,
+        COUNT(DISTINCT a.id) as article_count,
+        AVG(CASE a.sentiment
           WHEN 'positive' THEN 1.0
           WHEN 'neutral' THEN 0.0
           WHEN 'negative' THEN -1.0
           ELSE 0.0
-        END) as sentiment_avg
-       FROM content_articles
-       WHERE published_at > ?
-       AND category IS NOT NULL
-       GROUP BY category, league_id
-       HAVING COUNT(*) >= 2
-       ORDER BY COUNT(*) DESC
+        END) as sentiment_avg,
+        AVG(ct.confidence) as avg_confidence,
+        MAX(a.trending_score) as max_trending_score
+       FROM content_topics ct
+       JOIN content_articles a ON ct.article_id = a.id
+       WHERE a.published_at > ?
+       GROUP BY ct.topic_value, ct.topic_type, a.league_id
+       HAVING COUNT(DISTINCT a.id) >= 2
+       AND AVG(ct.confidence) >= 50
+       ORDER BY COUNT(DISTINCT a.id) DESC, AVG(ct.confidence) DESC
        LIMIT 50`
     )
       .bind(oneHourAgo)
       .all();
 
     // Upsert trending topics
-    for (const topic of recentArticles.results) {
+    for (const topic of recentTopics.results) {
       const velocity = topic.article_count as number; // Articles per hour
       const trendingId = crypto.randomUUID();
 
@@ -522,7 +574,7 @@ async function updateTrendingTopics(env: Env): Promise<void> {
         .run();
     }
 
-    console.log(`[Content] Updated ${recentArticles.results.length} trending topics`);
+    console.log(`[Content] Updated ${recentTopics.results.length} trending topics from AI analysis`);
   } catch (error) {
     console.error('[Content] Failed to update trending topics:', error);
   }
