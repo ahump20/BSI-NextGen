@@ -1,0 +1,35 @@
+{
+  "name": "blaze-ingestion",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for ingesting sports data into D1 database",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "db:list": "wrangler d1 list",
+    "db:info": "wrangler d1 info blaze-sports-db",
+    "db:execute": "wrangler d1 execute blaze-sports-db --remote",
+    "db:query": "wrangler d1 execute blaze-sports-db --remote --command",
+    "logs": "wrangler d1 execute blaze-sports-db --remote --command=\"SELECT * FROM ingestion_logs ORDER BY started_at DESC LIMIT 10\""
+  },
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "sports",
+    "data",
+    "ingestion",
+    "d1"
+  ],
+  "author": "Blaze Sports Intel",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250107.0",
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "wrangler": "^3.96.0"
+  }
+}

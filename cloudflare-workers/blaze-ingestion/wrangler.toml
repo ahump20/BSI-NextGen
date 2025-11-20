@@ -1,0 +1,48 @@
+# Blaze Sports Ingestion Worker Configuration
+
+name = "blaze-ingestion"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "BLAZE_DB"
+database_name = "blaze-sports-db"
+database_id = "" # TODO: Run `npx wrangler d1 create blaze-sports-db` and add ID here
+
+# KV Namespace for Caching
+[[kv_namespaces]]
+binding = "SPORTS_CACHE"
+id = "" # TODO: Run `npx wrangler kv:namespace create SPORTS_CACHE` and add ID here
+
+# Cron Triggers - Run every 15 minutes
+[triggers]
+crons = ["*/15 * * * *"]
+
+# Environment Variables (Secrets should be set via `wrangler secret put`)
+[vars]
+ENVIRONMENT = "production"
+
+# Build Configuration
+[build]
+command = ""
+
+# Observability
+[observability]
+enabled = true
+
+# Development Configuration
+[env.dev]
+name = "blaze-ingestion-dev"
+vars = { ENVIRONMENT = "development" }
+
+# Development D1 Database (for local testing)
+[[env.dev.d1_databases]]
+binding = "BLAZE_DB"
+database_name = "blaze-sports-db-dev"
+database_id = "" # TODO: Create dev database
+
+# Development KV Namespace
+[[env.dev.kv_namespaces]]
+binding = "SPORTS_CACHE"
+id = "" # TODO: Create dev KV namespace
