@@ -4,6 +4,11 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
 import { NcaaFusionCard } from '@/components/NcaaFusionCard';
+import { BrandLogo } from '@/components/BrandLogo';
+import { SocialHighlights } from '@/components/SocialHighlights';
+import { FanPoll } from '@/components/FanPoll';
+import { useEffect } from 'react';
+import { trackPageView } from '@/lib/analytics/tracker';
 
 /**
  * Homepage
@@ -17,38 +22,21 @@ import { NcaaFusionCard } from '@/components/NcaaFusionCard';
 export default function HomePage() {
   const { user, authenticated, loading, login } = useAuth();
 
+  // Track page view
+  useEffect(() => {
+    trackPageView('/', { sport: 'home' });
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
       {/* Header / Navigation */}
       <header className="bg-white shadow-md">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-                <svg
-                  className="w-6 h-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  Blaze Sports Intel
-                </h1>
-                <p className="text-xs text-gray-600 hidden sm:block">
-                  Professional Sports Intelligence
-                </p>
-              </div>
-            </div>
+            {/* Logo - Using enhanced brand logo matching Logo 2 aesthetic */}
+            <Link href="/" className="flex items-center">
+              <BrandLogo variant="full" size="md" />
+            </Link>
 
             {/* Auth Actions */}
             <div className="flex items-center space-x-2">
@@ -478,13 +466,36 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Fan Engagement Section - NEW */}
+      <section className="bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-16">
+        <div className="container mx-auto px-4">
+          <h3 className="text-3xl font-bold text-gray-900 mb-12 text-center">
+            Join the Conversation
+          </h3>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            {/* Fan Poll - Featured */}
+            <div className="lg:col-span-1">
+              <FanPoll category="college-baseball" />
+            </div>
+
+            {/* Social Highlights - 2 columns on desktop */}
+            <div className="lg:col-span-2">
+              <SocialHighlights limit={3} />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Brand */}
             <div>
-              <h5 className="text-xl font-bold mb-4">Blaze Sports Intel</h5>
+              <div className="mb-4">
+                <BrandLogo variant="full" size="md" className="brightness-200" />
+              </div>
               <p className="text-gray-400 text-sm">
                 Professional sports intelligence platform filling ESPN&apos;s
                 gaps with real, complete data.
