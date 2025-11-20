@@ -81,6 +81,9 @@ npx playwright show-report  # Show test results
 .claude/tests/mobile-regression.sh --create-baseline
 .claude/tests/mobile-regression.sh --performance
 .claude/tests/mobile-regression.sh --all
+
+# SportsDataIO Integration Test
+pnpm test:sportsdataio        # Test NFL and NBA API integration
 ```
 
 ### Code Quality
@@ -105,6 +108,57 @@ pnpm clean
 # Full reset (clean + reinstall)
 pnpm clean && pnpm install
 ```
+
+### Blaze Trends (Cloudflare Worker)
+
+**Purpose:** Real-time sports news monitoring with AI-powered trend analysis
+
+```bash
+# Local development
+pnpm trends:dev              # Start worker (http://localhost:8787)
+
+# Deployment
+pnpm trends:deploy           # Deploy to Cloudflare
+
+# Monitoring
+pnpm trends:tail             # View real-time logs
+pnpm trends:health           # Health check all endpoints
+
+# Database management
+pnpm trends:db list          # List recent trends
+pnpm trends:db stats         # Database statistics
+pnpm trends:db errors        # View error logs
+pnpm trends:db help          # Show all db commands
+
+# Initial setup
+pnpm trends:setup            # Run setup wizard
+```
+
+**Key Features:**
+- AI-powered trend identification with OpenAI GPT-4 Turbo
+- Multi-sport news aggregation via Brave Search API
+- Automated monitoring every 15 minutes (cron)
+- Edge computing with Cloudflare Workers
+- D1 database for persistence
+- KV caching for <10ms response times
+
+**API Endpoints:**
+- `GET /health` - Health check
+- `GET /api/trends` - Get all trends
+- `GET /api/trends?sport=college_baseball` - Filter by sport
+- `GET /api/trends/:id` - Get specific trend
+- `GET /cron/monitor` - Manual monitoring trigger
+
+**Documentation:**
+- `cloudflare-workers/blaze-trends/README.md` - Technical overview
+- `cloudflare-workers/blaze-trends/DEPLOYMENT.md` - Deployment guide
+- `cloudflare-workers/blaze-trends/scripts/README.md` - Script documentation
+- `BLAZE-TRENDS-IMPLEMENTATION.md` - Complete implementation summary
+
+**Frontend Integration:**
+- `/trends` page in Next.js app
+- Components: `TrendCard`, `SportFilter`
+- Types: `packages/web/types/trends.ts`
 
 ---
 
@@ -723,11 +777,148 @@ if (!games.length) {
 
 ---
 
+## Claude Code Web Support
+
+This repository is configured for **Claude Code on the web** with automatic setup hooks and network access requirements.
+
+### Automatic Setup
+
+When you start a Claude Code web session, the `.claude/scripts/setup.sh` script runs automatically to:
+
+1. ✅ Verify Node.js and pnpm installation
+2. ✅ Install all dependencies with `pnpm install`
+3. ✅ Build all packages in dependency order (@bsi/shared → @bsi/api → @bsi/web)
+4. ✅ Check for `.env` file and environment variables
+5. ✅ Display available commands and next steps
+
+**Configuration:** `.claude/settings.json` contains SessionStart hooks that trigger setup automatically.
+
+### Network Requirements
+
+This project requires network access to the following domains:
+
+**Required (Core Functionality):**
+- `statsapi.mlb.com` - MLB Stats API (free, official)
+- `site.api.espn.com` - ESPN APIs for NCAA/College sports (free, official)
+
+**Required with API Keys:**
+- `api.sportsdata.io` - SportsDataIO for NFL/NBA data (requires `SPORTSDATAIO_API_KEY`)
+- `sportsdata.io` - SportsDataIO authentication
+
+**Optional (Authentication):**
+- `*.auth0.com` - Auth0 authentication (if configured)
+
+**Network Access Level:** Requires **Full Internet Access** or domain allowlist with the above domains.
+
+### Verifying Network Access
+
+Run the network check script to validate API connectivity:
+
+```bash
+.claude/scripts/network-check.sh
+```
+
+This script tests all required sports data APIs and reports which ones are accessible. If required APIs fail, you may need to adjust network access settings in your Claude Code web environment.
+
+### Environment Variables
+
+**Required for full functionality:**
+
+```bash
+# SportsDataIO API (for NFL/NBA)
+SPORTSDATAIO_API_KEY=your_api_key_here
+
+# Auth0 (for authentication)
+AUTH0_DOMAIN=your-tenant.us.auth0.com
+AUTH0_CLIENT_ID=your_client_id
+AUTH0_CLIENT_SECRET=your_client_secret
+JWT_SECRET=your_jwt_secret
+
+# Application URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+**Setup:**
+1. Copy `.env.example` to `.env`
+2. Add your API keys
+3. Never commit `.env` to version control
+
+### Claude Code Web Limitations
+
+**What works:**
+- ✅ Automatic dependency installation via SessionStart hooks
+- ✅ Full monorepo build process
+- ✅ Development server (`pnpm dev`)
+- ✅ API integration with external sports data sources
+- ✅ Playwright E2E tests (after browser installation)
+
+**Potential issues:**
+- ⚠️ Network access may be restricted - use `.claude/scripts/network-check.sh` to verify
+- ⚠️ Some APIs require environment variables - ensure `.env` is configured
+- ⚠️ Playwright browser installation may timeout - run `npx playwright install` manually if needed
+
+### Development Workflow in Claude Code Web
+
+1. **Session starts** → Setup script runs automatically
+2. **Verify environment:** Check that setup completed successfully
+3. **Test network access:** Run `.claude/scripts/network-check.sh`
+4. **Configure environment:** Ensure `.env` file has required API keys
+5. **Start development:** Run `pnpm dev` to start Next.js server
+6. **Make changes:** Edit code, Claude Code will help implement features
+7. **Test changes:** Use Playwright tests or manual testing
+8. **Commit & push:** Claude Code will help create commits and push to your branch
+
+### Troubleshooting in Claude Code Web
+
+**Setup fails with permission errors:**
+```bash
+# Manually run setup with verbose output
+bash -x .claude/scripts/setup.sh
+```
+
+**Network access blocked:**
+```bash
+# Check which APIs are accessible
+.claude/scripts/network-check.sh
+
+# If required APIs are blocked, request Full Internet Access or domain allowlist
+```
+
+**Build fails during setup:**
+```bash
+# Clean and rebuild manually
+pnpm clean
+pnpm install
+pnpm build
+```
+
+**Environment variables not working:**
+```bash
+# Verify .env file exists and has required keys
+cat .env
+
+# If missing, copy from template
+cp .env.example .env
+# Then edit .env with your API keys
+```
+
+### Additional Resources
+
+- **Claude Code Documentation:** https://docs.anthropic.com/claude/docs/claude-code
+- **SessionStart Hooks:** `.claude/settings.json` configuration
+- **Setup Script:** `.claude/scripts/setup.sh` implementation
+- **Network Check:** `.claude/scripts/network-check.sh` for API validation
+- **Claude Code Configuration:** `.claude/README.md` for detailed setup notes
+
+---
+
 ## Documentation Files
 
 - `README.md` - Project overview and quick start
 - `QUICK_START.md` - Detailed setup instructions
 - `DEPLOYMENT.md` - Deployment procedures
+- `SPORTSDATAIO_INTEGRATION.md` - SportsDataIO API integration guide
 - `docs/IMPLEMENTATION_SUMMARY.md` - Infrastructure implementation roadmap
 - `docs/INFRASTRUCTURE.md` - Complete architecture mapping
 - `docs/OPERATIONAL_RUNBOOKS.md` - Operations procedures
+- `.claude/README.md` - Claude Code web setup documentation

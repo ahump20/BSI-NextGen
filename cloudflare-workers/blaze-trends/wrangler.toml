@@ -1,0 +1,55 @@
+# Cloudflare Worker Configuration for Blaze Trends
+
+name = "blaze-trends"
+main = "src/index.ts"
+compatibility_date = "2024-11-13"
+node_compat = true
+
+# Account details (replace with your account ID)
+# Run: wrangler whoami
+account_id = "YOUR_ACCOUNT_ID"
+
+# Worker settings
+workers_dev = true
+
+# Routes (configure after deployment)
+# routes = [
+#   { pattern = "api.blazesportsintel.com/trends/*", zone_name = "blazesportsintel.com" }
+# ]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "blaze-trends-db"
+database_id = "YOUR_DATABASE_ID"  # Will be set after running: npm run db:create
+
+# KV Namespace binding
+[[kv_namespaces]]
+binding = "BLAZE_TRENDS_CACHE"
+id = "YOUR_KV_NAMESPACE_ID"  # Will be set after running: npm run kv:create
+preview_id = "YOUR_KV_PREVIEW_ID"  # Will be set after running: npm run kv:create:preview
+
+# Environment variables (secrets set via wrangler secret put)
+# OPENAI_API_KEY - Set via: npm run secret:openai
+# BRAVE_API_KEY - Set via: npm run secret:brave
+
+# Cron triggers - Run monitoring every 15 minutes
+[triggers]
+crons = ["*/15 * * * *"]
+
+# Limits and settings
+[limits]
+cpu_ms = 50000  # 50 seconds max CPU time
+
+# Build configuration
+[build]
+command = ""
+
+# Development mode
+[env.development]
+name = "blaze-trends-dev"
+
+# Production environment
+[env.production]
+name = "blaze-trends-production"
+workers_dev = false

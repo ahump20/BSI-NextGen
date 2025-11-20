@@ -3,11 +3,11 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": false,
-    "noImplicitAny": false,
-    "strictNullChecks": false
+    "strict": true,
+    "types": ["node"]
   },
   "include": ["src/**/*"],
+  "exclude": ["src/**/__tests__/**/*", "src/**/*.test.ts", "src/**/*.spec.ts"],
   "references": [
     { "path": "../shared" }
   ]

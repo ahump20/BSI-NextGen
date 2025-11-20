@@ -14,7 +14,12 @@ const viewports = [
 
 const routes = [
   { path: '/', name: 'homepage' },
-  { path: '/mlb', name: 'mlb' },
+  { path: '/sports/mlb', name: 'mlb' },
+  { path: '/sports/nfl', name: 'nfl' },
+  { path: '/sports/nba', name: 'nba' },
+  { path: '/sports/college-baseball', name: 'college-baseball' },
+  { path: '/unified', name: 'unified' },
+  { path: '/login', name: 'login' },
 ];
 
 test.describe('Mobile Visual Regression', () => {

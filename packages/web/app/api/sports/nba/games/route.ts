@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0];
     const date = searchParams.get('date') || today;
 
-    const adapter = new NBAAdapter();
+    const adapter = new NBAAdapter(process.env.SPORTSDATAIO_API_KEY);
     const response = await adapter.getGames(date);
 
     // Cache based on game status
