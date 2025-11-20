@@ -1,3 +1,7 @@
+# Netlify Next.js Plugin - Enables API routes as serverless functions
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 [build]
   # Set base directory to packages/web for the Next.js app
   base = "packages/web"
@@ -33,12 +37,8 @@
   command = "cd ../.. && CI='' pnpm install --frozen-lockfile && pnpm build"
   publish = ".next"
 
-# Redirect rules (optional - customize as needed)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+# Note: Catch-all redirects removed to allow Next.js API routes to work
+# The @netlify/plugin-nextjs handles routing automatically
 
 # Headers (optional - security headers)
 [[headers]]
