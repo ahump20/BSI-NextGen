@@ -128,11 +128,11 @@ export async function GET(
   } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
-      console.error('[MMI API] Validation error:', error.errors);
+      console.error('[MMI API] Validation error:', error.issues);
       return NextResponse.json(
         {
           error: 'Invalid request parameters',
-          details: error.errors,
+          details: error.issues,
           timestamp: new Date().toISOString(),
         },
         { status: 400 }
