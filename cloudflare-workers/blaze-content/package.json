@@ -1,0 +1,33 @@
+{
+  "name": "blaze-content",
+  "version": "1.0.0",
+  "description": "Blaze Sports Content Aggregation Worker - News, analysis, and trending topics",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "test": "vitest",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "sports",
+    "news",
+    "rss",
+    "ai"
+  ],
+  "author": "Blaze Sports Intel",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "wrangler": "^3.86.1"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.3.3"
+  }
+}
