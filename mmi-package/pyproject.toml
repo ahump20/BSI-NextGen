@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mmi"
+version = "0.1.0"
+description = "Moment Mentality Index - A comprehensive mental demand metric for MLB players"
+authors = [
+    {name = "Blaze Sports Intel", email = "ahump20@outlook.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+keywords = ["baseball", "analytics", "sabermetrics", "mlb", "mental-demand"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "pydantic>=2.0.0",
+    "requests>=2.31.0",
+    "scikit-learn>=1.3.0",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "typer>=0.9.0",
+    "pyarrow>=14.0.0",
+    "python-dateutil>=2.8.2",
+    "MLB-StatsAPI>=1.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "mypy>=1.5.0",
+    "ruff>=0.1.0",
+]
+experiments = [
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "jupyter>=1.0.0",
+    "scikit-learn>=1.3.0",
+]
+
+[project.scripts]
+mmi = "mmi.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mmi*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=mmi --cov-report=term-missing"
