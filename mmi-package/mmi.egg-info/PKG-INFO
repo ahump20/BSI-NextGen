@@ -1,0 +1,325 @@
+Metadata-Version: 2.4
+Name: mmi
+Version: 0.1.0
+Summary: Moment Mentality Index - A comprehensive mental demand metric for MLB players
+Author-email: Blaze Sports Intel <ahump20@outlook.com>
+License: MIT
+Keywords: baseball,analytics,sabermetrics,mlb,mental-demand
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Information Analysis
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: requests>=2.31.0
+Requires-Dist: scikit-learn>=1.3.0
+Requires-Dist: fastapi>=0.104.0
+Requires-Dist: uvicorn>=0.24.0
+Requires-Dist: typer>=0.9.0
+Requires-Dist: pyarrow>=14.0.0
+Requires-Dist: python-dateutil>=2.8.2
+Requires-Dist: MLB-StatsAPI>=1.6.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: mypy>=1.5.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Provides-Extra: experiments
+Requires-Dist: matplotlib>=3.7.0; extra == "experiments"
+Requires-Dist: seaborn>=0.12.0; extra == "experiments"
+Requires-Dist: jupyter>=1.0.0; extra == "experiments"
+Requires-Dist: scikit-learn>=1.3.0; extra == "experiments"
+Dynamic: license-file
+
+# Moment Mentality Index (MMI)
+
+**A comprehensive baseball analytics package for quantifying mental demands on MLB players.**
+
+MMI combines five normalized components to measure how mentally demanding a moment is for a player:
+
+```
+MMI = 0.35·z(LI) + 0.20·z(Pressure) + 0.20·z(Fatigue) + 0.15·z(Execution) + 0.10·z(BioProxies)
+```
+
+## Features
+
+- **Multi-component metric**: Combines Leverage Index, Pressure, Fatigue, Execution Difficulty, and Bio-Physiological Proxies
+- **Production-ready**: Full type hints, comprehensive error handling, extensive testing
+- **Flexible data ingestion**: Live MLB StatsAPI integration + offline CSV/Parquet support
+- **Command-line interface**: Easy-to-use CLI for common workflows
+- **REST API**: FastAPI-based endpoints for integration
+- **Scalable normalization**: Z-score normalization with season-based or rolling windows
+
+## Installation
+
+```bash
+pip install .
+```
+
+For development:
+
+```bash
+pip install -e ".[dev,experiments]"
+```
+
+## Quick Start
+
+### Compute MMI for a Single Game
+
+```python
+from mmi import compute_game_mmi
+
+# Fetch game data and compute MMI
+df = compute_game_mmi("663471", season=2024, role="pitcher")
+
+print(df[['inning', 'pitcher_name', 'batter_name', 'mmi']].head())
+```
+
+### Summarize Player Statistics
+
+```python
+from mmi import summarize_mmi_by_player
+import pandas as pd
+
+# Load season data
+season_df = pd.read_parquet("2024_season_mmi.parquet")
+
+# Summarize by pitcher
+summary = summarize_mmi_by_player(season_df, role="pitcher", min_events=100)
+
+print(summary.head(10))
+```
+
+### Command-Line Usage
+
+```bash
+# Fetch games for a date
+mmi fetch-games --date 2024-06-01 --team STL
+
+# Compute MMI for a game
+mmi compute-game --game-id 663471 --out cardinals_game.parquet --role pitcher
+
+# Summarize a season
+mmi summarize-season --year 2024 --input season_data.parquet --out pitcher_summary.csv --role pitcher
+```
+
+### REST API
+
+Start the API server:
+
+```bash
+uvicorn mmi.api:app --reload
+```
+
+Query endpoints:
+
+```bash
+# Get game MMI
+curl http://localhost:8000/games/663471/mmi?role=pitcher
+
+# Search high-MMI moments
+curl "http://localhost:8000/search/high-mmi?threshold=2.5&game_id=663471"
+
+# Health check
+curl http://localhost:8000/health
+```
+
+## MMI Components
+
+### 1. Leverage Index (LI) - 35% weight
+
+Win probability sensitivity based on:
+- Inning and score differential
+- Base-out state
+- Home/away context
+
+### 2. Pressure Score - 20% weight
+
+Contextual and environmental pressure from:
+- Game closeness (tied games = highest pressure)
+- Late innings (7th+ more pressure)
+- Postseason/elimination games
+- Crowd size and home/away
+- Mound visits and long pauses
+
+### 3. Fatigue Score - 20% weight
+
+Physical and mental fatigue from:
+- **Pitchers**: Pitch count, days rest, recent workload, role (starter/reliever/closer)
+- **Batters**: Plate appearances, games played, innings in current game
+
+### 4. Execution Windows Score - 15% weight
+
+Task difficulty based on:
+- **Pitchers**: Batter quality, handedness matchup, runners in scoring position
+- **Batters**: Pitcher quality, pitch velocity/type, count leverage
+
+### 5. Bio Proxies Score - 10% weight
+
+Physiological stress indicators:
+- Tempo deviations from player's average
+- Recent high-MMI exposure
+- Late-game accumulated stress
+- High pitch count physiological wear
+
+*Designed to be enhanced with real biometric data (HRV, sleep, cortisol) in future versions.*
+
+## Data Pipeline
+
+### Ingestion
+
+```python
+from mmi.data_ingest import fetch_game_data, parse_pitch_events
+
+game_data = fetch_game_data("663471")
+pitches = parse_pitch_events(game_data)
+```
+
+### Normalization
+
+```python
+from mmi.scaling import fit_normalization_from_dataframe, Scaler
+import pandas as pd
+
+# Fit normalization on sample data
+df = pd.read_parquet("sample_pitches.parquet")
+scaler = fit_normalization_from_dataframe(df, season=2024, save=True)
+
+# Load saved normalization
+scaler = Scaler.load(season=2024)
+```
+
+### Computation
+
+```python
+from mmi.mmi_core import compute_pitch_mmi_with_components
+
+components = compute_pitch_mmi_with_components(
+    pitch=pitch_event,
+    game_context=game_ctx,
+    scaler=scaler,
+    role="pitcher"
+)
+
+print(f"MMI: {components.mmi:.2f}")
+print(f"Components: LI={components.li_z:.2f}, Pressure={components.pressure_z:.2f}")
+```
+
+## Validation & Experiments
+
+The package includes validation experiments to test whether MMI predicts:
+
+1. **Win Probability Added (WPA)** magnitude better than LI alone
+2. **Negative outcomes** (strikeouts for batters, hard contact for pitchers)
+3. **Postseason vs regular season** differences
+
+Run experiments:
+
+```bash
+python experiments/validation.py --season 2024 --sample-size 5000
+```
+
+Generate visualizations:
+
+```bash
+python experiments/visualizations.py --input season_mmi.parquet --output plots/
+```
+
+## Testing
+
+Run full test suite:
+
+```bash
+pytest
+```
+
+With coverage:
+
+```bash
+pytest --cov=mmi --cov-report=html
+```
+
+## Configuration
+
+Customize MMI weights and parameters:
+
+```python
+from mmi.config import get_config, set_config, MMIConfig
+
+config = get_config()
+
+# Adjust component weights
+config.weight_leverage = 0.40
+config.weight_pressure = 0.25
+# ... other adjustments
+
+config.validate_weights()  # Ensure weights sum to 1.0
+set_config(config)
+```
+
+## Performance Considerations
+
+- **Game-level computation**: ~2-5 seconds per game
+- **Season-level computation**: Run as batch job (100+ games = hours)
+- **Normalization fitting**: Requires 10,000+ pitch sample (configurable)
+- **API latency**: ~1-2s for game queries (includes MLB API fetch)
+
+## Project Structure
+
+```
+mmi-package/
+├── mmi/
+│   ├── __init__.py           # Package exports
+│   ├── models.py             # Pydantic data models
+│   ├── config.py             # Configuration management
+│   ├── data_ingest.py        # MLB API & file loaders
+│   ├── win_prob.py           # Win probability & LI
+│   ├── features.py           # Component calculations
+│   ├── scaling.py            # Z-score normalization
+│   ├── mmi_core.py           # Core MMI computation
+│   ├── aggregate.py          # Game/player/season summaries
+│   ├── cli.py                # Command-line interface
+│   └── api.py                # REST API (FastAPI)
+├── tests/                    # Test suite
+├── experiments/              # Validation experiments
+├── pyproject.toml            # Package configuration
+└── README.md                 # This file
+```
+
+## License
+
+MIT License
+
+## Contributing
+
+Contributions welcome! Please submit issues and pull requests.
+
+## Citation
+
+If you use MMI in research, please cite:
+
+```
+Blaze Sports Intel (2025). Moment Mentality Index: A Multi-Component Mental Demand Metric for MLB Players.
+```
+
+## Contact
+
+- **Author**: Blaze Sports Intel
+- **Email**: ahump20@outlook.com
+- **Website**: blazesportsintel.com
+
+## Future Enhancements
+
+- [ ] Integration with real biometric data (HRV, sleep tracking, cortisol levels)
+- [ ] Machine learning models for outcome prediction using MMI
+- [ ] Historical MMI trends and player career arcs
+- [ ] Opponent-adjusted MMI metrics
+- [ ] Real-time MMI during live games via WebSocket streaming
+- [ ] Expanded to other sports (NFL, NBA, NHL)
