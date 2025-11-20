@@ -7,6 +7,7 @@
 export * from './adapters/mlb';
 export * from './adapters/nfl';
 export * from './adapters/nba';
+export * from './adapters/nba-espn';
 export * from './adapters/ncaaFootball';
 export * from './adapters/collegeBaseball';
 export * from './adapters/ncaa-adapter';
