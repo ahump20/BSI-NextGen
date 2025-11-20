@@ -1,0 +1,29 @@
+{
+  "name": "bsi-data-ingestion",
+  "version": "1.0.0",
+  "description": "Blaze Sports Intel - Data Ingestion Worker for D1",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "db:create": "wrangler d1 create bsi-sports-data",
+    "db:init": "wrangler d1 execute bsi-sports-data --file=../../schema/sports-data.sql",
+    "db:query": "wrangler d1 execute bsi-sports-data --command",
+    "db:list": "wrangler d1 list",
+    "trigger:manual": "curl https://bsi-data-ingestion.WORKER_SUBDOMAIN.workers.dev/ingest?sport=all"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "d1",
+    "sports",
+    "data-ingestion"
+  ],
+  "author": "Blaze Sports Intel",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20231218.0",
+    "wrangler": "^3.78.0"
+  }
+}
