@@ -18,6 +18,9 @@ export * from './orchestrator/league-orchestrator';
 // Services
 export * from './services/sportsDataService';
 
+// Caching layer
+export * from './cache';
+
 // Auth
 export * from './auth/jwt';
 export * from './auth/auth0';
