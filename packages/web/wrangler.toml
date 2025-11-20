@@ -1,0 +1,28 @@
+# Cloudflare Pages Configuration for BSI-NextGen Web
+# This file configures Cloudflare Workers features for the Next.js application
+
+name = "bsi-nextgen-web"
+compatibility_date = "2025-01-01"
+
+# Pages-specific configuration
+pages_build_output_dir = ".next"
+
+# Analytics Engine binding for monitoring and performance tracking
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "bsi_analytics"
+
+# Environment variables (configured in Cloudflare Dashboard)
+# SPORTSDATAIO_API_KEY - SportsDataIO API key
+# NEXT_PUBLIC_APP_URL - Application URL
+
+# KV namespaces (for caching if needed)
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
+
+# D1 databases (for historical data if needed)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "bsi-nextgen"
+# database_id = "your-d1-database-id"
