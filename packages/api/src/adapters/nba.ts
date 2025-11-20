@@ -76,8 +76,12 @@ export class NBAAdapter {
    */
   async getStandings(season?: string): Promise<ApiResponse<Standing[]>> {
     return retryWithBackoff(async () => {
-      const activeSeason = season ?? this.getCurrentSeason();
-      const response = await fetch(`${this.baseUrl}/scores/json/Standings/${activeSeason}`, {
+      // Use "current" endpoint for latest data, or specific season if provided
+      const endpoint = season
+        ? `${this.baseUrl}/scores/json/Standings/${season}`
+        : `${this.baseUrl}/scores/json/Standings/${this.getCurrentSeason()}`;
+
+      const response = await fetch(endpoint, {
         headers: {
           'Ocp-Apim-Subscription-Key': this.apiKey,
         },
@@ -88,6 +92,9 @@ export class NBAAdapter {
       }
 
       const data = await response.json() as any;
+
+      // Log season being returned vs requested for debugging
+      console.log(`[NBA Adapter] Requested season: ${this.getCurrentSeason()}, Response count: ${data.length}`);
 
       const standings: Standing[] = data.map((team: any) => ({
         team: {
