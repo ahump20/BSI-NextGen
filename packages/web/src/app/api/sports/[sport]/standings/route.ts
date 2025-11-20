@@ -3,7 +3,8 @@ import type { ApiResponse, Standing } from '@bsi/shared';
 import { getSportsDataService, resolveSport } from '../utils';
 
 export async function GET(request: NextRequest, { params }: { params: { sport: string } }) {
-  const sport = resolveSport(params.sport);
+  const { sport: sportParam } = await params;
+  const sport = resolveSport(sportParam);
 
   if (!sport) {
     return NextResponse.json(
