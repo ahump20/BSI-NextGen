@@ -3,6 +3,7 @@
 
 name = "bsi-nextgen-web"
 compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
 
 # Pages-specific configuration
 pages_build_output_dir = ".next"

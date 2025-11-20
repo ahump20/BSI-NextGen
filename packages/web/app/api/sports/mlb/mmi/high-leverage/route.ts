@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { HighMMISearchResponse, isMMIError } from '@bsi/shared';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 const MMI_SERVICE_URL = process.env.MMI_SERVICE_URL || 'http://localhost:8001';
 
 /**

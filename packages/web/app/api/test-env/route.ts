@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 export async function GET() {
   return NextResponse.json({
     hasKey: !!process.env.SPORTSDATAIO_API_KEY,

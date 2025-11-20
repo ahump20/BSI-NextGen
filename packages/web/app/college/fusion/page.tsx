@@ -1,6 +1,9 @@
 import { Metadata } from 'next';
 import './fusion.css';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 export const metadata: Metadata = {
   title: 'NCAA Fusion Dashboard | Blaze Sports Intel',
   description: 'Team intelligence board merging season analytics with live scoreboard state'

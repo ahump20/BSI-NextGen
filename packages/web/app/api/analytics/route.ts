@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Configure for Cloudflare Edge Runtime
+export const runtime = 'edge';
+
 /**
  * Analytics API Endpoint
  * Receives analytics events from the frontend and writes to Cloudflare Analytics Engine
