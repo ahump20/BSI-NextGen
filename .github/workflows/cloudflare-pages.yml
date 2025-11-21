@@ -1,19 +1,33 @@
-name: Deploy to Cloudflare Pages
+name: Cloudflare Pages & Workers
 
 on:
   push:
     branches:
       - main
+      - "feature/**"
+      - "release/**"
   pull_request:
     branches:
-      - main
+      - "*"
+
+concurrency:
+  group: cloudflare-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
+
+    env:
+      NODE_VERSION: '20'
+      PNPM_VERSION: 8
+      CF_PAGES_PROJECT: blazesportsintel
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
 
     steps:
       - name: Checkout repository
@@ -22,12 +36,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Get pnpm store directory
         shell: bash
@@ -45,17 +59,128 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: pnpm build
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Build all workspaces
+        run: pnpm -r build
         env:
           NODE_ENV: production
 
-      - name: Deploy to Cloudflare Pages
+      - name: Set deployment metadata
+        id: meta
+        run: |
+          TS=$(date -u +"%Y%m%d%H%M%S")
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "branch=main" >> $GITHUB_OUTPUT
+            echo "pages_host=${{ secrets.CF_PAGES_PROD_DOMAIN }}" >> $GITHUB_OUTPUT
+            echo "web_health=${{ secrets.CF_WEB_HEALTH_PROD }}" >> $GITHUB_OUTPUT
+            echo "api_health=${{ secrets.CF_API_HEALTH_PROD }}" >> $GITHUB_OUTPUT
+            echo "kv_sports_cache=${{ secrets.CF_KV_SPORTS_CACHE_PROD }}" >> $GITHUB_OUTPUT
+            echo "d1_blaze=${{ secrets.CF_D1_BLAZE_DB_PROD }}" >> $GITHUB_OUTPUT
+            echo "d1_trends=${{ secrets.CF_D1_TRENDS_DB_PROD }}" >> $GITHUB_OUTPUT
+            echo "kv_trends=${{ secrets.CF_KV_TRENDS_CACHE_PROD }}" >> $GITHUB_OUTPUT
+            echo "d1_longhorns=${{ secrets.CF_D1_LONGHORNS_DB_PROD }}" >> $GITHUB_OUTPUT
+            echo "r2_media=${{ secrets.CF_R2_MEDIA_BUCKET_PROD }}" >> $GITHUB_OUTPUT
+          else
+            BRANCH_SLUG=$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-')
+            echo "environment=preview" >> $GITHUB_OUTPUT
+            echo "branch=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+            echo "pages_host=${BRANCH_SLUG}.${{ secrets.CF_PAGES_PREVIEW_BASE_DOMAIN }}" >> $GITHUB_OUTPUT
+            echo "web_health=${{ secrets.CF_WEB_HEALTH_PREVIEW }}" >> $GITHUB_OUTPUT
+            echo "api_health=${{ secrets.CF_API_HEALTH_PREVIEW }}" >> $GITHUB_OUTPUT
+            echo "kv_sports_cache=${{ secrets.CF_KV_SPORTS_CACHE_PREVIEW }}" >> $GITHUB_OUTPUT
+            echo "d1_blaze=${{ secrets.CF_D1_BLAZE_DB_PREVIEW }}" >> $GITHUB_OUTPUT
+            echo "d1_trends=${{ secrets.CF_D1_TRENDS_DB_PREVIEW }}" >> $GITHUB_OUTPUT
+            echo "kv_trends=${{ secrets.CF_KV_TRENDS_CACHE_PREVIEW }}" >> $GITHUB_OUTPUT
+            echo "d1_longhorns=${{ secrets.CF_D1_LONGHORNS_DB_PREVIEW }}" >> $GITHUB_OUTPUT
+            echo "r2_media=${{ secrets.CF_R2_MEDIA_BUCKET_PREVIEW }}" >> $GITHUB_OUTPUT
+          fi
+          echo "version=${TS}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Deploy web to Cloudflare Pages
+        id: pages
+        if: github.event_name == 'push'
         uses: cloudflare/pages-action@v1
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: a12cb329d84130460eed99b816e4d0d3
-          projectName: blazesportsintel
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ env.CF_PAGES_PROJECT }}
           directory: packages/web/.next
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          branch: ${{ steps.meta.outputs.branch }}
+          wranglerVersion: '3'
+
+      - name: Install Wrangler
+        if: github.event_name == 'push'
+        run: pnpm dlx wrangler@3 --version
+
+      - name: Deploy Cloudflare Workers
+        if: github.event_name == 'push'
+        env:
+          DEPLOY_ENV: ${{ steps.meta.outputs.environment }}
+          DEPLOY_VERSION: ${{ steps.meta.outputs.version }}
+          KV_SPORTS_CACHE: ${{ steps.meta.outputs.kv_sports_cache }}
+          KV_TRENDS: ${{ steps.meta.outputs.kv_trends }}
+          D1_BLAZE: ${{ steps.meta.outputs.d1_blaze }}
+          D1_TRENDS: ${{ steps.meta.outputs.d1_trends }}
+          D1_LONGHORNS: ${{ steps.meta.outputs.d1_longhorns }}
+          R2_MEDIA: ${{ steps.meta.outputs.r2_media }}
+        run: |
+          set -euo pipefail
+          deploy_worker() {
+            local worker_path="$1"; shift
+            local cmd="pnpm dlx wrangler@3 deploy --env ${DEPLOY_ENV} --var DEPLOY_VERSION=${DEPLOY_VERSION} $@"
+            echo "Deploying ${worker_path} with command: ${cmd}"
+            (cd "${worker_path}" && eval "${cmd}")
+          }
+
+          deploy_worker "cloudflare-workers/blaze-content" \
+            ${KV_SPORTS_CACHE:+--kv SPORTS_CACHE=${KV_SPORTS_CACHE}} \
+            ${D1_BLAZE:+--d1 BLAZE_DB=${D1_BLAZE}} \
+            ${R2_MEDIA:+--r2-bucket MEDIA_BUCKET=${R2_MEDIA}}
+
+          deploy_worker "cloudflare-workers/blaze-ingestion" \
+            ${KV_SPORTS_CACHE:+--kv SPORTS_CACHE=${KV_SPORTS_CACHE}} \
+            ${D1_BLAZE:+--d1 BLAZE_DB=${D1_BLAZE}} \
+            ${R2_MEDIA:+--r2-bucket MEDIA_BUCKET=${R2_MEDIA}}
+
+          deploy_worker "cloudflare-workers/blaze-trends" \
+            ${KV_TRENDS:+--kv BLAZE_TRENDS_CACHE=${KV_TRENDS}} \
+            ${D1_TRENDS:+--d1 DB=${D1_TRENDS}} \
+            ${R2_MEDIA:+--r2-bucket MEDIA_BUCKET=${R2_MEDIA}}
+
+          deploy_worker "cloudflare-workers/longhorns-baseball" \
+            ${D1_LONGHORNS:+--d1 DB=${D1_LONGHORNS}}
+
+      - name: Purge Cloudflare cache
+        if: github.event_name == 'push'
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
+
+      - name: Smoke-check deployed endpoints
+        if: github.event_name == 'push'
+        env:
+          WEB_HEALTH: ${{ steps.meta.outputs.web_health }}
+          API_HEALTH: ${{ steps.meta.outputs.api_health }}
+          FALLBACK_WEB: "https://${{ steps.meta.outputs.pages_host }}"
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error "${WEB_HEALTH:-$FALLBACK_WEB}" --max-time 20 > /dev/null
+          curl --fail --silent --show-error "${API_HEALTH:-$FALLBACK_WEB/api/health}" --max-time 20 > /dev/null
+
+      - name: Deployment summary
+        if: github.event_name == 'push'
+        run: |
+          echo "Environment: ${{ steps.meta.outputs.environment }}"
+          echo "Version: ${{ steps.meta.outputs.version }}"
+          echo "Pages host: ${{ steps.meta.outputs.pages_host }}"
+          echo "Branch: ${{ steps.meta.outputs.branch }}"
