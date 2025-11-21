@@ -300,6 +300,17 @@ export function PitchTunnelSimulator() {
       tunnelMidpoint,
     ]);
 
+    // Clean up old tunnel shell mesh before creating a new one
+    if (tunnelShellRef.current) {
+      group.remove(tunnelShellRef.current);
+      tunnelShellRef.current.geometry.dispose();
+      if (Array.isArray(tunnelShellRef.current.material)) {
+        tunnelShellRef.current.material.forEach((m) => m.dispose());
+      } else {
+        tunnelShellRef.current.material.dispose();
+      }
+    }
+
     tunnelShellRef.current = new THREE.Mesh(
       new THREE.TubeGeometry(sharedCurve, 40, 0.28, 10, false),
       new THREE.MeshStandardMaterial({ color: '#22c55e', transparent: true, opacity: 0.28, roughness: 0.3 }),
