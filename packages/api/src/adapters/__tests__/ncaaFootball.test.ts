@@ -4,7 +4,6 @@
  */
 
 import { NCAAFootballAdapter } from '../ncaaFootball';
-import * as shared from '@bsi/shared';
 
 // Mock the shared utilities
 jest.mock('@bsi/shared', () => ({
