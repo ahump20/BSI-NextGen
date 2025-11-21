@@ -151,13 +151,9 @@ class PitchEvent(BaseModel):
 
     @property
     def score_differential(self) -> int:
-        """Score differential from batting team's perspective."""
-        if self.top_of_inning:
-            # Away team batting
-            return self.away_score - self.home_score
-        else:
-            # Home team batting
-            return self.home_score - self.away_score
+        """Score differential from home team's perspective (positive = home winning)."""
+        # Always return home_score - away_score to match schema documentation
+        return self.home_score - self.away_score
 
     @property
     def inning_weight(self) -> float:
