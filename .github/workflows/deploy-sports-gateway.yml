@@ -1,0 +1,81 @@
+name: Deploy Sports Gateway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cloudflare-workers/blaze-sports-gateway/**'
+      - 'packages/web/**'
+      - '.github/workflows/deploy-sports-gateway.yml'
+
+jobs:
+  publish-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install worker deps
+        run: |
+          cd cloudflare-workers/blaze-sports-gateway
+          pnpm install
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare-workers/blaze-sports-gateway
+          command: publish
+        env:
+          UPSTREAM_BASE_URL: https://www.blazesportsintel.com
+          CACHE_BYPASS_TOKEN: ${{ secrets.CACHE_BYPASS_TOKEN }}
+          INVALIDATION_TOKEN: ${{ secrets.INVALIDATION_TOKEN }}
+
+  sync-static-assets:
+    needs: publish-worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install web dependencies
+        run: pnpm install --filter @bsi/web --filter @bsi/shared --recursive
+      - name: Build Next.js
+        run: pnpm --filter @bsi/web build
+        env:
+          NEXT_PUBLIC_R2_ASSET_BASE_URL: ${{ secrets.R2_CDN_BASE_URL }}
+      - name: Upload assets to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: true
+        run: |
+          sudo apt-get update && sudo apt-get install -y awscli
+          aws s3 sync packages/web/.next/static s3://${{ secrets.R2_BUCKET_NAME }}/_next/static \
+            --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --cache-control "public, max-age=31536000, immutable"
+          aws s3 sync packages/web/public s3://${{ secrets.R2_BUCKET_NAME }}/assets \
+            --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --cache-control "public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400"
+
+  apply-d1-schema:
+    needs: publish-worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply D1 schema
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 migrations apply bsi-observability --config cloudflare-workers/blaze-sports-gateway/wrangler.toml

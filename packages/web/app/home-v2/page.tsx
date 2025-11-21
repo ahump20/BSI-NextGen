@@ -17,6 +17,7 @@ import {
   PerformanceCard,
   GamifiedNavbar,
 } from '@/components/homepage';
+import { getAssetUrl } from '@/app/lib/cdn';
 
 /**
  * Blaze Sports Intel Homepage (V2)
@@ -31,6 +32,14 @@ import {
  */
 
 export default function HomePageV2() {
+  const heroImage = getAssetUrl(
+    'hero/diamond-intel.jpg',
+    'https://images.unsplash.com/photo-1587280501635-6850370e306d?q=80&w=2670&auto=format&fit=crop'
+  );
+  const podcastImage = getAssetUrl(
+    'media/podcast-tile.jpg',
+    'https://images.unsplash.com/photo-1478737270239-2f02b77ac6d5?q=80&w=200&auto=format&fit=crop'
+  );
   return (
     <main className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-orange-600 selection:text-white overflow-x-hidden relative flex flex-col">
       {/* --- ANIMATED BACKGROUND LAYER --- */}
@@ -118,7 +127,10 @@ export default function HomePageV2() {
             {/* 1. DIAMOND INTEL (Primary Feature - Takes 2x2 space) */}
             <div className="md:col-span-2 md:row-span-2 relative group rounded-3xl border border-white/10 bg-zinc-900/40 overflow-hidden hover:border-orange-500/50 transition-all duration-500 shadow-2xl">
               {/* Background Image */}
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1587280501635-6850370e306d?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center opacity-40 group-hover:opacity-60 group-hover:scale-105 transition-all duration-700 grayscale group-hover:grayscale-0 mix-blend-overlay" />
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 group-hover:scale-105 transition-all duration-700 grayscale group-hover:grayscale-0 mix-blend-overlay"
+                style={{ backgroundImage: `url('${heroImage}')` }}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
 
               <div className="absolute top-6 right-6 z-20">
@@ -210,7 +222,7 @@ export default function HomePageV2() {
               <div className="flex items-center gap-4 relative z-10">
                 <div className="w-16 h-16 rounded-2xl bg-zinc-800 relative overflow-hidden border border-white/10 shrink-0">
                   <img
-                    src="https://images.unsplash.com/photo-1478737270239-2f02b77ac6d5?q=80&w=200&auto=format&fit=crop"
+                    src={podcastImage}
                     alt="Podcast"
                     className="w-full h-full object-cover opacity-70"
                   />

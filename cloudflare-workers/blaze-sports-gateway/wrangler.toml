@@ -1,0 +1,39 @@
+name = "blaze-sports-gateway"
+main = "src/index.ts"
+compatibility_date = "2024-12-20"
+node_compat = true
+
+account_id = "YOUR_ACCOUNT_ID"
+workers_dev = true
+
+routes = [
+  { pattern = "api.blazesportsintel.com/api/sports/*", zone_name = "blazesportsintel.com" },
+  { pattern = "api.blazesportsintel.com/api/unified/*", zone_name = "blazesportsintel.com" }
+]
+
+[[kv_namespaces]]
+binding = "SPORTS_CACHE"
+id = "YOUR_KV_NAMESPACE_ID"
+preview_id = "YOUR_KV_PREVIEW_ID"
+
+[[d1_databases]]
+binding = "OBS_DB"
+database_name = "bsi-observability"
+database_id = "YOUR_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "ASSET_BUCKET"
+bucket_name = "bsi-web-assets"
+
+[vars]
+UPSTREAM_BASE_URL = "https://www.blazesportsintel.com"
+CACHE_BYPASS_TOKEN = "set-in-secrets"
+INVALIDATION_TOKEN = "set-in-secrets"
+
+[env.production]
+name = "blaze-sports-gateway-production"
+workers_dev = false
+
+[env.staging]
+name = "blaze-sports-gateway-staging"
+workers_dev = true

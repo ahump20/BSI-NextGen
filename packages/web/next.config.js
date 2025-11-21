@@ -1,3 +1,27 @@
+const r2AssetBase = process.env.NEXT_PUBLIC_R2_ASSET_BASE_URL;
+const r2Hostname = (() => {
+  try {
+    return r2AssetBase ? new URL(r2AssetBase).hostname : null;
+  } catch (_error) {
+    return null;
+  }
+})();
+
+const cdnHeaders = [
+  {
+    key: 'Cache-Control',
+    value: 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400, immutable',
+  },
+  {
+    key: 'CDN-Cache-Control',
+    value: 'public, max-age=604800, stale-while-revalidate=604800',
+  },
+  {
+    key: 'Timing-Allow-Origin',
+    value: '*',
+  },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -12,12 +36,34 @@ const nextConfig = {
       'www.mlbstatic.com',
       'a.espncdn.com',
       'loodibee.com',
+      ...(r2Hostname ? [r2Hostname] : []),
     ],
   },
+  assetPrefix: r2AssetBase || undefined,
   env: {
     SPORTSDATAIO_API_KEY: process.env.SPORTSDATAIO_API_KEY,
   },
+  async rewrites() {
+    if (!r2AssetBase) return [];
+    return [
+      {
+        source: '/assets/:path*',
+        destination: `${r2AssetBase}/:path*`,
+      },
+    ];
+  },
   async headers() {
+    const connectSrc = [
+      "'self'",
+      'https://statsapi.mlb.com',
+      'https://api.sportsdata.io',
+      'https://site.api.espn.com',
+    ];
+
+    if (r2AssetBase) {
+      connectSrc.push(r2AssetBase);
+    }
+
     return [
       {
         // HTML pages: Short CDN cache to prevent stale content
@@ -62,7 +108,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://statsapi.mlb.com https://api.sportsdata.io https://site.api.espn.com",
+              `connect-src ${connectSrc.join(' ')}`,
               "frame-ancestors 'none'",
             ].join('; '),
           },
@@ -77,10 +123,18 @@ const nextConfig = {
             // 1 year cache - safe because Next.js versions these files
             value: 'public, max-age=31536000, immutable',
           },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
         ],
+      },
+      {
+        source: '/assets/:path*',
+        headers: cdnHeaders,
       },
     ];
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
