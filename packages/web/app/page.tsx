@@ -121,6 +121,12 @@ export default function HomePage() {
             >
               See Features
             </Link>
+            <Link
+              href="/pitch-tunnel-simulator"
+              className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+            >
+              Pitch Tunnel Simulator
+            </Link>
           </div>
         </div>
       </section>
