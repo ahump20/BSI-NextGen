@@ -110,8 +110,10 @@ Sports data adapters and authentication utilities.
 - **MLBAdapter**: MLB Stats API (free, official)
 - **NFLAdapter**: SportsDataIO (requires API key)
 - **NBAAdapter**: SportsDataIO (requires API key)
-- **NCAAAdapter**: ESPN API + enhanced box scores
-- **D1BaseballAdapter**: D1Baseball rankings and standings
+- **NCAAFootballAdapter**: ESPN API for college football
+- **NCAABasketballAdapter**: ESPN API for NCAA basketball
+- **CollegeBaseballAdapter**: ESPN API + enhanced box scores
+- **YouthSportsAdapter**: Youth sports data management
 - **Auth0Client**: OAuth 2.0 authentication flow
 - **JWT utilities**: Session token creation and verification
 
@@ -125,13 +127,70 @@ Next.js web application with mobile-first UI.
 - Responsive design with Tailwind CSS
 - API routes for sports data and authentication
 
+### `@bsi/mcp-sportsdata-io` 🔥
+Model Context Protocol (MCP) server for SportsData.io API integration.
+
+- 8 specialized tools for sports data retrieval
+- Priority #1: College Baseball (fills ESPN gaps)
+- Multi-sport support: MLB, NFL, NCAA Football, NCAA Basketball
+- Real-time data with play-by-play feeds
+- Cloudflare Workers deployment
+- See [CLAUDE.md](./CLAUDE.md) for complete documentation
+
+### `mmi-baseball` ⚾
+Major Moments Index (MMI) - Python package for baseball analytics.
+
+- Advanced baseball analytics and moment scoring
+- Play-by-play analysis
+- Win probability calculations
+- High-leverage situation detection
+- API endpoints: `/api/sports/mlb/mmi/*`
+- See [MMI_INTEGRATION_COMPLETE.md](./MMI_INTEGRATION_COMPLETE.md)
+
 ## 🎯 Sports Coverage Priority
 
 1. **College Baseball** 🔥 - Complete box scores (ESPN gap filler)
-2. **MLB** - Real-time scores and standings
+2. **MLB** - Real-time scores and standings (+ MMI analytics)
 3. **NFL** - Live games and team stats
 4. **NCAA Football** - Conference standings and scores
-5. **NBA** - Live scores and standings
+5. **NCAA Basketball** - Live scores and standings
+6. **NBA** - Live scores and standings
+7. **Youth Sports** - Community sports coverage
+
+## ☁️ Cloudflare Workers
+
+BSI-NextGen uses multiple Cloudflare Workers for edge computing:
+
+### `blaze-trends` 🔥
+Real-time sports news monitoring with AI-powered trend analysis.
+
+```bash
+# Development
+pnpm trends:dev              # Start worker (http://localhost:8787)
+
+# Deployment
+pnpm trends:deploy           # Deploy to Cloudflare
+
+# Monitoring
+pnpm trends:tail             # View real-time logs
+pnpm trends:health           # Health check all endpoints
+```
+
+**Features:**
+- AI-powered trend identification (OpenAI GPT-4 Turbo)
+- Multi-sport news aggregation (Brave Search API)
+- Automated monitoring every 15 minutes (cron)
+- D1 database persistence
+- KV caching (<10ms response times)
+
+**Documentation:** [BLAZE-TRENDS-IMPLEMENTATION.md](./BLAZE-TRENDS-IMPLEMENTATION.md)
+
+### Other Workers
+- **blaze-content** - Content management worker
+- **blaze-ingestion** - Data ingestion pipeline
+- **longhorns-baseball** - Texas Longhorns baseball specific worker
+
+See [CLAUDE.md](./CLAUDE.md) for complete worker documentation and [docs/INFRASTRUCTURE.md](./docs/INFRASTRUCTURE.md) for full infrastructure mapping (72 total workers).
 
 ## 🔧 Development
 
@@ -154,8 +213,29 @@ pnpm clean
 
 ## 📚 Documentation
 
+### 🔥 For Developers & AI Assistants
+- **[CLAUDE.md](./CLAUDE.md)** - **START HERE** - Comprehensive guide (1,444 lines)
+  - Complete monorepo architecture and package details
+  - All 22 API endpoints documented
+  - MCP (Model Context Protocol) server documentation
+  - MMI (Major Moments Index) baseball analytics package
+  - Observability infrastructure and SLOs
+  - Production deployment guide with security headers
+  - Cache control strategy and monitoring
+  - AI assistant guidelines and best practices
+  - Troubleshooting and common patterns
+  - 50+ documentation files indexed by category
+
+- **[DOCUMENTATION-STATUS.md](./DOCUMENTATION-STATUS.md)** - Documentation completeness report
+  - Verification of all documented sections
+  - API endpoints summary (22 endpoints)
+  - Package documentation status
+  - Infrastructure coverage (4 Cloudflare Workers)
+  - Recent updates (P0/P1 fixes Nov 2025)
+
 ### Quick Start
-- [IMPLEMENTATION_SUMMARY.md](./docs/IMPLEMENTATION_SUMMARY.md) - **START HERE** - Overview of all implementation guides and roadmap
+- [QUICK_START.md](./QUICK_START.md) - Quick setup guide
+- [IMPLEMENTATION_SUMMARY.md](./docs/IMPLEMENTATION_SUMMARY.md) - Overview of all implementation guides and roadmap
 
 ### Infrastructure & Architecture
 - [INFRASTRUCTURE.md](./docs/INFRASTRUCTURE.md) - Complete infrastructure mapping of BlazeSportsIntel.com
@@ -169,6 +249,12 @@ pnpm clean
 - [HYPERDRIVE_SETUP.md](./docs/HYPERDRIVE_SETUP.md) - **MEDIUM PRIORITY** - Configure database connection pooling
 - [DATABASE_MONITORING.md](./docs/DATABASE_MONITORING.md) - Implement database growth monitoring and alerting
 
+### Observability & Monitoring
+- [observability/README.md](./observability/README.md) - **START HERE** - Observability overview
+- [observability/QUICK_START.md](./observability/QUICK_START.md) - 5-minute quick start
+- [observability/DEBUGGABILITY_CARD.md](./observability/DEBUGGABILITY_CARD.md) - Incident response guide
+- [MONITORING.md](./MONITORING.md) - Production monitoring setup
+
 ### Operations
 - [OPERATIONAL_RUNBOOKS.md](./docs/OPERATIONAL_RUNBOOKS.md) - Standard operating procedures
   - Worker deployment procedures
@@ -180,6 +266,12 @@ pnpm clean
 
 ### Deployment Guides
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Netlify/Vercel deployment procedures and troubleshooting
+- [CACHE-FIX-IMPLEMENTATION.md](./CACHE-FIX-IMPLEMENTATION.md) - Cache control strategy
+
+### Integration Documentation
+- [MMI_INTEGRATION_COMPLETE.md](./MMI_INTEGRATION_COMPLETE.md) - Major Moments Index integration
+- [SPORTSDATAIO_INTEGRATION.md](./SPORTSDATAIO_INTEGRATION.md) - SportsDataIO API integration
+- [BLAZE-TRENDS-IMPLEMENTATION.md](./BLAZE-TRENDS-IMPLEMENTATION.md) - Blaze Trends worker
 
 ## 🚢 Deployment
 
@@ -205,19 +297,22 @@ CI/CD pipeline automatically:
 
 ## 📊 API Endpoints
 
-### Sports Data
+### Sports Data (22 Endpoints)
 
-```
+```bash
 # College Baseball (PRIORITY - Complete box scores)
 GET /api/sports/college-baseball/games?date=2025-01-10
-GET /api/sports/college-baseball/games/[gameId]
-GET /api/sports/college-baseball/rankings?week=1
 GET /api/sports/college-baseball/standings?conference=ACC
 
-# MLB
+# MLB (3 endpoints + 3 MMI analytics endpoints)
 GET /api/sports/mlb/games?date=2025-01-10
 GET /api/sports/mlb/standings?divisionId=200
 GET /api/sports/mlb/teams
+
+# MLB MMI (Major Moments Index - Baseball Analytics)
+GET /api/sports/mlb/mmi/games/:gameId        # MMI score for specific game
+GET /api/sports/mlb/mmi/high-leverage         # High-leverage moments
+GET /api/sports/mlb/mmi/health                # MMI service health
 
 # NFL
 GET /api/sports/nfl/games?week=1&season=2025
@@ -230,13 +325,27 @@ GET /api/sports/nba/standings
 GET /api/sports/nba/teams
 
 # NCAA Football
-GET /api/sports/ncaa_football/games?week=1
-GET /api/sports/ncaa_football/standings?conference=12
+GET /api/sports/ncaa/football/games?week=1
+GET /api/sports/ncaa/football/standings?conference=12
+
+# NCAA Basketball 🏀
+GET /api/sports/ncaa/basketball/games?date=2025-01-10
+GET /api/sports/ncaa/basketball/standings
+
+# Youth Sports ⚽
+GET /api/sports/youth-sports/games
+GET /api/sports/youth-sports/teams
+
+# Command Center (Multi-Sport Dashboard)
+GET /api/sports/command-center/dashboard
+
+# System Health
+GET /api/health
 ```
 
 ### Authentication
 
-```
+```bash
 # Initiate OAuth login flow
 GET /api/auth/login?returnTo=/profile
 
