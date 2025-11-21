@@ -3,6 +3,36 @@ import type { WeeklyAlphaResponse, WeeklyAlpha, SportPerformance } from '@bsi/sh
 import { LeagueOrchestrator } from '@bsi/api';
 
 /**
+ * In-memory storage for picks
+ * NOTE: This is a temporary solution for development/testing.
+ * In production, this should be replaced with persistent storage:
+ * - Cloudflare D1 database for Workers
+ * - PostgreSQL/MySQL for traditional hosting
+ * - KV store for simple key-value needs
+ */
+interface Pick {
+  id: string;
+  sport: string;
+  result: 'win' | 'loss' | 'push';
+  units: number;
+  confidence: number;
+  timestamp: string;
+}
+
+// In-memory storage (will be cleared on server restart)
+const picksStorage = new Map<string, Pick>();
+
+/**
+ * Helper function to get stored picks
+ */
+function getStoredPicks(limit?: number): Pick[] {
+  const picks = Array.from(picksStorage.values());
+  // Sort by timestamp (most recent first)
+  picks.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return limit ? picks.slice(0, limit) : picks;
+}
+
+/**
  * GET /api/homepage/weekly-alpha
  *
  * Fetches weekly performance metrics derived from REAL game data
@@ -15,11 +45,15 @@ import { LeagueOrchestrator } from '@bsi/api';
  *
  * Query params:
  * - weeks: number (default: 1) - Number of weeks to include
+ * - includePicks: boolean (default: false) - Include stored picks in response
+ * - picksLimit: number (default: 50) - Maximum number of picks to return
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const weeks = parseInt(searchParams.get('weeks') || '1', 10);
+    const includePicks = searchParams.get('includePicks') === 'true';
+    const picksLimit = parseInt(searchParams.get('picksLimit') || '50', 10);
 
     // Initialize orchestrator to fetch real game data
     const orchestrator = new LeagueOrchestrator({
@@ -62,11 +96,18 @@ export async function GET(request: NextRequest) {
       timezone: 'America/Chicago',
     };
 
-    const response: WeeklyAlphaResponse = {
+    const response: WeeklyAlphaResponse & { picks?: Pick[]; picksCount?: number } = {
       alpha,
       cached: false,
       lastUpdated: new Date().toISOString(),
     };
+
+    // Optionally include stored picks
+    if (includePicks) {
+      const storedPicks = getStoredPicks(picksLimit);
+      response.picks = storedPicks;
+      response.picksCount = picksStorage.size;
+    }
 
     return NextResponse.json(response, {
       headers: {
@@ -93,17 +134,17 @@ export async function GET(request: NextRequest) {
  * Records a new pick result
  *
  * Body:
- * - sport: string
- * - result: 'win' | 'loss' | 'push'
- * - units: number
- * - confidence: number (1-10)
+ * - sport: string - Name of the sport (e.g., 'MLB', 'NFL', 'NBA')
+ * - result: 'win' | 'loss' | 'push' - Outcome of the pick
+ * - units: number - Units wagered/won (positive or negative)
+ * - confidence: number (1-10) - Confidence level of the pick
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { sport, result, units, confidence } = body;
 
-    // Validate input
+    // Validate required fields
     if (!sport || !result || units === undefined) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields: sport, result, units' },
@@ -111,13 +152,65 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Implement actual database storage for picks
-    // For now, return success response
+    // Validate result type
+    if (!['win', 'loss', 'push'].includes(result)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid result. Must be "win", "loss", or "push"' },
+        { status: 400 }
+      );
+    }
+
+    // Validate units is a number
+    if (typeof units !== 'number' || isNaN(units)) {
+      return NextResponse.json(
+        { success: false, error: 'Units must be a valid number' },
+        { status: 400 }
+      );
+    }
+
+    // Validate confidence if provided
+    if (confidence !== undefined) {
+      if (typeof confidence !== 'number' || confidence < 1 || confidence > 10) {
+        return NextResponse.json(
+          { success: false, error: 'Confidence must be a number between 1 and 10' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Create pick record
+    const pick: Pick = {
+      id: `pick_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      sport: sport.trim(),
+      result,
+      units,
+      confidence: confidence || 5, // Default to medium confidence
+      timestamp: new Date().toISOString(),
+    };
+
+    // Store pick in memory
+    picksStorage.set(pick.id, pick);
+
+    console.log('[Weekly Alpha API] Pick recorded:', {
+      id: pick.id,
+      sport: pick.sport,
+      result: pick.result,
+      units: pick.units,
+      totalPicks: picksStorage.size,
+    });
 
     return NextResponse.json({
       success: true,
-      message: `Pick recorded: ${sport} - ${result} (${units} units)`,
-      timestamp: new Date().toISOString(),
+      pick: {
+        id: pick.id,
+        sport: pick.sport,
+        result: pick.result,
+        units: pick.units,
+        confidence: pick.confidence,
+      },
+      message: `Pick recorded: ${sport} - ${result} (${units >= 0 ? '+' : ''}${units} units)`,
+      timestamp: pick.timestamp,
+      totalPicksStored: picksStorage.size,
     });
   } catch (error) {
     console.error('[Weekly Alpha API] POST Error:', error);
