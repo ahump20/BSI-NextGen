@@ -29,7 +29,7 @@ bsi-nextgen/
 ### Prerequisites
 
 - Node.js >= 18.0.0
-- pnpm >= 8.0.0
+- pnpm >= 9.0.0
 - SportsDataIO API key (required for NFL/NBA data)
 
 ### Installation
