@@ -168,15 +168,41 @@ pnpm trends:setup            # Run setup wizard
 - Components: `TrendCard`, `SportFilter`
 - Types: `packages/web/types/trends.ts`
 
-#### Other Cloudflare Workers
+#### Blaze Content Worker
 
-**Location:** `cloudflare-workers/`
+**Purpose:** Content management and media handling worker
 
-- **blaze-content** - Content management worker
-- **blaze-ingestion** - Data ingestion pipeline
-- **longhorns-baseball** - Texas Longhorns baseball specific worker
+**Location:** `cloudflare-workers/blaze-content/`
 
-See `docs/INFRASTRUCTURE.md` for complete worker mapping (72 total workers documented).
+**Features:**
+- Content storage and retrieval
+- Media file management
+- Content versioning
+
+#### Blaze Ingestion Worker
+
+**Purpose:** Data ingestion pipeline for sports data
+
+**Location:** `cloudflare-workers/blaze-ingestion/`
+
+**Features:**
+- Real-time data ingestion from multiple sources
+- Data transformation and normalization
+- Queue management for processing
+
+#### Longhorns Baseball Worker
+
+**Purpose:** Texas Longhorns baseball specific worker
+
+**Location:** `cloudflare-workers/longhorns-baseball/`
+
+**Features:**
+- Texas Longhorns-specific data processing
+- Custom analytics and reporting
+- Team-specific integrations
+
+**Complete Infrastructure:**
+See `docs/INFRASTRUCTURE.md` for complete worker mapping (72 total workers documented, 18 D1 databases, 20+ KV stores).
 
 ---
 
@@ -276,34 +302,103 @@ packages/web/
 
 ### Package: `@bsi/mcp-sportsdata-io`
 
-**Purpose:** Model Context Protocol (MCP) server for SportsData.io API integration.
+**Purpose:** Model Context Protocol (MCP) server for SportsData.io API integration with the BSI-NextGen platform.
 
 **Key Features:**
-- 8 specialized tools for sports data retrieval
-- Priority #1: College Baseball (fills ESPN gaps)
-- Multi-sport support: MLB, NFL, NCAA Football, NCAA Basketball
-- Real-time data with play-by-play feeds
-- Cloudflare Workers deployment
+- **8 Specialized Tools** for sports data retrieval
+- **Priority #1: College Baseball** - Complete coverage including box scores, rosters, standings (fills ESPN gaps)
+- **Multi-Sport Support** - MLB, NFL, NCAA Football, NCAA Basketball
+- **Real-Time Data** - Live game updates and play-by-play feeds
+- **Historical Statistics** - Career stats, season trends, multi-year data
+- **Mobile-Optimized** - Designed for Blaze Sports Intel mobile experience
+- **Cloudflare Workers Deployment** - Edge computing for low latency
 
 **Tools:**
-1. `fetch_college_baseball_data` - Priority #1 college baseball coverage
-2. `fetch_mlb_data` - MLB games, scores, stats
-3. `fetch_nfl_data` - NFL games, scores, stats, injuries
-4. `fetch_college_football_data` - College football with FCS focus
-5. `fetch_ncaa_basketball_data` - NCAA basketball and March Madness
-6. `stream_live_game_data` - Real-time play-by-play updates
-7. `fetch_historical_stats` - Historical season and career stats
-8. `fetch_odds_and_projections` - Betting lines and projections
 
-**Usage:**
+1. **`fetch_college_baseball_data`** - Priority #1 college baseball coverage
+   - Examples: "Get today's D1 baseball scores", "Fetch Texas Longhorns roster", "Show SEC standings"
+   - Complete box scores, rosters, standings, player stats
+   - Addresses ESPN's college baseball coverage gaps
+
+2. **`fetch_mlb_data`** - MLB games, scores, player stats, team info, standings
+   - Examples: "Get Cardinals game score", "Fetch current MLB standings", "Player stats for [name]"
+
+3. **`fetch_nfl_data`** - NFL games, scores, player stats, team info, standings, injury reports
+   - Examples: "Get Titans game score", "Current NFL standings", "Injury report for [team]"
+
+4. **`fetch_college_football_data`** - College football games, scores, rankings
+   - Priority on FCS and Group-of-Five programs
+   - Examples: "Get FCS playoff scores", "Texas Longhorns schedule", "Top 25 rankings"
+
+5. **`fetch_ncaa_basketball_data`** - NCAA basketball games, scores, tournament data, bracketology
+   - Examples: "Get today's games", "March Madness bracket", "Team stats for [school]"
+
+6. **`stream_live_game_data`** - Real-time play-by-play updates for live games
+   - Optimized for mobile push notifications
+   - Examples: "Stream Cardinals game updates", "Live play-by-play for Texas vs Oklahoma"
+
+7. **`fetch_historical_stats`** - Historical season stats, career stats, multi-year trends
+   - Examples: "College baseball stats 2020-2024", "Cardinals franchise history", "Player career stats"
+
+8. **`fetch_odds_and_projections`** - Betting lines, odds, statistical projections (for analysis only)
+   - Examples: "Get spread for [game]", "Win probability model inputs", "Over/under trends"
+
+**Installation & Development:**
 ```bash
-# Local development
+# Install dependencies
 cd packages/mcp-sportsdata-io
+pnpm install
+
+# Local development
 pnpm dev
 
+# Build TypeScript
+pnpm build
+```
+
+**Environment Variables:**
+```bash
+SPORTSDATA_CFB_KEY=your_cfb_key_here
+SPORTSDATA_MLB_KEY=your_mlb_key_here
+SPORTSDATA_NFL_KEY=your_nfl_key_here
+SPORTSDATA_NCAABB_KEY=your_ncaabb_key_here
+```
+
+**Deployment:**
+```bash
 # Deploy to Cloudflare Workers
 pnpm deploy
+
+# Health check
+curl https://sportsdata-io-mcp.your-subdomain.workers.dev/health
 ```
+
+**MCP Client Configuration:**
+```json
+{
+  "mcpServers": {
+    "sportsdata-io": {
+      "command": "node",
+      "args": ["path/to/BSI-NextGen/packages/mcp-sportsdata-io/dist/sportsdata-io-mcp-server.js"],
+      "env": {
+        "SPORTSDATA_CFB_KEY": "your_cfb_key",
+        "SPORTSDATA_MLB_KEY": "your_mlb_key",
+        "SPORTSDATA_NFL_KEY": "your_nfl_key",
+        "SPORTSDATA_NCAABB_KEY": "your_ncaabb_key"
+      }
+    }
+  }
+}
+```
+
+**API Rate Limits:**
+- **Trial:** 1 call/second, 1000 calls/month
+- **Basic:** 2 calls/second, 10,000 calls/month
+- **Pro:** 5 calls/second, 100,000 calls/month
+
+The MCP server implements intelligent caching and batching to minimize API calls.
+
+**Timezone:** All timestamps use **America/Chicago** timezone to match the BSI-NextGen platform standard.
 
 **Location:** `packages/mcp-sportsdata-io/`
 
@@ -311,28 +406,89 @@ pnpm deploy
 
 ### Package: `mmi-baseball`
 
-**Purpose:** Major Moments Index (MMI) - Python package for baseball analytics.
+**Purpose:** Major Moments Index (MMI) - Python package for baseball analytics that quantifies the mental intensity of each pitch.
+
+**What is MMI?**
+
+The **Moment Mentality Index (MMI)** is a per-pitch metric that combines:
+- **Leverage Index (35%)** - Win probability swing potential
+- **Pressure Score (20%)** - Game context pressure (closeness, crowd, stakes)
+- **Fatigue Score (20%)** - Cumulative physical/mental wear
+- **Execution Difficulty (15%)** - Technical difficulty of the task
+- **Bio-Proxies (10%)** - Behavioral/physiological signals
+
+**Formula:**
+```
+MMI = 0.35·z(LI) + 0.20·z(Pressure) + 0.20·z(Fatigue) + 0.15·z(Execution) + 0.10·z(Bio)
+```
 
 **Key Features:**
-- Advanced baseball analytics and moment scoring
-- Play-by-play analysis
-- Win probability calculations
-- High-leverage situation detection
-- Python-based analytics engine
+- **Advanced Baseball Analytics** - Per-pitch moment scoring
+- **Play-by-Play Analysis** - Complete game breakdown
+- **Win Probability Calculations** - Leverage index computation
+- **High-Leverage Situation Detection** - Identify clutch moments
+- **Player Performance Tracking** - Aggregate MMI by player
+- **Python-Based Analytics Engine** - Production-ready package
 
-**Integration:** Available via `/api/sports/mlb/mmi/*` endpoints
+**Installation:**
+```bash
+cd packages/mmi-baseball
+pip install -e .
+pip install -r requirements.txt
+```
+
+**Quick Start:**
+```python
+from mmi.data_ingest import fetch_game_pitches
+from mmi.scaling import create_default_scalers
+from mmi.aggregate import compute_game_mmi
+
+# Fetch game data
+game_id = "662253"
+pitches = fetch_game_pitches(game_id)
+
+# Create scalers (normalization parameters)
+scaler_set = create_default_scalers()
+league_stats = scaler_set.to_league_stats()
+
+# Compute MMI for all pitches (pitcher perspective)
+mmi_results = compute_game_mmi(game_id, pitches, league_stats, role="pitcher")
+
+# Print top 5 highest MMI pitches
+top_moments = sorted(mmi_results, key=lambda r: r.mmi, reverse=True)[:5]
+for result in top_moments:
+    print(f"Pitch {result.pitch_id}: MMI = {result.mmi:.2f}")
+```
+
+**REST API:**
+```bash
+# Start the API server
+uvicorn mmi.api:app --reload
+
+# Query endpoints
+curl http://localhost:8000/games/662253/mmi?role=pitcher
+curl http://localhost:8000/games/date/2024-06-15
+curl http://localhost:8000/health
+```
+
+**Integration:** Available via `/api/sports/mlb/mmi/*` endpoints in Next.js app
 
 **MMI API Endpoints:**
 - `GET /api/sports/mlb/mmi/games/:gameId` - Get MMI score for a game
 - `GET /api/sports/mlb/mmi/high-leverage` - High-leverage moments
 - `GET /api/sports/mlb/mmi/health` - MMI service health check
 
+**Use Cases:**
+1. **Identify Clutch Performers** - Players with highest average MMI in high-leverage situations
+2. **Pitcher Workload Management** - Track cumulative high-MMI exposure
+3. **Game Narrative Analysis** - Find the most intense moment of a game
+
 **Location:** `packages/mmi-baseball/`
 
 **Documentation:**
-- `packages/mmi-baseball/README.md`
-- `MMI_INTEGRATION_COMPLETE.md`
-- `MMI_DEPLOYMENT_SUMMARY.md`
+- `packages/mmi-baseball/README.md` - Complete package documentation
+- `MMI_INTEGRATION_COMPLETE.md` - Integration guide
+- `MMI_DEPLOYMENT_SUMMARY.md` - Deployment status
 
 ---
 
@@ -455,49 +611,80 @@ export async function POST(request: NextRequest) {
 
 ### Available API Endpoints
 
+**MLB (Major League Baseball)**
 ```
-# MLB
 GET /api/sports/mlb/games?date=2025-01-11
 GET /api/sports/mlb/standings?divisionId=200
 GET /api/sports/mlb/teams
+```
 
-# MLB MMI (Major Moments Index)
+**MLB MMI (Major Moments Index)**
+```
 GET /api/sports/mlb/mmi/games/:gameId
 GET /api/sports/mlb/mmi/high-leverage
 GET /api/sports/mlb/mmi/health
+```
 
-# NFL
+**NFL (National Football League)**
+```
 GET /api/sports/nfl/games?week=1&season=2025
 GET /api/sports/nfl/standings?season=2025
 GET /api/sports/nfl/teams
+```
 
-# NBA
+**NBA (National Basketball Association)**
+```
 GET /api/sports/nba/games?date=2025-01-11
 GET /api/sports/nba/standings
 GET /api/sports/nba/teams
+```
 
-# NCAA Football
+**NCAA Football**
+```
 GET /api/sports/ncaa/football/games?week=1
 GET /api/sports/ncaa/football/standings?conference=12
+```
 
-# NCAA Basketball
+**NCAA Basketball**
+```
 GET /api/sports/ncaa/basketball/games?date=2025-01-11
 GET /api/sports/ncaa/basketball/standings
+```
 
-# College Baseball
+**College Baseball** (Priority #1 - ESPN Gap Filler)
+```
 GET /api/sports/college-baseball/games?date=2025-01-11
+GET /api/sports/college-baseball/games/:gameId
 GET /api/sports/college-baseball/standings?conference=ACC
+GET /api/sports/college-baseball/rankings
+```
 
-# Youth Sports
-GET /api/sports/youth-sports/games
-GET /api/sports/youth-sports/teams
+**Youth Sports**
+```
+GET /api/sports/youth-sports/perfect-game/tournaments
+GET /api/sports/youth-sports/texas-hs-football/scores
+GET /api/sports/youth-sports/texas-hs-football/standings
+```
 
-# Command Center (Multi-sport dashboard)
+**Command Center (Multi-sport dashboard)**
+```
 GET /api/sports/command-center/dashboard
+```
 
-# System Health
+**System Health**
+```
 GET /api/health
 ```
+
+**NCAA Generic Endpoints**
+```
+GET /api/sports/ncaa/:sport/:teamId
+```
+
+**All endpoints return JSON with:**
+- Data payload
+- `meta` object with `dataSource`, `lastUpdated`, `timezone`
+- `requestId` and `traceId` for observability (when available)
 
 ---
 
@@ -554,14 +741,28 @@ NCAA_API_KEY=your_key_here
 - ✅ PR previews enabled
 - ✅ Automatic cache purge via GitHub Actions
 
-**Security Headers (Deployed):**
-- ✅ X-Frame-Options: DENY
-- ✅ X-Content-Type-Options: nosniff
-- ✅ X-XSS-Protection: 1; mode=block
-- ✅ Strict-Transport-Security: max-age=31536000
-- ✅ Content-Security-Policy: Comprehensive CSP
-- ✅ Referrer-Policy: origin-when-cross-origin
-- ✅ Permissions-Policy: Restricted device permissions
+**Security Headers (Deployed - 7/7):**
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| X-Frame-Options | DENY | Prevent clickjacking attacks |
+| X-Content-Type-Options | nosniff | Prevent MIME type sniffing |
+| X-XSS-Protection | 1; mode=block | XSS attack protection |
+| Strict-Transport-Security | max-age=31536000 | Enforce HTTPS for 1 year |
+| Referrer-Policy | origin-when-cross-origin | Control referrer information |
+| Permissions-Policy | camera=(), microphone=(), geolocation=() | Block device permissions |
+| Content-Security-Policy | Comprehensive CSP | Whitelist trusted sources |
+
+**CSP Directives:**
+- `default-src 'self'` - Only allow same-origin by default
+- `script-src 'self' 'unsafe-inline' 'unsafe-eval'` - Scripts (Next.js compatibility)
+- `connect-src` - Whitelisted: statsapi.mlb.com, api.sportsdata.io, site.api.espn.com
+
+**Security Audit Status:**
+- ✅ No known vulnerabilities found (`pnpm audit --prod`)
+- ✅ Debug endpoints removed
+- ✅ Console logging cleaned up in production routes
+- ✅ API keys never exposed in logs or responses
 
 **Configuration Files:**
 - `netlify.toml` - Netlify build configuration
@@ -588,22 +789,36 @@ curl -X POST "https://api.cloudflare.com/client/v4/zones/{zone_id}/purge_cache" 
 
 ### Deployment Checklist
 
-Before deploying:
+**Before Deploying:**
 - [ ] All tests passing (`pnpm test`)
 - [ ] Build succeeds locally (`pnpm build`)
-- [ ] Environment variables configured
-- [ ] Cache headers reviewed
-- [ ] Security headers verified
-- [ ] Health check endpoint responding
-- [ ] Monitoring scripts tested
+- [ ] Environment variables configured (Netlify dashboard)
+- [ ] Cache headers reviewed (60s for HTML, 1 year for static assets)
+- [ ] Security headers verified (7/7 deployed)
+- [ ] Health check endpoint responding (`/api/health`)
+- [ ] Monitoring scripts tested (`./scripts/monitor-production.sh`)
+- [ ] Observability helpers integrated (if adding new endpoints)
+- [ ] No console.log statements in production routes
+- [ ] No debug endpoints exposed
 
-After deployment:
-- [ ] Verify homepage loads
-- [ ] Test API endpoints
-- [ ] Check `/api/health` endpoint
-- [ ] Monitor error rates for 15 minutes
-- [ ] Verify cache headers with `curl -I`
-- [ ] Check Cloudflare Analytics dashboard
+**After Deployment:**
+- [ ] Verify homepage loads (https://blazesportsintelligence.netlify.app)
+- [ ] Test API endpoints (MLB, NFL, NBA, College Baseball)
+- [ ] Check `/api/health` endpoint (should return 200)
+- [ ] Monitor error rates for 15 minutes (Cloudflare Dashboard)
+- [ ] Verify cache headers with `curl -I https://blazesportsintel.com/`
+- [ ] Check Cloudflare Analytics dashboard for anomalies
+- [ ] Verify automated cache purge ran (GitHub Actions)
+- [ ] Test cache staleness script (`./scripts/check-cache-staleness.sh`)
+- [ ] Confirm security headers present (`curl -I` shows all 7 headers)
+- [ ] Check observability logs for errors (Cloudflare Dashboard → Logs)
+
+**Rollback Procedure:**
+1. Go to Netlify Dashboard → Deploys
+2. Find previous successful deployment
+3. Click "Publish deploy" to rollback
+4. Verify site is working
+5. Document incident in `DEPLOYMENT_LOG.md`
 
 ### Alternative: Vercel Deployment
 
@@ -690,32 +905,112 @@ npx playwright test --debug
 
 **Location:** `observability/`
 
-BSI-NextGen has comprehensive production observability infrastructure:
+BSI-NextGen has comprehensive production observability infrastructure for monitoring, logging, tracing, and alerting.
 
 **Key Components:**
+
 1. **Structured Logging** - JSON-formatted logs with correlation IDs
+   - Request/response logging with `requestId` and `traceId`
+   - Error logging with stack traces and context
+   - Performance timing for all operations
+
 2. **Metrics Recording** - Cloudflare Analytics Engine integration
+   - Request counts, durations, error rates
+   - External API latency and success rates
+   - Circuit breaker state transitions
+
 3. **Distributed Tracing** - OpenTelemetry-compatible tracing
+   - Request tracing across services
+   - Span-based performance analysis
+   - Trace context propagation
+
 4. **Circuit Breakers** - Automatic failure protection for external APIs
+   - Fail-fast pattern for degraded services
+   - Automatic recovery with configurable thresholds
+   - State tracking: CLOSED → OPEN → HALF_OPEN
+
 5. **Health Checks** - Production health monitoring endpoints
+   - `/api/health` - Main health check endpoint
+   - External API connectivity checks
+   - Environment validation
 
 **Observability Helpers:**
-- `observability/helpers/telemetry.ts` - Logging, metrics, tracing
-- `observability/helpers/middleware.ts` - Request instrumentation
-- `observability/helpers/circuit-breaker.ts` - Failure protection
+
+- **`observability/helpers/telemetry.ts`** - Core observability utilities
+  - `StructuredLogger`: JSON-formatted logs with correlation IDs
+  - `MetricsRecorder`: Write to Cloudflare Analytics Engine
+  - `Tracer`: Distributed tracing with OpenTelemetry
+  - `RequestContext`: Unified observability per request
+
+- **`observability/helpers/middleware.ts`** - Request wrapper
+  - Automatic request/response instrumentation
+  - Trace context injection
+  - Error handling with logging
+  - Performance timing
+
+- **`observability/helpers/circuit-breaker.ts`** - Failure protection
+  - Fail-fast pattern for external APIs
+  - Automatic recovery with configurable thresholds
+  - State tracking: CLOSED → OPEN → HALF_OPEN
+  - Metrics for state transitions
 
 **Service Level Objectives (SLOs):**
-- Page Load Performance: P95 <2s, Error rate <0.1%
-- API Response Time: P99 <200ms, 5xx rate <0.5%
-- Data Freshness: Live games <30s, Standings <5min
-- External API Reliability: 99.5% success rate
+
+Defined in `observability/slos/`:
+
+| SLO | File | Key Targets |
+|-----|------|-------------|
+| **Page Load Performance** | `page-load-performance.yaml` | P95 <2s, Error rate <0.1% |
+| **API Response Time** | `api-response-time.yaml` | P99 <200ms, 5xx rate <0.5% |
+| **Data Freshness** | `data-freshness.yaml` | Live games <30s, Standings <5min |
+| **External API Reliability** | `external-api-reliability.yaml` | 99.5% success, <5 circuit trips/day |
+
+**Key Metrics:**
+
+**Request Metrics:**
+```typescript
+// Counter: http.request.count
+dimensions: { method, status, endpoint, sport }
+
+// Histogram: http.request.duration
+dimensions: { method, endpoint, sport }
+
+// Counter: http.request.errors
+dimensions: { method, endpoint, error_type }
+```
+
+**External API Metrics:**
+```typescript
+// Histogram: external_api.duration
+dimensions: { sport, endpoint, provider }
+
+// Counter: external_api.errors
+dimensions: { sport, provider, error_type }
+```
+
+**Circuit Breaker Metrics:**
+```typescript
+// Counter: circuit_breaker.state_change
+dimensions: { circuit, from, to }
+
+// Counter: circuit_breaker.rejected
+dimensions: { circuit, state }
+```
+
+**Performance Overhead:**
+- Structured Logging: <1ms
+- Metrics Recording: <2ms
+- Tracing: <1ms
+- Circuit Breaker: <0.5ms
+- **Total: ~5ms per request (<1% of typical request)**
 
 **Documentation:**
-- `observability/README.md` - Observability overview (START HERE)
-- `observability/QUICK_START.md` - 5-minute quick start
+- `observability/README.md` - Observability overview (**START HERE**)
+- `observability/QUICK_START.md` - 5-minute quick start guide
 - `observability/DEBUGGABILITY_CARD.md` - Incident response guide
 - `observability/RUNBOOK.md` - Operational procedures
 - `observability/PRODUCTION_DEPLOYMENT_GUIDE.md` - Deployment steps
+- `observability/IMPLEMENTATION_SUMMARY.md` - Technical implementation overview
 
 **Monitoring Commands:**
 ```bash
@@ -727,7 +1022,17 @@ curl https://www.blazesportsintel.com/api/health
 
 # Check cache staleness
 ./scripts/check-cache-staleness.sh
+
+# View logs (Cloudflare Dashboard)
+# Navigate to: Workers & Pages → Logs
+# Filter: level:error | last 1h
 ```
+
+**For On-Call Engineers:**
+1. **Alert fired?** → Open `observability/DEBUGGABILITY_CARD.md`
+2. **Check dashboard**: Cloudflare Analytics
+3. **Follow runbook**: Common issues and solutions
+4. **Post updates**: #incidents Slack channel
 
 ### Production Monitoring
 
@@ -1062,22 +1367,26 @@ pnpm dev
 **Status:** Stable and monitored
 
 **Recent Major Updates:**
+
 1. ✅ **P0 Critical Fixes** (Nov 20, 2025)
    - Health check endpoint deployed (`/api/health`)
-   - Production monitoring script implemented
+   - Production monitoring script implemented (`scripts/monitor-production.sh`)
    - Complete monitoring documentation (MONITORING.md)
+   - Response time tracking and service status reporting
 
 2. ✅ **P1 Security Improvements** (Nov 20, 2025)
    - Security headers implemented (7/7 deployed)
    - Console logging cleanup in production routes
-   - Debug endpoint removed
+   - Debug endpoint removed (`/api/test-env`)
    - Security audit passed (0 vulnerabilities)
+   - API keys never exposed in logs or responses
 
 3. ✅ **Cache Control Fix** (Nov 20, 2025)
    - HTML cache reduced from 7 days to 60 seconds
    - Prevents React hydration errors from stale content
    - Automatic cache purge via GitHub Actions
-   - Cache monitoring script implemented
+   - Cache monitoring script implemented (`scripts/check-cache-staleness.sh`)
+   - Static assets cached for 1 year (immutable, versioned)
 
 4. ✅ **Homepage Enhancement** (Nov 20, 2025)
    - Full backend integration with real data
@@ -1086,23 +1395,26 @@ pnpm dev
    - Improved mobile responsiveness
 
 5. ✅ **Observability Infrastructure** (Nov 20, 2025)
-   - Structured logging with correlation IDs
+   - Structured logging with correlation IDs (`requestId`, `traceId`)
    - Metrics recording with Cloudflare Analytics Engine
-   - Distributed tracing support
+   - Distributed tracing support (OpenTelemetry-compatible)
    - Circuit breakers for external APIs
-   - SLO definitions and monitoring
+   - SLO definitions and monitoring (4 SLOs defined)
+   - Performance overhead: <5ms per request
 
 6. ✅ **MMI Integration** (2025)
    - Major Moments Index for baseball analytics
    - API endpoints for high-leverage situations
    - Win probability calculations
    - Play-by-play analysis
+   - Python package with REST API
 
 7. ✅ **MCP Server** (2025)
    - Model Context Protocol server for SportsData.io
    - 8 specialized tools for sports data
    - Priority on college baseball coverage
    - Cloudflare Workers deployment
+   - Intelligent caching and rate limit handling
 
 **Season Updates:**
 - ✅ All sports updated for 2025-2026 season
@@ -1381,9 +1693,12 @@ cp .env.example .env
 
 ### Root Documentation
 
+**Getting Started:**
 - `README.md` - Project overview and quick start
 - `QUICK_START.md` - Detailed setup instructions
 - `CLAUDE.md` - **This file** - AI assistant guide and codebase overview
+
+**Deployment & Operations:**
 - `DEPLOYMENT.md` - General deployment procedures
 - `DEPLOYMENT-READY-STATUS.md` - Pre-deployment status check
 - `DEPLOYMENT_LOG.md` - Recent deployment history (P0/P1 fixes)
@@ -1392,41 +1707,92 @@ cp .env.example .env
 
 ### Integration & Implementation
 
+**API Integrations:**
 - `SPORTSDATAIO_INTEGRATION.md` - SportsDataIO API integration guide
+- `SPORTSDATAIO-INTEGRATION-COMPLETE.md` - Integration completion status
+
+**Analytics Features:**
 - `MMI_INTEGRATION_COMPLETE.md` - Major Moments Index integration
 - `MMI_DEPLOYMENT_SUMMARY.md` - MMI deployment status
+- `MMI_INTEGRATION_TEST_RESULTS.md` - MMI test results
+
+**Worker Implementations:**
 - `BLAZE-TRENDS-IMPLEMENTATION.md` - Blaze Trends worker implementation
 - `COLLEGE-BASEBALL-IMPLEMENTATION.md` - College baseball feature implementation
 - `NCAA-FUSION-DASHBOARD.md` - NCAA multi-sport dashboard
+- `NCAA_FUSION_COMPLETE.md` - NCAA Fusion completion status
+- `NCAA_FUSION_DEPLOYMENT_COMPLETE.md` - NCAA Fusion deployment status
 
 ### Analytics & 3D Features
 
+**Analytics:**
 - `ANALYTICS-DEPLOYMENT-GUIDE.md` - Analytics implementation guide
+- `ANALYTICS-MIGRATION-COMPLETE-2025-11-20.md` - Analytics migration status
+- `ANALYTICS-MIGRATION-NEEDED-2025-11-20.md` - Analytics migration requirements
+
+**3D Visualization:**
 - `BLAZE-3D-IMPLEMENTATION-SUMMARY.md` - 3D visualization summary
 - `BLAZE-3D-QUICK-START.md` - 3D visualization quick start
 - `BLAZE-3D-VISUALIZATION-ARCHITECTURE.md` - 3D architecture details
 
 ### Infrastructure Documentation (`docs/`)
 
-- `docs/INFRASTRUCTURE.md` - Complete architecture mapping (72 workers, 18 D1 DBs)
+**Architecture:**
+- `docs/INFRASTRUCTURE.md` - Complete architecture mapping (72 workers, 18 D1 DBs, 20+ KV stores)
 - `docs/IMPLEMENTATION_SUMMARY.md` - Infrastructure implementation roadmap
-- `docs/OPERATIONAL_RUNBOOKS.md` - Operations procedures
+- `docs/LEAGUE_WIDE_IMPLEMENTATION_SUMMARY.md` - League-wide implementation
+- `docs/LEAGUE_WIDE_DATA_MANAGEMENT.md` - League-wide data management
+
+**Operations:**
+- `docs/OPERATIONAL_RUNBOOKS.md` - Operations procedures (HIGH PRIORITY)
 - `docs/PRODUCTION_SETUP.md` - Production configuration
-- `docs/R2_STORAGE_SETUP.md` - R2 media storage implementation
-- `docs/HYPERDRIVE_SETUP.md` - Database connection pooling
-- `docs/DATABASE_MONITORING.md` - Database monitoring setup
-- `docs/SENTRY-SETUP-GUIDE.md` - Error tracking setup
 - `docs/DOMAIN_SETUP_GUIDE.md` - Domain configuration
 - `docs/PERFORMANCE_TESTING.md` - Performance testing procedures
 
+**Storage & Databases:**
+- `docs/R2_STORAGE_SETUP.md` - R2 media storage implementation (HIGH PRIORITY)
+- `docs/HYPERDRIVE_SETUP.md` - Database connection pooling (MEDIUM PRIORITY)
+- `docs/DATABASE_MONITORING.md` - Database monitoring setup (MEDIUM PRIORITY)
+
+**Monitoring & Error Tracking:**
+- `docs/SENTRY-SETUP-GUIDE.md` - Error tracking setup
+- `docs/DATABASE_MONITORING.md` - Database monitoring
+
+**API Documentation:**
+- `docs/API_INVENTORY.md` - Complete API endpoint inventory
+- `docs/UNIFIED_API_QUICKSTART.md` - Unified API quick start guide
+
 ### Observability Documentation (`observability/`)
 
+**Start Here:**
 - `observability/README.md` - Observability overview (**START HERE**)
 - `observability/QUICK_START.md` - 5-minute quick start guide
+
+**Operational Guides:**
 - `observability/DEBUGGABILITY_CARD.md` - Incident response guide
 - `observability/RUNBOOK.md` - Operational procedures
 - `observability/PRODUCTION_DEPLOYMENT_GUIDE.md` - Deployment steps
+
+**Technical Details:**
 - `observability/IMPLEMENTATION_SUMMARY.md` - Technical implementation overview
+
+**SLO Definitions:**
+- `observability/slos/page-load-performance.yaml` - Page load SLO
+- `observability/slos/api-response-time.yaml` - API response time SLO
+- `observability/slos/data-freshness.yaml` - Data freshness SLO
+- `observability/slos/external-api-reliability.yaml` - External API reliability SLO
+
+### Cloudflare Workers Documentation
+
+**Blaze Trends:**
+- `cloudflare-workers/blaze-trends/README.md` - Blaze Trends worker technical overview
+- `cloudflare-workers/blaze-trends/DEPLOYMENT.md` - Trends deployment guide
+- `cloudflare-workers/blaze-trends/scripts/README.md` - Script documentation
+
+**Other Workers:**
+- `cloudflare-workers/blaze-content/` - Content management worker
+- `cloudflare-workers/blaze-ingestion/` - Data ingestion pipeline
+- `cloudflare-workers/longhorns-baseball/` - Texas Longhorns baseball worker
 
 ### Claude Code Configuration (`.claude/`)
 
@@ -1437,7 +1803,11 @@ cp .env.example .env
 
 ### Package-Specific Documentation
 
-- `packages/mcp-sportsdata-io/README.md` - MCP server documentation
-- `packages/mmi-baseball/README.md` - MMI analytics package
-- `cloudflare-workers/blaze-trends/README.md` - Blaze Trends worker
-- `cloudflare-workers/blaze-trends/DEPLOYMENT.md` - Trends deployment guide
+**MCP Server:**
+- `packages/mcp-sportsdata-io/README.md` - MCP server documentation (8 tools, deployment guide)
+
+**MMI Analytics:**
+- `packages/mmi-baseball/README.md` - MMI analytics package (complete API reference)
+
+**Other Packages:**
+- See individual package directories for package-specific documentation
