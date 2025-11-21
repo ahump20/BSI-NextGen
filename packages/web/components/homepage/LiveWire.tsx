@@ -144,16 +144,12 @@ export const LiveWire: React.FC<LiveWireProps> = ({
  * Individual Alert Card Component
  */
 const AlertCard: React.FC<{ alert: LiveAlert }> = ({ alert }) => {
-  const CardWrapper = alert.url ? Link : 'div';
-  const wrapperProps = alert.url ? { href: alert.url } : {};
+  const cardClassName = `p-4 rounded-xl bg-zinc-900 border ${
+    alert.border || 'border-white/5'
+  } hover:border-white/20 transition-colors cursor-pointer group shadow-lg block`;
 
-  return (
-    <CardWrapper
-      {...wrapperProps}
-      className={`p-4 rounded-xl bg-zinc-900 border ${
-        alert.border || 'border-white/5'
-      } hover:border-white/20 transition-colors cursor-pointer group shadow-lg block`}
-    >
+  const cardContent = (
+    <>
       <div className="flex justify-between mb-2">
         <span
           className={`text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 ${
@@ -167,8 +163,18 @@ const AlertCard: React.FC<{ alert: LiveAlert }> = ({ alert }) => {
       <p className="text-xs text-gray-300 font-medium leading-relaxed group-hover:text-white transition-colors">
         {alert.msg}
       </p>
-    </CardWrapper>
+    </>
   );
+
+  if (alert.url) {
+    return (
+      <Link href={alert.url} className={cardClassName}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return <div className={cardClassName}>{cardContent}</div>;
 };
 
 // Custom scrollbar styles (add to global CSS if not already present)
