@@ -111,9 +111,8 @@ export function extractBearerToken(authHeader: string | null): string | null {
   }
   
   // RFC 7230: Bearer scheme should be case-insensitive
-  const lowerHeader = authHeader.toLowerCase();
-  
-  if (!lowerHeader.startsWith('bearer ')) {
+  // Check prefix length and compare case-insensitively
+  if (authHeader.length < 8 || authHeader.substring(0, 7).toLowerCase() !== 'bearer ') {
     return null;
   }
   
