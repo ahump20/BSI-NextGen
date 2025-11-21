@@ -157,7 +157,7 @@ jobs:
 
       - name: Export Next.js for Cloudflare Pages
         working-directory: packages/web
-        run: pnpm exec npx @cloudflare/next-on-pages --outdir .vercel/output/static --experimental-minify
+        run: pnpm exec @cloudflare/next-on-pages --outdir .vercel/output/static --experimental-minify
 
       - name: Deploy Workers (KV/D1/R2 bindings)
         uses: cloudflare/wrangler-action@v3
@@ -201,12 +201,29 @@ jobs:
 
   promote-production:
     name: Promote to production
-    needs: deploy-staging
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.promote_to_production == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install Worker dependencies
+        working-directory: cloudflare-workers/blaze-trends
+        run: pnpm install --frozen-lockfile
+
       - name: Download staged artifact
         uses: actions/download-artifact@v4
         with:
@@ -237,13 +254,15 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
 
       - name: Netlify production fallback (optional)
-        if: secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != ''
-        uses: nwtgck/actions-netlify@v3
-        with:
-          publish-dir: packages/web/.vercel/output/static
-          netlifySiteId: ${{ secrets.NETLIFY_SITE_ID }}
-          netlifyAuthToken: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          production-deploy: true
+        run: |
+          if [ -n "${NETLIFY_AUTH_TOKEN}" ] && [ -n "${NETLIFY_SITE_ID}" ]; then
+            npx netlify deploy --dir=packages/web/.vercel/output/static --prod
+          else
+            echo "Skipping Netlify fallback deploy: NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID not set."
+          fi
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
   rollback-production:
     name: Rollback production from staged artifact
@@ -253,6 +272,24 @@ jobs:
     environment:
       name: production
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install Worker dependencies
+        working-directory: cloudflare-workers/blaze-trends
+        run: pnpm install --frozen-lockfile
+
       - name: Find latest successful deploy-staging run
         id: find_run
         uses: actions/github-script@v7
