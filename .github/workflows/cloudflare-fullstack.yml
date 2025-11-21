@@ -288,7 +288,7 @@ jobs:
 
       - name: Install Worker dependencies
         working-directory: cloudflare-workers/blaze-trends
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Find latest successful deploy-staging run
         id: find_run
