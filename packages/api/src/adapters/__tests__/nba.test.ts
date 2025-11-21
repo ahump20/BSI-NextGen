@@ -475,7 +475,7 @@ describe('NBAAdapter', () => {
 
   describe('API key validation', () => {
     it('should use provided API key', () => {
-      const adapterWithKey = new NBAAdapter('custom-key');
+      new NBAAdapter('custom-key');
       expect(shared.validateApiKey).toHaveBeenCalledWith('custom-key', 'SportsDataIO (NBA)');
     });
 
