@@ -93,7 +93,9 @@ export function PitchTunnelSimulator() {
     if (newPitchType === tunnelPitch) {
       // Set to the first available option that isn't the new pitch type
       const alternatives = Object.keys(pitchPalette).filter(key => key !== newPitchType);
-      setTunnelPitch(alternatives[0] as PitchType);
+      if (alternatives.length > 0) {
+        setTunnelPitch(alternatives[0] as PitchType);
+      }
     }
   };
 
