@@ -305,8 +305,8 @@ describe('GameCard', () => {
       });
       render(<GameCard game={game} />);
 
-      // Status will be mapped to SCHEDULED in the component logic
-      expect(screen.getByText(/SCHEDULED/i)).toBeInTheDocument();
+      // Postponed games should display POSTPONED status
+      expect(screen.getByText(/POSTPONED/i)).toBeInTheDocument();
     });
 
     it('should handle cancelled status', () => {
@@ -315,8 +315,8 @@ describe('GameCard', () => {
       });
       render(<GameCard game={game} />);
 
-      // Status will be mapped to SCHEDULED in the component logic
-      expect(screen.getByText(/SCHEDULED/i)).toBeInTheDocument();
+      // Cancelled games should display CANCELLED status
+      expect(screen.getByText(/CANCELLED/i)).toBeInTheDocument();
     });
 
     it('should handle long team names gracefully', () => {

@@ -9,6 +9,10 @@ import { NextRequest } from 'next/server';
 // Mock global fetch
 global.fetch = jest.fn();
 
+// Expected constants from the health route implementation
+const EXPECTED_VERSION = '1.0.0';
+const EXPECTED_TIMEZONE = 'America/Chicago';
+
 describe('/api/health', () => {
   let mockFetch: jest.MockedFunction<typeof fetch>;
   const originalEnv = process.env;
@@ -42,8 +46,8 @@ describe('/api/health', () => {
       expect(data.checks.external_apis).toBe('healthy');
       expect(data.checks.environment).toBe('healthy');
       expect(data.checks.database).toBe('not_configured');
-      expect(data.timezone).toBe('America/Chicago');
-      expect(data.version).toBe('1.0.0');
+      expect(data.timezone).toBe(EXPECTED_TIMEZONE);
+      expect(data.version).toBe(EXPECTED_VERSION);
     });
 
     it('should include response time', async () => {
@@ -149,7 +153,7 @@ describe('/api/health', () => {
       expect(data.checks.external_apis).toBe('degraded');
 
       consoleSpy.mockRestore();
-    }, 10000); // Increase test timeout
+    }, 5000); // Timeout for async test
 
     it('should set X-Service-Status header to degraded', async () => {
       mockFetch.mockResolvedValue({

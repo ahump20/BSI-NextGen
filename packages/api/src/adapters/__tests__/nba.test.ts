@@ -142,8 +142,6 @@ describe('NBAAdapter', () => {
     ];
 
     it('should fetch and transform standings for current season', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => mockStandingsResponse,
@@ -174,8 +172,6 @@ describe('NBAAdapter', () => {
 
       expect(result.data[1].gamesBack).toBe(2.0);
       expect(result.source.provider).toBe('SportsDataIO');
-
-      consoleSpy.mockRestore();
     });
 
     it('should fetch standings for specific season', async () => {
