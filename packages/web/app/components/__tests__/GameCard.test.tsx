@@ -117,7 +117,7 @@ describe('GameCard', () => {
       const game = createMockGame({
         status: 'scheduled',
       });
-      const { container } = render(<GameCard game={game} />);
+      render(<GameCard game={game} />);
 
       const statusElement = screen.getByText('SCHEDULED');
       expect(statusElement).toHaveClass('text-blue-400');
