@@ -494,6 +494,16 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
 
       expect(token).toBe(validToken);
     });
+
+    it('should reject tokens with empty parts', () => {
+      const token1 = extractBearerToken('Bearer .payload.signature');
+      const token2 = extractBearerToken('Bearer header..signature');
+      const token3 = extractBearerToken('Bearer header.payload.');
+
+      expect(token1).toBeNull();
+      expect(token2).toBeNull();
+      expect(token3).toBeNull();
+    });
   });
 
   describe('Security Considerations', () => {

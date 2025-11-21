@@ -103,17 +103,18 @@ export function extractBearerToken(authHeader: string | null): string | null {
   }
   
   // RFC 7230: Bearer scheme should be case-insensitive
-  const bearerPrefix = 'bearer ';
   const lowerHeader = authHeader.toLowerCase();
   
-  if (!lowerHeader.startsWith(bearerPrefix)) {
+  if (!lowerHeader.startsWith('bearer ')) {
     return null;
   }
   
-  const token = authHeader.substring(bearerPrefix.length);
+  // Extract token using fixed length 7 for "Bearer "
+  const token = authHeader.substring(7);
   
   // Validate JWT format: must have exactly 3 parts separated by dots
   // Each part should be base64url encoded (alphanumeric, -, _, no spaces)
+  // Each part must have at least one character
   const jwtPattern = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
   
   if (!token || !jwtPattern.test(token)) {
