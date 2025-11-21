@@ -77,7 +77,7 @@ jobs:
         with:
           files: ./packages/api/coverage/coverage-final.json,./packages/web/coverage/coverage-final.json
           flags: unittests
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
   build:
     name: Build Project
