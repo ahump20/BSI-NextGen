@@ -433,9 +433,10 @@ Tests run automatically on:
    });
    ```
 
-3. **One Assertion Per Test (When Possible)**
-   - Makes failures easier to diagnose
-   - Improves test readability
+3. **One Assertion Per Test (When Practical)**
+   - Prefer a single assertion per test for simplicity and easier diagnosis of failures.
+   - Multiple assertions are acceptable when they are closely related (e.g., checking several properties of a single response object).
+   - Use descriptive test names and clear structure to maintain readability when using multiple assertions.
 
 4. **Clear Test Names**
    ```typescript
