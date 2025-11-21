@@ -237,13 +237,15 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
 
       - name: Netlify production fallback (optional)
-        if: secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != ''
-        uses: nwtgck/actions-netlify@v3
-        with:
-          publish-dir: packages/web/.vercel/output/static
-          netlifySiteId: ${{ secrets.NETLIFY_SITE_ID }}
-          netlifyAuthToken: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          production-deploy: true
+        run: |
+          if [ -n "${NETLIFY_AUTH_TOKEN}" ] && [ -n "${NETLIFY_SITE_ID}" ]; then
+            npx netlify deploy --dir=packages/web/.vercel/output/static --prod
+          else
+            echo "Skipping Netlify production fallback deploy: NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID not set."
+          fi
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
   rollback-production:
     name: Rollback production from staged artifact
