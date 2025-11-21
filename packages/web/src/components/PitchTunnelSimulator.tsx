@@ -258,16 +258,36 @@ export function PitchTunnelSimulator() {
       }
     }
 
-    const buildTube = (curve: THREE.CatmullRomCurve3, color: string) =>
+    // Cache materials by color to avoid recreating them on every render
+    const materialCache = new Map<string, THREE.MeshStandardMaterial>();
+    const getMaterial = (color: string, opacity: number) => {
+      if (!materialCache.has(color)) {
+        materialCache.set(
+          color,
+          new THREE.MeshStandardMaterial({
+            color,
+            opacity, // default opacity, can be overridden per mesh
+            transparent: true,
+            metalness: 0.08,
+            roughness: 0.45,
+          })
+        );
+      }
+      // Clone the cached material to allow per-mesh opacity changes
+      const baseMaterial = materialCache.get(color)!;
+      const material = baseMaterial.clone();
+      material.opacity = opacity;
+      return material;
+    };
+
+    const buildTube = (curve: THREE.CatmullRomCurve3, color: string, opacity: number) =>
       new THREE.Mesh(
         new THREE.TubeGeometry(curve, 120, 0.08, 16, false),
-        new THREE.MeshStandardMaterial({ color, opacity: 0.82, transparent: true, metalness: 0.08, roughness: 0.45 }),
+        getMaterial(color, opacity),
       );
 
-    const primaryMesh = buildTube(primaryCurve, pitchPalette[pitchType].color);
-    const tunnelMesh = buildTube(tunnelPairCurve, pitchPalette[tunnelPitch].color);
-    tunnelMesh.material.transparent = true;
-    (tunnelMesh.material as THREE.MeshStandardMaterial).opacity = 0.55;
+    const primaryMesh = buildTube(primaryCurve, pitchPalette[pitchType].color, 0.82);
+    const tunnelMesh = buildTube(tunnelPairCurve, pitchPalette[tunnelPitch].color, 0.55);
 
     group.add(primaryMesh);
     group.add(tunnelMesh);
