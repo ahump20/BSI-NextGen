@@ -25,18 +25,18 @@ export async function GET(request: NextRequest) {
     const sessionToken = request.cookies.get('bsi_session')?.value;
 
     if (sessionToken) {
-      try {
-        const user = await verifyJWT(sessionToken, {
-          secret: process.env.JWT_SECRET || 'dev-secret-key',
-          issuer: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-          audience: 'bsi-web',
-        });
+        try {
+          const user = await verifyJWT(sessionToken, {
+            secret: process.env.JWT_SECRET || 'dev-secret-key',
+            issuer: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+            audience: 'bsi-web',
+          });
 
-        if (user) {
-          userId = user.userId || user.sub || 'guest';
-          isAuthenticated = true;
-        }
-      } catch (error) {
+          if (user) {
+            userId = user.id;
+            isAuthenticated = true;
+          }
+        } catch (error) {
         console.warn('[User Stats] Invalid session token:', error);
         // Continue as guest user
       }
@@ -188,20 +188,20 @@ export async function POST(request: NextRequest) {
 
     let userId: string;
     try {
-      const user = await verifyJWT(sessionToken, {
-        secret: process.env.JWT_SECRET || 'dev-secret-key',
-        issuer: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        audience: 'bsi-web',
-      });
+        const user = await verifyJWT(sessionToken, {
+          secret: process.env.JWT_SECRET || 'dev-secret-key',
+          issuer: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+          audience: 'bsi-web',
+        });
 
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: 'Invalid session' },
-          { status: 401 }
-        );
-      }
+        if (!user) {
+          return NextResponse.json(
+            { success: false, error: 'Invalid session' },
+            { status: 401 }
+          );
+        }
 
-      userId = user.userId || user.sub || '';
+        userId = user.id;
     } catch (error) {
       return NextResponse.json(
         { success: false, error: 'Invalid session token' },

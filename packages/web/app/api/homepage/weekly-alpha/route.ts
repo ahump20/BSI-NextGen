@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { WeeklyAlphaResponse, WeeklyAlpha, SportPerformance } from '@bsi/shared';
 import { LeagueOrchestrator } from '@bsi/api';
 
+type MultiLeagueGamesResponse = Awaited<ReturnType<LeagueOrchestrator['getAllGames']>>;
+
 /**
  * GET /api/homepage/weekly-alpha
  *
@@ -35,13 +37,18 @@ export async function GET(request: NextRequest) {
     const startDate = oneWeekAgo.toISOString().split('T')[0];
 
     // Fetch unified games for analysis
-    let gamesResponse;
+    let gamesResponse: MultiLeagueGamesResponse;
     try {
-      gamesResponse = await orchestrator.getAllGames(startDate, today);
+      gamesResponse = await fetchGamesInRange(orchestrator, startDate, today);
     } catch (error) {
       console.warn('[Weekly Alpha] Error fetching games, using calculated metrics:', error);
       // Fall back to calculated metrics if games API fails
-      gamesResponse = { data: [], errors: [] };
+      gamesResponse = {
+        data: [],
+        sources: [],
+        aggregatedConfidence: 0,
+        timestamp: new Date().toISOString(),
+      };
     }
 
     // Analyze completed games and calculate sport-specific performance
@@ -264,4 +271,59 @@ function calculateSportPerformance(games: any[]): SportPerformance[] {
   }
 
   return sports;
+}
+
+async function fetchGamesInRange(
+  orchestrator: LeagueOrchestrator,
+  startDate: string,
+  endDate: string
+): Promise<MultiLeagueGamesResponse> {
+  const dateRange = getInclusiveDateRange(startDate, endDate);
+
+  const data: MultiLeagueGamesResponse['data'] = [];
+  const sources: MultiLeagueGamesResponse['sources'] = [];
+  const errors: NonNullable<MultiLeagueGamesResponse['errors']> = [];
+
+  for (const date of dateRange) {
+    const result = await orchestrator.getAllGames(date);
+    data.push(...result.data);
+    sources.push(...result.sources);
+    if (result.errors) {
+      errors.push(...result.errors);
+    }
+  }
+
+  return {
+    data,
+    sources,
+    aggregatedConfidence:
+      sources.length > 0
+        ? sources.reduce((sum, source) => sum + source.confidence, 0) / sources.length
+        : 0,
+    timestamp: new Date().toISOString(),
+    errors: errors.length > 0 ? errors : undefined,
+  };
+}
+
+function getInclusiveDateRange(startDate: string, endDate: string): string[] {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (Number.isNaN(start.getTime())) {
+    return [new Date().toISOString().split('T')[0]];
+  }
+
+  if (Number.isNaN(end.getTime()) || end < start) {
+    return [start.toISOString().split('T')[0]];
+  }
+
+  const range: string[] = [];
+  const current = new Date(start);
+
+  while (current <= end) {
+    range.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
+  }
+
+  return range;
 }
