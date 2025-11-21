@@ -132,3 +132,68 @@ export async function retryWithBackoff<T>(
 
   throw lastError!;
 }
+
+type CircuitState = {
+  failures: number;
+  lastFailure?: number;
+  openUntil?: number;
+};
+
+const providerCircuits = new Map<string, CircuitState>();
+
+interface ResilienceOptions {
+  maxRetries?: number;
+  baseDelay?: number;
+  failureThreshold?: number;
+  cooldownMs?: number;
+}
+
+/**
+ * Apply retry, backoff, and circuit breaking for a specific provider
+ */
+export async function withProviderResilience<T>(
+  provider: string,
+  fn: () => Promise<T>,
+  {
+    maxRetries = 3,
+    baseDelay = 750,
+    failureThreshold = 3,
+    cooldownMs = 30000,
+  }: ResilienceOptions = {}
+): Promise<T> {
+  const state = providerCircuits.get(provider) ?? { failures: 0 };
+
+  if (state.openUntil && state.openUntil > Date.now()) {
+    const retryAt = new Date(state.openUntil).toISOString();
+    throw new Error(`Circuit open for ${provider}. Retry after ${retryAt}`);
+  }
+
+  try {
+    const result = await retryWithBackoff(fn, maxRetries, baseDelay);
+    providerCircuits.set(provider, { failures: 0 });
+    return result;
+  } catch (error) {
+    const failures = state.failures + 1;
+    const openUntil = failures >= failureThreshold ? Date.now() + cooldownMs : undefined;
+
+    providerCircuits.set(provider, {
+      failures,
+      lastFailure: Date.now(),
+      openUntil,
+    });
+
+    throw error;
+  }
+}
+
+export function getProviderHealth(provider: string) {
+  const state = providerCircuits.get(provider) ?? { failures: 0 };
+  const isOpen = !!state.openUntil && state.openUntil > Date.now();
+  return {
+    provider,
+    status: isOpen ? 'circuit_open' : state.failures > 0 ? 'degraded' : 'healthy',
+    consecutiveFailures: state.failures,
+    lastFailure: state.lastFailure ? new Date(state.lastFailure).toISOString() : undefined,
+    cooldownExpiresAt: state.openUntil ? new Date(state.openUntil).toISOString() : undefined,
+  };
+}

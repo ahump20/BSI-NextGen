@@ -132,6 +132,14 @@ export interface DataSource {
   confidence: number; // 0-1
 }
 
+export interface ProviderHealth {
+  provider: string;
+  status: 'healthy' | 'degraded' | 'circuit_open';
+  lastFailure?: string;
+  cooldownExpiresAt?: string;
+  consecutiveFailures: number;
+}
+
 export interface ApiResponse<T> {
   data: T;
   source: DataSource;

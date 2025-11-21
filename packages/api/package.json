@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@bsi/shared": "workspace:*",
-    "jose": "^6.1.0"
+    "jose": "^6.1.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

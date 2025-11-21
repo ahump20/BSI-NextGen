@@ -11,6 +11,7 @@ jest.mock('@bsi/shared', () => ({
   validateApiKey: jest.fn((key: string | undefined) => key || 'mock-api-key'),
   fetchWithTimeout: jest.fn(),
   retryWithBackoff: jest.fn((fn) => fn()),
+  withProviderResilience: jest.fn((_, fn) => fn()),
   getChicagoTimestamp: jest.fn(() => '2025-01-13T12:00:00-06:00'),
 }));
 
@@ -137,6 +138,12 @@ describe('MLBAdapter', () => {
       ],
     };
 
+    const currentSeason = (() => {
+      const now = new Date();
+      const month = now.getMonth();
+      return month >= 10 ? now.getFullYear() + 1 : now.getFullYear();
+    })();
+
     it('should fetch all standings without divisionId', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
@@ -146,7 +153,7 @@ describe('MLBAdapter', () => {
       const result = await adapter.getStandings();
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=2025&standingsTypes=regularSeason',
+        `https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=${currentSeason}&standingsTypes=regularSeason`,
         {},
         10000
       );
@@ -177,7 +184,7 @@ describe('MLBAdapter', () => {
       const result = await adapter.getStandings('201');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=2025&standingsTypes=regularSeason&divisionId=201',
+        `https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=${currentSeason}&standingsTypes=regularSeason&divisionId=201`,
         {},
         10000
       );
@@ -489,6 +496,67 @@ describe('MLBAdapter', () => {
       } as Response);
 
       await expect(adapter.getGames('2025-01-13')).rejects.toThrow('MLB API error: Bad Request');
+    });
+  });
+
+  describe('getBoxScore', () => {
+    const mockLinescoreResponse = {
+      gameDate: '2025-01-13T18:10:00Z',
+      currentInning: 7,
+      inningHalf: 'Top',
+      game: { status: { statusCode: 'I' } },
+      teams: {
+        home: {
+          runs: 2,
+          hits: 5,
+          errors: 0,
+          team: {
+            id: 147,
+            name: 'New York Yankees',
+            abbreviation: 'NYY',
+            locationName: 'New York',
+            teamCode: 'NYY',
+          },
+        },
+        away: {
+          runs: 3,
+          hits: 6,
+          errors: 1,
+          team: {
+            id: 117,
+            name: 'Houston Astros',
+            abbreviation: 'HOU',
+            locationName: 'Houston',
+            teamCode: 'HOU',
+          },
+        },
+      },
+      innings: [
+        { num: 1, home: { runs: 0 }, away: { runs: 1 } },
+        { num: 2, home: { runs: 1 }, away: { runs: 0 } },
+      ],
+    };
+
+    it('should normalize box score linescore and teams', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => mockLinescoreResponse,
+      } as Response);
+
+      const result = await adapter.getBoxScore('746801');
+
+      expect(result.data).toMatchObject({
+        id: '746801',
+        sport: 'MLB',
+        status: 'live',
+        homeTeam: expect.objectContaining({ abbreviation: 'NYY' }),
+        awayTeam: expect.objectContaining({ abbreviation: 'HOU' }),
+        homeScore: 2,
+        awayScore: 3,
+      });
+
+      expect(result.data.linescore?.totals.home.runs).toBe(2);
+      expect(result.data.linescore?.innings).toHaveLength(2);
     });
   });
 

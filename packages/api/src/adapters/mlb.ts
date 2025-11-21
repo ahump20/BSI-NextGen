@@ -11,12 +11,41 @@ import type {
   PitcherInfo,
   LinescoreSummary,
 } from '@bsi/shared';
-import { validateApiKey, retryWithBackoff, getChicagoTimestamp, fetchWithTimeout } from '@bsi/shared';
+import {
+  validateApiKey,
+  getChicagoTimestamp,
+  fetchWithTimeout,
+  withProviderResilience,
+  TeamSchema,
+  StandingSchema,
+  GameSchema,
+  LinescoreSummarySchema,
+} from '@bsi/shared';
+import type { ZodType } from 'zod';
 
 export class MLBAdapter {
   private readonly apiKey: string;
   private readonly baseUrl = 'https://statsapi.mlb.com/api/v1';
   private readonly sportsDataIOKey: string;
+
+  private filterValid<T>(items: T[], schema: ZodType<T>) {
+    const valid: T[] = [];
+    let rejected = 0;
+
+    items.forEach((item) => {
+      const result = schema.safeParse(item);
+      if (result.success) {
+        valid.push(result.data);
+      } else {
+        rejected += 1;
+      }
+    });
+
+    return {
+      valid,
+      error: rejected > 0 ? `Filtered ${rejected} invalid records` : undefined,
+    };
+  }
 
   constructor() {
     // MLB Stats API is free, but we also support SportsDataIO
@@ -41,16 +70,16 @@ export class MLBAdapter {
 
   /**
    * Get all MLB teams
-   */
+  */
   async getTeams(): Promise<ApiResponse<Team[]>> {
-    return retryWithBackoff(async () => {
-      const response = await fetchWithTimeout(`${this.baseUrl}/teams?sportId=1`, {}, 10000);
+    return withProviderResilience('MLB', async () => {
+      const upstreamResponse = await fetchWithTimeout(`${this.baseUrl}/teams?sportId=1`, {}, 10000);
 
-      if (!response.ok) {
-        throw new Error(`MLB API error: ${response.statusText}`);
+      if (!upstreamResponse.ok) {
+        throw new Error(`MLB API error: ${upstreamResponse.statusText}`);
       }
 
-      const data = await response.json() as any;
+      const data = await upstreamResponse.json() as any;
 
       const teams: Team[] = data.teams.map((team: any) => ({
         id: team.id.toString(),
@@ -62,14 +91,19 @@ export class MLBAdapter {
         conference: team.league?.name,
       }));
 
-      return {
-        data: teams,
+      const { valid, error } = this.filterValid(teams, TeamSchema);
+
+      const apiResponse: ApiResponse<Team[]> = {
+        data: valid,
         source: {
           provider: 'MLB Stats API',
           timestamp: getChicagoTimestamp(),
           confidence: 1.0,
         },
+        error,
       };
+
+      return apiResponse;
     });
   }
 
@@ -77,19 +111,19 @@ export class MLBAdapter {
    * Get standings for a specific division or all MLB
    */
   async getStandings(divisionId?: string): Promise<ApiResponse<Standing[]>> {
-    return retryWithBackoff(async () => {
+    return withProviderResilience('MLB', async () => {
       const currentSeason = this.getCurrentSeason();
       const url = divisionId
         ? `${this.baseUrl}/standings?leagueId=103,104&season=${currentSeason}&standingsTypes=regularSeason&divisionId=${divisionId}`
         : `${this.baseUrl}/standings?leagueId=103,104&season=${currentSeason}&standingsTypes=regularSeason`;
 
-      const response = await fetchWithTimeout(url, {}, 10000);
+      const upstreamResponse = await fetchWithTimeout(url, {}, 10000);
 
-      if (!response.ok) {
-        throw new Error(`MLB API error: ${response.statusText}`);
+      if (!upstreamResponse.ok) {
+        throw new Error(`MLB API error: ${upstreamResponse.statusText}`);
       }
 
-      const data = await response.json() as any;
+      const data = await upstreamResponse.json() as any;
 
       const standings: Standing[] = [];
 
@@ -112,13 +146,16 @@ export class MLBAdapter {
         });
       });
 
+      const { valid, error } = this.filterValid(standings, StandingSchema);
+
       return {
-        data: standings,
+        data: valid,
         source: {
           provider: 'MLB Stats API',
           timestamp: getChicagoTimestamp(),
           confidence: 1.0,
         },
+        error,
       };
     });
   }
@@ -127,17 +164,17 @@ export class MLBAdapter {
    * Get live/scheduled games for a specific date
    */
   async getGames(date?: string): Promise<ApiResponse<Game[]>> {
-    return retryWithBackoff(async () => {
+    return withProviderResilience('MLB', async () => {
       const targetDate = date || new Date().toISOString().split('T')[0];
       const url = `${this.baseUrl}/schedule?sportId=1&date=${targetDate}`;
 
-      const response = await fetchWithTimeout(url, {}, 10000);
+      const upstreamResponse = await fetchWithTimeout(url, {}, 10000);
 
-      if (!response.ok) {
-        throw new Error(`MLB API error: ${response.statusText}`);
+      if (!upstreamResponse.ok) {
+        throw new Error(`MLB API error: ${upstreamResponse.statusText}`);
       }
 
-      const data = await response.json() as any;
+      const data = await upstreamResponse.json() as any;
 
       const games: Game[] = data.dates?.[0]?.games?.map((game: any) => ({
         id: game.gamePk.toString(),
@@ -167,14 +204,80 @@ export class MLBAdapter {
         linescore: this.mapLinescore(game.linescore, game.teams),
       })) || [];
 
-      return {
-        data: games,
+      const { valid, error } = this.filterValid<Game>(games, GameSchema as unknown as ZodType<Game>);
+      const validGames: Game[] = valid;
+
+      const apiResponse: ApiResponse<Game[]> = {
+        data: validGames,
         source: {
           provider: 'MLB Stats API',
           timestamp: getChicagoTimestamp(),
           confidence: 1.0,
         },
+        error,
       };
+
+      return apiResponse;
+    });
+  }
+
+  /**
+   * Get box score/linescore snapshot for a specific game
+   */
+  async getBoxScore(gameId: string): Promise<ApiResponse<Game>> {
+    return withProviderResilience('MLB', async () => {
+      const upstreamResponse = await fetchWithTimeout(`${this.baseUrl}/game/${gameId}/linescore`, {}, 10000);
+
+      if (!upstreamResponse.ok) {
+        throw new Error(`MLB API error: ${upstreamResponse.statusText}`);
+      }
+
+      const data = await upstreamResponse.json() as any;
+      const homeTeam = data.teams?.home?.team;
+      const awayTeam = data.teams?.away?.team;
+
+      const game: Game = {
+        id: gameId,
+        sport: 'MLB',
+        date: data.gameDate || new Date().toISOString(),
+        status: this.mapGameStatus(data.game?.status?.statusCode || data.currentInningState),
+        homeTeam: {
+          id: (homeTeam?.id ?? '').toString(),
+          name: homeTeam?.name || 'Home',
+          abbreviation: homeTeam?.abbreviation || homeTeam?.teamCode || 'HOME',
+          city: homeTeam?.locationName || 'Home',
+          logo: homeTeam?.id ? `https://www.mlbstatic.com/team-logos/${homeTeam.id}.svg` : undefined,
+        },
+        awayTeam: {
+          id: (awayTeam?.id ?? '').toString(),
+          name: awayTeam?.name || 'Away',
+          abbreviation: awayTeam?.abbreviation || awayTeam?.teamCode || 'AWY',
+          city: awayTeam?.locationName || 'Away',
+          logo: awayTeam?.id ? `https://www.mlbstatic.com/team-logos/${awayTeam.id}.svg` : undefined,
+        },
+        homeScore: data.teams?.home?.runs ?? 0,
+        awayScore: data.teams?.away?.runs ?? 0,
+        period: data.currentInning ? `${data.currentInning}${data.inningHalf || ''}` : undefined,
+        linescore: this.mapLinescore(data, data.teams),
+      };
+
+      const parsed = GameSchema.safeParse(game);
+      if (!parsed.success) {
+        throw new Error('Invalid MLB box score payload from upstream');
+      }
+
+      const normalizedGame: Game = parsed.data as Game;
+
+      const apiResponse: ApiResponse<Game> = {
+        data: normalizedGame,
+        source: {
+          provider: 'MLB Stats API',
+          timestamp: getChicagoTimestamp(),
+          confidence: 0.95,
+        },
+      };
+
+      return apiResponse;
     });
   }
 
@@ -258,7 +361,7 @@ export class MLBAdapter {
       return undefined;
     }
 
-    const innings = Array.isArray(linescore.innings)
+    const innings: LinescoreSummary['innings'] = Array.isArray(linescore.innings)
       ? linescore.innings.map((inning: any) => ({
           number: inning.num,
           home: inning.home?.runs ?? null,
@@ -279,11 +382,18 @@ export class MLBAdapter {
       },
     };
 
-    return {
+    const summary: LinescoreSummary = {
       currentInning: linescore.currentInning ?? undefined,
       inningState: linescore.inningState || linescore.inningHalf || undefined,
       innings,
       totals,
     };
+
+    const parsed = LinescoreSummarySchema.safeParse(summary);
+    if (!parsed.success) {
+      return undefined;
+    }
+
+    return parsed.data as LinescoreSummary;
   }
 }

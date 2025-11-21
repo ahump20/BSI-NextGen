@@ -27,6 +27,7 @@ module.exports = {
         strict: false,
         noImplicitAny: false,
         strictNullChecks: false,
+        types: ['node', 'jest'],
       },
     }],
   },

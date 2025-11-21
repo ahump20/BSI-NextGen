@@ -31,6 +31,13 @@ interface Standing {
   streak?: string;
 }
 
+interface UnifiedMeta {
+  aggregatedConfidence?: number;
+  lastUpdated?: string;
+  count?: number;
+  errors?: Array<{ sport: string; message: string }>;
+}
+
 interface SearchResult {
   sport: string;
   type: string;
@@ -53,6 +60,7 @@ export default function UnifiedDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState<UnifiedMeta | null>(null);
 
   useEffect(() => {
     if (activeTab === 'games') {
@@ -71,6 +79,7 @@ export default function UnifiedDashboard() {
       const response = await fetch('/api/unified/games');
       const data = await response.json();
       setGames(data.games || []);
+      setMeta(data.meta || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch games');
     } finally {
@@ -85,6 +94,7 @@ export default function UnifiedDashboard() {
       const response = await fetch('/api/unified/live');
       const data = await response.json();
       setLiveGames(data.games || []);
+      setMeta(data.meta || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch live games');
     } finally {
@@ -99,6 +109,7 @@ export default function UnifiedDashboard() {
       const response = await fetch('/api/unified/standings');
       const data = await response.json();
       setStandings(data.standings || []);
+      setMeta(data.meta || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch standings');
     } finally {
@@ -117,6 +128,7 @@ export default function UnifiedDashboard() {
       const response = await fetch(`/api/unified/search?q=${encodeURIComponent(query)}`);
       const data = await response.json();
       setSearchResults(data.results || []);
+      setMeta(data.meta || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to search');
     } finally {
@@ -146,6 +158,36 @@ export default function UnifiedDashboard() {
     }
   };
 
+  const renderServiceStatus = () => {
+    if (!meta) {
+      return null;
+    }
+
+    const severity = meta.errors?.length ? 'degraded' : 'healthy';
+    const badgeColor = severity === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
+
+    return (
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span className={`inline-flex items-center rounded-full px-3 py-1 font-medium ${badgeColor}`}>
+          {severity === 'healthy' ? 'All providers responsive' : 'Partial degradation detected'}
+        </span>
+        {meta.aggregatedConfidence !== undefined && (
+          <span className="text-gray-600">Confidence: {(meta.aggregatedConfidence * 100).toFixed(1)}%</span>
+        )}
+        {meta.lastUpdated && (
+          <span className="text-gray-500">Last updated: {formatDate(meta.lastUpdated)}</span>
+        )}
+        {meta.errors?.length ? (
+          <ul className="list-disc list-inside text-amber-700">
+            {meta.errors.map((err) => (
+              <li key={`${err.sport}-${err.message}`}>{err.sport}: {err.message}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -157,6 +199,9 @@ export default function UnifiedDashboard() {
           <p className="text-sm text-gray-600 mt-1">
             Multi-League Sports Dashboard
           </p>
+          <div className="mt-3">
+            {renderServiceStatus()}
+          </div>
         </div>
       </header>
 
