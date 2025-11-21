@@ -402,11 +402,15 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
   });
 
   describe('extractBearerToken', () => {
-    it('should extract token from valid Bearer header', () => {
-      const validToken = 'eyJhbGci.eyJzdWIi.SflKxwRJ';
-      const token = extractBearerToken(`Bearer ${validToken}`);
+    // Test constants for valid JWT tokens
+    const VALID_JWT_SHORT = 'eyJhbGci.eyJzdWIi.SflKxwRJ';
+    const VALID_JWT_FULL = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+    const VALID_JWT_WITH_SPECIAL_CHARS = 'ey-J_hbG.ey-J_zdW.Sfl-Kx_wRJ';
 
-      expect(token).toBe(validToken);
+    it('should extract token from valid Bearer header', () => {
+      const token = extractBearerToken(`Bearer ${VALID_JWT_SHORT}`);
+
+      expect(token).toBe(VALID_JWT_SHORT);
     });
 
     it('should return null for null header', () => {
@@ -422,25 +426,22 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
     });
 
     it('should return null for header without Bearer prefix', () => {
-      const validToken = 'eyJhbGci.eyJzdWIi.SflKxwRJ';
-      const token = extractBearerToken(validToken);
+      const token = extractBearerToken(VALID_JWT_SHORT);
 
       expect(token).toBeNull();
     });
 
     it('should return null for malformed Bearer header', () => {
-      const validToken = 'eyJhbGci.eyJzdWIi.SflKxwRJ';
-      const token = extractBearerToken(`Bear ${validToken}`);
+      const token = extractBearerToken(`Bear ${VALID_JWT_SHORT}`);
 
       expect(token).toBeNull();
     });
 
     it('should handle Bearer with different casing', () => {
       // The "Bearer" prefix should be matched case-insensitively (RFC 7230)
-      const validToken = 'eyJhbGci.eyJzdWIi.SflKxwRJ';
-      const token = extractBearerToken(`bearer ${validToken}`);
+      const token = extractBearerToken(`bearer ${VALID_JWT_SHORT}`);
 
-      expect(token).toBe(validToken);
+      expect(token).toBe(VALID_JWT_SHORT);
     });
 
     it('should reject tokens with spaces (invalid JWT format)', () => {
@@ -458,10 +459,9 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
 
     it('should accept valid JWT format tokens', () => {
       // Valid JWT: three base64url parts separated by dots
-      const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-      const token = extractBearerToken(`Bearer ${validToken}`);
+      const token = extractBearerToken(`Bearer ${VALID_JWT_FULL}`);
 
-      expect(token).toBe(validToken);
+      expect(token).toBe(VALID_JWT_FULL);
     });
 
     it('should reject tokens with only one part (missing dots)', () => {
@@ -489,10 +489,9 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
     });
 
     it('should accept tokens with base64url characters (including - and _)', () => {
-      const validToken = 'ey-J_hbG.ey-J_zdW.Sfl-Kx_wRJ';
-      const token = extractBearerToken(`Bearer ${validToken}`);
+      const token = extractBearerToken(`Bearer ${VALID_JWT_WITH_SPECIAL_CHARS}`);
 
-      expect(token).toBe(validToken);
+      expect(token).toBe(VALID_JWT_WITH_SPECIAL_CHARS);
     });
 
     it('should reject tokens with empty parts', () => {

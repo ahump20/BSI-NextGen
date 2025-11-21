@@ -94,6 +94,14 @@ export async function verifyAuth0JWT(
 }
 
 /**
+ * JWT format validation pattern
+ * Matches tokens with exactly 3 base64url-encoded parts separated by dots
+ * Base64url characters: A-Z, a-z, 0-9, hyphen (-), underscore (_)
+ * Each part must contain at least one character
+ */
+const JWT_FORMAT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
+/**
  * Extract JWT from Authorization header
  * Validates that the token matches JWT format (three base64url parts separated by dots)
  */
@@ -112,12 +120,8 @@ export function extractBearerToken(authHeader: string | null): string | null {
   // Extract token using fixed length 7 for "Bearer "
   const token = authHeader.substring(7);
   
-  // Validate JWT format: must have exactly 3 parts separated by dots
-  // Each part should be base64url encoded (alphanumeric, -, _, no spaces)
-  // Each part must have at least one character
-  const jwtPattern = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
-  
-  if (!token || !jwtPattern.test(token)) {
+  // Validate JWT format
+  if (!token || !JWT_FORMAT_PATTERN.test(token)) {
     return null;
   }
   
