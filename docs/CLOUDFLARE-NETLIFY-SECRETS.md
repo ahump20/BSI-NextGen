@@ -32,7 +32,14 @@ Prefer storing sensitive values as environment secrets; fall back to environment
 
 ## Cloudflare bindings
 
-- **Workers**: Bind D1 (`[[d1_databases]]`), KV (`kv_namespaces`), and R2 (`r2_buckets`) in each `wrangler.toml`. Use environment-specific sections to keep staging and production isolated.
+- **Workers**: Bind D1 (`[[d1_databases]]`), KV (`kv_namespaces`), and R2 (`r2_buckets`) in each `wrangler.toml`. Use environment-specific sections (e.g., `[env.staging]` and `[env.production]`) to keep staging and production isolated.  
+  > **Note:** If you plan to deploy to a `staging` environment (e.g., using `wrangler deploy --env staging`), ensure that a `[env.staging]` section exists in your `wrangler.toml` with the appropriate bindings. Example:
+  > ```
+  > [env.staging]
+  > kv_namespaces = [{ binding = "MY_KV", id = "staging-namespace-id" }]
+  > d1_databases = [{ binding = "MY_D1", database_id = "staging-d1-id" }]
+  > r2_buckets = [{ binding = "MY_R2", bucket_name = "staging-bucket" }]
+  > ```
 - **Pages**: Provide the same bindings via `cloudflare_pages` config or environment variables so server-side rendering has identical access to data.
 - **Netlify fallback**: Keep `netlify.toml` aligned with Pages bindings. If a Worker proxy is required, map the same environment variables and credentials through Netlify environment settings.
 
