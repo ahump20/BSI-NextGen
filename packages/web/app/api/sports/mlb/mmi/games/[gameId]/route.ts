@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { GameMMIResponse, isMMIError } from '@bsi/shared';
+import { MLBAdapter } from '@bsi/api';
 
 // Configure for Cloudflare Edge Runtime
 export const runtime = 'edge';
@@ -17,6 +18,23 @@ const MMI_SERVICE_URL = process.env.MMI_SERVICE_URL;
  */
 function isMMIServiceConfigured(): boolean {
   return Boolean(MMI_SERVICE_URL && !MMI_SERVICE_URL.includes('localhost'));
+}
+
+/**
+ * Get cache control header based on game status
+ * - Final games: 1 hour browser, 24 hours CDN (data won't change)
+ * - Live games: 1 minute browser, 2 minutes CDN (frequent updates)
+ * - Scheduled/Other: 5 minutes browser, 10 minutes CDN (default)
+ */
+function getCacheControl(gameStatus: string | undefined): string {
+  switch (gameStatus) {
+    case 'final':
+      return 'public, max-age=3600, s-maxage=86400'; // 1hr browser, 24hr CDN
+    case 'live':
+      return 'public, max-age=60, s-maxage=120'; // 1min browser, 2min CDN
+    default:
+      return 'public, max-age=300, s-maxage=600'; // 5min browser, 10min CDN
+  }
 }
 
 /**
@@ -126,15 +144,31 @@ export async function GET(
       },
     };
 
+    // Fetch game status from MLB API to determine cache strategy
+    let gameStatus: string | undefined;
+    try {
+      const mlbAdapter = new MLBAdapter();
+      // Extract date from first pitch if available
+      const gameDate = data.pitches?.[0]?.date?.split('T')[0];
+      if (gameDate) {
+        const gamesResponse = await mlbAdapter.getGames(gameDate);
+        const game = gamesResponse.data.find(g => g.id === validated.gameId);
+        gameStatus = game?.status;
+      }
+    } catch (error) {
+      console.warn('[MMI API] Failed to fetch game status for cache optimization:', error);
+      // Continue with default cache if status fetch fails
+    }
+
     // Determine cache strategy based on game status
-    // TODO: Check if game is completed for longer cache
-    const cacheControl = 'public, max-age=300, s-maxage=600'; // 5min browser, 10min CDN
+    const cacheControl = getCacheControl(gameStatus);
 
     return NextResponse.json(enrichedData, {
       headers: {
         'Cache-Control': cacheControl,
         'X-Data-Source': 'MMI-Python-Service',
         'X-Game-ID': validated.gameId,
+        'X-Game-Status': gameStatus || 'unknown',
       },
     });
   } catch (error) {
