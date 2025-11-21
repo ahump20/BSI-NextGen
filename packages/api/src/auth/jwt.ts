@@ -94,11 +94,35 @@ export async function verifyAuth0JWT(
 }
 
 /**
+ * JWT format validation pattern
+ * Matches tokens with exactly 3 base64url-encoded parts separated by dots
+ * Base64url characters: A-Z, a-z, 0-9, hyphen (-), underscore (_)
+ * Each part must contain at least one character
+ */
+const JWT_FORMAT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
+/**
  * Extract JWT from Authorization header
+ * Validates that the token matches JWT format (three base64url parts separated by dots)
  */
 export function extractBearerToken(authHeader: string | null): string | null {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader) {
     return null;
   }
-  return authHeader.substring(7);
+  
+  // RFC 7230: Bearer scheme should be case-insensitive
+  // Check prefix length and compare case-insensitively
+  if (authHeader.length < 8 || authHeader.substring(0, 7).toLowerCase() !== 'bearer ') {
+    return null;
+  }
+  
+  // Extract token using fixed length 7 for "Bearer "
+  const token = authHeader.substring(7);
+  
+  // Validate JWT format
+  if (!token || !JWT_FORMAT_PATTERN.test(token)) {
+    return null;
+  }
+  
+  return token;
 }
