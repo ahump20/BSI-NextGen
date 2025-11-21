@@ -265,7 +265,7 @@ describe('/api/health', () => {
       expect(data.checks.external_apis).toBe('degraded');
 
       consoleSpy.mockRestore();
-    }, 10000);
+    }, 4000);
 
     it('should return degraded on non-200 response', async () => {
       mockFetch.mockResolvedValue({
