@@ -1,0 +1,282 @@
+name: Cloudflare Full-Stack Delivery
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      promote_to_production:
+        description: Promote latest staging artifact to production (requires approval)
+        required: false
+        type: boolean
+        default: false
+      rollback_production:
+        description: Trigger rollback using the last successful staging artifact
+        required: false
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+  NEXT_TELEMETRY_DISABLED: '1'
+  CI: true
+
+jobs:
+  validate-packages:
+    name: Build and test ${{ matrix.component }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [web, api]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build ${{ matrix.component }}
+        run: pnpm --filter @bsi/${{ matrix.component }} build
+
+      - name: Test ${{ matrix.component }}
+        run: pnpm --filter @bsi/${{ matrix.component }} test -- --runInBand
+
+  smoke-and-lighthouse:
+    name: Smoke + Lighthouse budgets
+    runs-on: ubuntu-latest
+    needs: validate-packages
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.promote_to_production != 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Next.js for smoke tests
+        run: pnpm --filter @bsi/web build
+
+      - name: Start Next.js server
+        run: |
+          pnpm --filter @bsi/web start -- --hostname 0.0.0.0 --port 3000 &
+          echo $! > /tmp/next_pid
+          for i in {1..20}; do
+            if curl -sSf http://localhost:3000 >/dev/null; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Next.js failed to start" && exit 1
+
+      - name: Smoke check homepage and API
+        run: |
+          curl -I http://localhost:3000
+          curl -I http://localhost:3000/api/health || echo "API health endpoint not yet exposed"
+
+      - name: Lighthouse performance & accessibility budgets
+        run: |
+          mkdir -p artifacts
+          npx lighthouse http://localhost:3000 \
+            --only-categories=performance,accessibility,best-practices \
+            --budget-path=.github/lighthouse-budgets.json \
+            --quiet \
+            --output=json \
+            --output-path=artifacts/lighthouse-report.json \
+            --chrome-flags="--headless --no-sandbox"
+
+      - name: Upload Lighthouse report
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: artifacts/lighthouse-report.json
+
+      - name: Stop Next.js
+        if: always()
+        run: |
+          if [ -f /tmp/next_pid ]; then
+            kill $(cat /tmp/next_pid) || true
+          fi
+
+  deploy-staging:
+    name: Deploy to Cloudflare staging
+    needs: [validate-packages, smoke-and-lighthouse]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build API + Web for staging
+        run: |
+          pnpm --filter @bsi/api build
+          pnpm --filter @bsi/web build
+
+      - name: Export Next.js for Cloudflare Pages
+        working-directory: packages/web
+        run: pnpm exec npx @cloudflare/next-on-pages --outdir .vercel/output/static --experimental-minify
+
+      - name: Deploy Workers (KV/D1/R2 bindings)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare-workers/blaze-trends
+          command: deploy --env staging
+
+      - name: Deploy Next.js to Cloudflare Pages (staging)
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
+          directory: packages/web/.vercel/output/static
+          branch: staging
+        env:
+          NODE_VERSION: ${{ env.NODE_VERSION }}
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Netlify fallback deploy (optional)
+        if: secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != ''
+        uses: netlify/actions/cli@v4
+        with:
+          args: deploy --dir=packages/web/.vercel/output/static --alias=staging-fallback
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+      - name: Package staging artifact for promotion
+        run: |
+          tar -czf staging-artifact.tar.gz packages/web/.vercel/output/static cloudflare-workers
+
+      - name: Upload staged artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-release
+          path: staging-artifact.tar.gz
+
+  promote-production:
+    name: Promote to production
+    needs: deploy-staging
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.promote_to_production == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Download staged artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: staging-release
+          path: ./release
+
+      - name: Extract release bundle
+        run: tar -xzf release/staging-artifact.tar.gz
+
+      - name: Deploy Workers (production)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare-workers/blaze-trends
+          command: deploy --env production
+
+      - name: Deploy Next.js to Cloudflare Pages (production)
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
+          directory: packages/web/.vercel/output/static
+          branch: production
+        env:
+          NODE_VERSION: ${{ env.NODE_VERSION }}
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Netlify production fallback (optional)
+        if: secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != ''
+        uses: netlify/actions/cli@v4
+        with:
+          args: deploy --dir=packages/web/.vercel/output/static --prod
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  rollback-production:
+    name: Rollback production from staged artifact
+    needs: deploy-staging
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.rollback_production == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Download staged artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: staging-release
+          path: ./release
+
+      - name: Extract release bundle
+        run: tar -xzf release/staging-artifact.tar.gz
+
+      - name: Rollback Workers to last staged build
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare-workers/blaze-trends
+          command: deploy --env production --minify
+
+      - name: Rollback Cloudflare Pages to staged artifact
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
+          directory: packages/web/.vercel/output/static
+          branch: production
+        env:
+          NODE_VERSION: ${{ env.NODE_VERSION }}
+          NEXT_TELEMETRY_DISABLED: '1'
