@@ -4,7 +4,6 @@
  */
 
 import { CollegeBaseballAdapter } from '../collegeBaseball';
-import * as shared from '@bsi/shared';
 
 // Mock the shared utilities
 jest.mock('@bsi/shared', () => ({
