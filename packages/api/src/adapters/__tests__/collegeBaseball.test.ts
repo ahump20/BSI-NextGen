@@ -806,7 +806,7 @@ describe('CollegeBaseballAdapter', () => {
       const result = await adapter.getGames({ date: '2025-01-13' });
       const gameWithBoxScore = result.data[0] as any;
 
-      expect(gameWithBoxScore.boxScore.pitchingLines[0].era).toBe('0.00');
+      expect(gameWithBoxScore.boxScore.pitchingLines[0].era).toBe('--');
 
       consoleSpy.mockRestore();
     });
