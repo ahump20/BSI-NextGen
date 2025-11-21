@@ -50,6 +50,17 @@ function buildPitchCurve(profile: PitchProfile) {
   return new THREE.CatmullRomCurve3([start, mid1, mid2, end]);
 }
 
+/**
+ * PitchTunnelSimulator - Interactive 3D pitch visualization component
+ * 
+ * Provides a real-time Three.js-based visualization of baseball pitch trajectories,
+ * allowing users to adjust pitch parameters and analyze tunneling effects between
+ * different pitch types.
+ * 
+ * @remarks
+ * This component uses client-side rendering only and should be loaded dynamically
+ * with { ssr: false } to avoid server-side Three.js initialization issues.
+ */
 export function PitchTunnelSimulator() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
