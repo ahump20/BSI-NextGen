@@ -3,32 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+  color-scheme: dark;
+  --surface: #0f172a;
+  --surface-strong: #111827;
+  --grid: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: #e5e7eb;
+  background: radial-gradient(circle at top left, rgba(45, 126, 255, 0.06), transparent 25%),
+    radial-gradient(circle at 20% 20%, rgba(34, 211, 238, 0.05), transparent 22%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(17, 24, 39, 0.98) 50%, rgba(15, 23, 42, 1) 100%);
+  background-color: var(--surface);
+  min-height: 100vh;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .bg-grid {
+    background-image: var(--grid);
+    background-size: 32px 32px;
   }
 
   /* Custom Scrollbar Styles */
