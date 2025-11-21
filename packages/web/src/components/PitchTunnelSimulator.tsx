@@ -244,17 +244,22 @@ export function PitchTunnelSimulator() {
     primaryCurveRef.current = primaryCurve;
     tunnelCurveRef.current = tunnelPairCurve;
 
+    // Helper function to dispose of a mesh and its resources
+    const disposeMesh = (mesh: THREE.Mesh) => {
+      mesh.geometry.dispose();
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((m) => m.dispose());
+      } else {
+        mesh.material.dispose();
+      }
+    };
+
     const group = pathGroupRef.current;
     while (group.children.length) {
       const child = group.children.pop();
       if (!child) continue;
       if (child instanceof THREE.Mesh) {
-        child.geometry.dispose();
-        if (Array.isArray(child.material)) {
-          child.material.forEach((m) => m.dispose());
-        } else {
-          child.material.dispose();
-        }
+        disposeMesh(child);
       }
     }
 
@@ -303,12 +308,7 @@ export function PitchTunnelSimulator() {
     // Clean up old tunnel shell mesh before creating a new one
     if (tunnelShellRef.current) {
       group.remove(tunnelShellRef.current);
-      tunnelShellRef.current.geometry.dispose();
-      if (Array.isArray(tunnelShellRef.current.material)) {
-        tunnelShellRef.current.material.forEach((m) => m.dispose());
-      } else {
-        tunnelShellRef.current.material.dispose();
-      }
+      disposeMesh(tunnelShellRef.current);
     }
 
     tunnelShellRef.current = new THREE.Mesh(
