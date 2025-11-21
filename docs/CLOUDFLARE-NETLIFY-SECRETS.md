@@ -4,18 +4,18 @@ This repository uses GitHub Actions to deploy Cloudflare Workers (with KV, D1, a
 
 ## Required secrets (GitHub Actions)
 
-| Secret | Purpose |
-| --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Token with access to Workers, KV, D1, R2, and Pages deploys. Scope it to the specific account and projects. |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID used by `wrangler` and the Pages deploy action. |
-| `CLOUDFLARE_PAGES_PROJECT` | Cloudflare Pages project slug for the Next.js frontend. |
-| `CLOUDFLARE_D1_DATABASE_ID` | D1 database identifier for data plane access and migrations. |
-| `CLOUDFLARE_R2_BUCKET` | Default R2 bucket binding used by Workers and the Next.js asset pipeline. |
-| `CLOUDFLARE_KV_NAMESPACE` | Namespace ID for KV used by Workers. |
-| `NETLIFY_AUTH_TOKEN` | Token for optional Netlify fallback deploys. |
-| `NETLIFY_SITE_ID` | Site ID for the Netlify fallback target. |
+| Secret | Purpose | Required/Optional |
+| --- | --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Token with access to Workers, KV, D1, R2, and Pages deploys. Scope it to the specific account and projects. | Required |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID used by `wrangler` and the Pages deploy action. | Required |
+| `CLOUDFLARE_PAGES_PROJECT` | Cloudflare Pages project slug for the Next.js frontend. | Required |
+| `CLOUDFLARE_D1_DATABASE_ID` | D1 database identifier for data plane access and migrations. | Optional (used for local development; bindings are set in `wrangler.toml`) |
+| `CLOUDFLARE_R2_BUCKET` | Default R2 bucket binding used by Workers and the Next.js asset pipeline. | Optional (used for local development; bindings are set in `wrangler.toml`) |
+| `CLOUDFLARE_KV_NAMESPACE` | Namespace ID for KV used by Workers. | Optional (used for local development; bindings are set in `wrangler.toml`) |
+| `NETLIFY_AUTH_TOKEN` | Token for optional Netlify fallback deploys. | Optional |
+| `NETLIFY_SITE_ID` | Site ID for the Netlify fallback target. | Optional |
 
-Store these values in GitHub repository *Secrets and variables → Actions* so they are available to the workflows. Use environment-level secrets for `staging` and `production` to enforce scoped credentials and manual approvals.
+**Note:** Secrets marked as "Optional" are only needed for local development or fallback deploys. For CI/CD, Worker bindings are configured via `wrangler.toml` and are not read from GitHub secrets.
 
 ## Environment variables consumed by pipelines
 
