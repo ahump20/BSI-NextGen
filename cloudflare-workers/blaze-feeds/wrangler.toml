@@ -1,0 +1,20 @@
+name = "blaze-feeds"
+main = "src/index.ts"
+compatibility_date = "2025-02-05"
+
+[[kv_namespaces]]
+binding = "FEED_CACHE"
+id = "${FEED_CACHE_NS}"
+
+[[d1_databases]]
+binding = "FEED_DB"
+database_name = "blaze-feeds-db"
+database_id = "${FEED_DB_ID}"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "blaze-feeds-media"
+
+[vars]
+UPSTREAM_BASE = "https://example.com/feeds"
+NETLIFY_FALLBACK_URL = "https://blazesportsintel.netlify.app/.netlify/functions"
