@@ -238,12 +238,12 @@ jobs:
 
       - name: Netlify production fallback (optional)
         if: secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != ''
-        uses: netlify/actions/cli@v4
+        uses: nwtgck/actions-netlify@v3
         with:
-          args: deploy --dir=packages/web/.vercel/output/static --prod
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          publish-dir: packages/web/.vercel/output/static
+          netlifySiteId: ${{ secrets.NETLIFY_SITE_ID }}
+          netlifyAuthToken: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          production-deploy: true
 
   rollback-production:
     name: Rollback production from staged artifact
