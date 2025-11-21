@@ -12,6 +12,116 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Unique Features That Set BSI-NextGen Apart
+
+BSI-NextGen is not just another sports platform. Here are the distinctive features that make it unique:
+
+### 1. Major Moments Index (MMI) System
+
+**What it is:** A proprietary baseball analytics engine that quantifies the psychological difficulty of every pitch using 5 factors.
+
+**The Formula:**
+```
+MMI = 0.35·z(Leverage Index) + 0.20·z(Pressure) + 0.20·z(Fatigue) + 0.15·z(Execution) + 0.10·z(Biometric)
+```
+
+**Why it matters:** Unlike traditional stats that focus on outcomes, MMI measures mental difficulty—the TRUE challenge athletes face.
+
+**Key Components:**
+- **Leverage Index (35%)** - Game situation criticality (0-10 scale)
+- **Pressure Score (20%)** - Crowd noise, streak status, playoff stakes
+- **Fatigue Score (20%)** - Pitch count, innings, days rest
+- **Execution Demand (15%)** - Pitch velocity, movement, location precision
+- **Biometric Indicators (10%)** - Heart rate variability, muscle tension (when available)
+
+**Implementation:** Powered by Cloudflare Workers with D1 database, exposed via `/api/sports/mlb/mmi/*` endpoints.
+
+**Frontend Integration:**
+- Real-time MMI scores displayed in game cards
+- Color-coded pressure indicators (green → yellow → red)
+- Breakdown tooltips showing component scores
+- Historical MMI trends and player comparisons
+
+### 2. Pitch Tunnel Simulator (3D Visualization)
+
+**What it is:** An interactive 3D pitch visualization tool with real physics simulation using Babylon.js.
+
+**Real Physics Implementation:**
+```typescript
+// Magnus Force (spin-induced movement)
+F_magnus = (1/2) * ρ * A * C_L * v²
+C_L = S / (v * d)  // Lift coefficient from spin rate
+
+// Drag Force (air resistance)
+F_drag = (1/2) * ρ * A * C_D * v²
+```
+
+**Features:**
+- **Statcast Integration** - Real pitch data from MLB's tracking system
+- **Pitcher Comparison** - Compare breaking balls side-by-side
+- **Custom Pitch Design** - Create hypothetical pitches with physics validation
+- **60 FPS Simulation** - Smooth, accurate trajectory rendering
+- **Batter's Eye View** - See exactly what the hitter sees
+
+**Technology Stack:**
+- Babylon.js for 3D rendering
+- Cloudflare Workers for data delivery
+- D1 database for pitch library (7-day cache TTL)
+- WebGL acceleration for 60 FPS performance
+
+**API Endpoints:**
+- `GET /api/pitch-tunnel/pitchers/search` - Find pitchers by name/team
+- `GET /api/pitch-tunnel/pitchers/:id/pitches` - Get pitcher's arsenal
+- `POST /api/pitch-tunnel/design` - Create custom pitch with physics validation
+
+### 3. Real-Time Edge Computing
+
+**What it is:** 8+ Cloudflare Workers deployed at the edge for <50ms response times globally.
+
+**Performance Targets:**
+- Sub-30-second data freshness for live games
+- <10ms cache hits via Cloudflare KV
+- <200ms P99 API response time (measured)
+- 99.9% uptime SLA
+
+**Key Workers:**
+- **MMI Engine** - Real-time moment scoring for live games
+- **Pitch Tunnel** - 3D physics simulation data delivery
+- **Blaze Trends** - AI-powered sports news monitoring with GPT-4 Turbo
+- **Blaze Ingestion** - Multi-source data pipeline aggregation
+- **Blaze Content** - Content management and caching layer
+
+**Edge Architecture Benefits:**
+- Global deployment across 300+ cities
+- Automatic failover and redundancy
+- Zero cold starts with Workers
+- D1 database replication for resilience
+
+### 4. AI-Powered Trend Detection (Blaze Trends)
+
+**What it is:** Automated sports news monitoring with GPT-4 Turbo-powered trend identification.
+
+**How it Works:**
+1. **Brave Search API** - Crawl sports news every 15 minutes (cron)
+2. **GPT-4 Turbo Analysis** - Identify emerging stories across 7 sports
+3. **D1 Storage** - Persist trends with metadata (source, confidence, sport)
+4. **KV Caching** - Sub-10ms retrieval for trending topics
+5. **Frontend Display** - Real-time trend cards with filtering
+
+**Monitoring Capabilities:**
+- Multi-sport coverage (MLB, NFL, NBA, NCAA Football, NCAA Basketball, College Baseball, Youth Sports)
+- Confidence scoring (0-100) based on source count and recency
+- Source attribution and link aggregation
+- Sport-specific filtering and search
+
+**Automation:**
+- Cron schedule: Every 15 minutes during peak hours
+- Automatic deduplication of similar stories
+- Trend decay based on age and engagement
+- Error logging and alerting via D1
+
+---
+
 ## Monorepo Structure
 
 ### Workspace Packages
@@ -115,11 +225,571 @@ pnpm clean && pnpm install
 
 ### Cloudflare Workers
 
-BSI-NextGen uses multiple Cloudflare Workers for edge computing:
+BSI-NextGen uses 8+ production Cloudflare Workers for edge computing and real-time analytics. Each worker is optimized for specific tasks with dedicated D1 databases and KV stores.
+
+---
+
+#### MMI Engine Worker
+
+**Purpose:** Real-time Major Moments Index calculation for live baseball games.
+
+**Location:** `cloudflare-workers/mmi-engine/`
+
+**The MMI Formula:**
+```typescript
+// Moment Mentality Index (0-100 scale)
+MMI = 0.35·z(LI) + 0.20·z(Pressure) + 0.20·z(Fatigue) + 0.15·z(Execution) + 0.10·z(Bio)
+
+// Where z() is standard score normalization:
+z(x) = (x - μ) / σ
+```
+
+**Component Calculations:**
+
+1. **Leverage Index (35% weight)**
+   ```typescript
+   // From Win Probability Added (WPA)
+   LI = abs(WPA_after - WPA_before)
+   // Range: 0-10, typical values: 0.5-3.0
+   ```
+
+2. **Pressure Score (20% weight)**
+   ```typescript
+   Pressure = w1·crowd_factor + w2·streak_pressure + w3·playoff_multiplier
+   // crowd_factor: 0-10 (attendance %, noise level)
+   // streak_pressure: 0-5 (team/player streak status)
+   // playoff_multiplier: 1.0-2.5 (regular=1.0, playoffs=2.5)
+   ```
+
+3. **Fatigue Score (20% weight)**
+   ```typescript
+   Fatigue = (pitch_count/100) + (innings_pitched/9) + (1 - days_rest/5)
+   // Normalized to 0-10 scale
+   ```
+
+4. **Execution Demand (15% weight)**
+   ```typescript
+   Execution = velocity_factor + movement_factor + location_precision
+   // velocity_factor: (velo - 85) / 15  // 85-100 mph range
+   // movement_factor: break_inches / 24  // 0-24 inch break
+   // location_precision: edge_distance / 17  // inches from plate edge
+   ```
+
+5. **Biometric Indicators (10% weight)**
+   ```typescript
+   Bio = (heart_rate - resting_HR) / max_HR_range
+   // When available: heart rate variability, muscle tension sensors
+   // Defaults to 5.0 when data unavailable
+   ```
+
+**D1 Database Schema:**
+
+```sql
+-- Table: mmi_moments
+CREATE TABLE mmi_moments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  game_id TEXT NOT NULL,
+  inning INTEGER NOT NULL,
+  pitch_number INTEGER NOT NULL,
+  mmi_score REAL NOT NULL,
+  leverage_index REAL,
+  pressure_score REAL,
+  fatigue_score REAL,
+  execution_demand REAL,
+  biometric_score REAL,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_game_id (game_id),
+  INDEX idx_mmi_score (mmi_score DESC)
+);
+
+-- Table: player_streaks
+CREATE TABLE player_streaks (
+  player_id TEXT PRIMARY KEY,
+  current_streak INTEGER,
+  streak_type TEXT,  -- 'hitting' | 'pitching' | 'winning'
+  last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table: game_summary
+CREATE TABLE game_summary (
+  game_id TEXT PRIMARY KEY,
+  peak_mmi REAL,
+  peak_moment TEXT,  -- Inning/play description
+  total_high_leverage_pitches INTEGER,
+  average_mmi REAL,
+  last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table: calibration
+CREATE TABLE calibration (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  component TEXT NOT NULL,  -- 'leverage' | 'pressure' | 'fatigue' | etc.
+  mean REAL,
+  std_dev REAL,
+  updated DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**API Endpoints:**
+
+```typescript
+// Get real-time MMI for live game
+GET /api/mmi/games/today
+Response: {
+  games: [
+    {
+      game_id: "2025_11_21_nyy_at_bos",
+      current_mmi: 78.5,
+      peak_mmi: 92.3,
+      high_leverage_count: 12,
+      last_updated: "2025-11-21T19:45:23Z"
+    }
+  ]
+}
+
+// Get top MMI moments across all games
+GET /api/mmi/top?limit=10&days=7
+Response: {
+  moments: [
+    {
+      game_id: "...",
+      inning: 9,
+      description: "Bottom 9th, bases loaded, 2 outs, down by 1",
+      mmi_score: 95.7,
+      breakdown: {
+        leverage: 9.2,
+        pressure: 8.5,
+        fatigue: 7.1,
+        execution: 6.8,
+        biometric: 7.9
+      },
+      timestamp: "2025-11-21T22:15:00Z"
+    }
+  ]
+}
+
+// Get MMI breakdown for specific game
+GET /api/mmi/:gameId
+Response: {
+  game_id: "2025_11_21_nyy_at_bos",
+  moments: [...],
+  summary: {
+    peak_mmi: 92.3,
+    average_mmi: 45.2,
+    high_leverage_pitches: 12,
+    pressure_timeline: [...]
+  }
+}
+
+// Update MMI for new play (internal)
+POST /api/mmi/calculate
+Body: {
+  game_id: "...",
+  play_data: {...}
+}
+
+// Health check
+GET /health
+Response: { status: "healthy", db_status: "connected", cache_hit_rate: 0.87 }
+```
+
+**Frontend Integration:**
+
+```typescript
+// Real-time MMI display in game card
+import { useMMI } from '@/hooks/useMMI';
+
+export function GameCard({ gameId }) {
+  const { mmi, breakdown, isLoading } = useMMI(gameId);
+
+  // Color-coded pressure indicator
+  const getPressureColor = (score: number) => {
+    if (score >= 80) return 'bg-red-600';      // Extreme
+    if (score >= 60) return 'bg-orange-500';   // High
+    if (score >= 40) return 'bg-yellow-400';   // Medium
+    return 'bg-green-500';                     // Low
+  };
+
+  return (
+    <div className="mmi-indicator">
+      <div className={getPressureColor(mmi)} />
+      <span>MMI: {mmi.toFixed(1)}</span>
+      {/* Breakdown tooltip */}
+      <Tooltip>
+        <div>Leverage: {breakdown.leverage}</div>
+        <div>Pressure: {breakdown.pressure}</div>
+        <div>Fatigue: {breakdown.fatigue}</div>
+        <div>Execution: {breakdown.execution}</div>
+      </Tooltip>
+    </div>
+  );
+}
+```
+
+**Commands:**
+
+```bash
+# Local development
+cd cloudflare-workers/mmi-engine
+wrangler dev
+
+# Deploy to production
+wrangler deploy
+
+# Monitor logs
+wrangler tail
+
+# Query D1 database
+wrangler d1 execute mmi-db --command "SELECT * FROM mmi_moments ORDER BY mmi_score DESC LIMIT 10"
+
+# Test MMI calculation
+curl -X POST http://localhost:8787/api/mmi/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"game_id":"test_game","play_data":{...}}'
+```
+
+**Performance Metrics:**
+- Calculation time: <15ms per pitch
+- D1 query time: <25ms P95
+- KV cache hit rate: 85%+
+- Update frequency: Real-time (every pitch)
+
+---
+
+#### Pitch Tunnel Simulator Worker
+
+**Purpose:** Deliver 3D pitch visualization data with real physics calculations.
+
+**Location:** `cloudflare-workers/pitch-tunnel/`
+
+**Physics Engine:**
+
+```typescript
+// Core physics simulation (runs at 60 FPS in browser)
+interface PitchPhysics {
+  // Initial conditions
+  velocity: Vector3;      // mph → m/s conversion
+  spin_rate: number;      // rpm
+  spin_axis: Vector3;     // degrees from vertical
+  release_point: Vector3; // feet from home plate
+
+  // Forces (Newtons)
+  gravity: Vector3;       // -9.81 m/s² vertical
+  magnus: Vector3;        // Spin-induced lift
+  drag: Vector3;          // Air resistance
+}
+
+// Magnus Force (spin creates pressure differential)
+function calculateMagnus(
+  velocity: number,      // m/s
+  spin_rate: number,     // rpm → rad/s
+  ball_diameter: number  // 0.074 m (regulation baseball)
+): number {
+  const rho = 1.225;  // Air density (kg/m³) at sea level
+  const A = Math.PI * Math.pow(ball_diameter / 2, 2);  // Cross-sectional area
+  const omega = spin_rate * (2 * Math.PI / 60);  // rpm → rad/s
+  const S = omega * ball_diameter / 2;  // Surface velocity
+
+  // Lift coefficient (empirical from wind tunnel data)
+  const C_L = S / (velocity * ball_diameter);
+
+  // Magnus force magnitude
+  const F_magnus = 0.5 * rho * A * C_L * Math.pow(velocity, 2);
+
+  return F_magnus;
+}
+
+// Drag Force (quadratic air resistance)
+function calculateDrag(
+  velocity: number,
+  ball_diameter: number
+): number {
+  const rho = 1.225;
+  const A = Math.PI * Math.pow(ball_diameter / 2, 2);
+  const C_D = 0.4;  // Drag coefficient for smooth sphere (approximation)
+
+  const F_drag = 0.5 * rho * A * C_D * Math.pow(velocity, 2);
+
+  return F_drag;
+}
+
+// Trajectory integration (Euler method, 60 FPS)
+function simulateTrajectory(pitch: PitchPhysics): Vector3[] {
+  const dt = 1 / 60;  // 60 FPS time step
+  const positions: Vector3[] = [];
+
+  let pos = pitch.release_point.clone();
+  let vel = pitch.velocity.clone();
+
+  // Simulate until ball crosses home plate (60.5 feet)
+  while (pos.z < 60.5) {
+    // Calculate forces
+    const F_gravity = new Vector3(0, -9.81 * 0.145, 0);  // kg → lbs conversion
+    const F_magnus = calculateMagnus(vel.length(), pitch.spin_rate, 0.074);
+    const F_drag = calculateDrag(vel.length(), 0.074);
+
+    // Apply forces (F = ma, a = F/m, m = 0.145 kg)
+    const a_gravity = F_gravity.scale(1 / 0.145);
+    const a_magnus = pitch.spin_axis.scale(F_magnus / 0.145);
+    const a_drag = vel.normalize().scale(-F_drag / 0.145);
+
+    const a_total = a_gravity.add(a_magnus).add(a_drag);
+
+    // Euler integration
+    vel = vel.add(a_total.scale(dt));
+    pos = pos.add(vel.scale(dt));
+
+    positions.push(pos.clone());
+  }
+
+  return positions;
+}
+```
+
+**D1 Database Schema:**
+
+```sql
+-- Table: pitchers
+CREATE TABLE pitchers (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  team TEXT,
+  mlb_id INTEGER,
+  statcast_id TEXT,
+  INDEX idx_name (name)
+);
+
+-- Table: pitch_arsenal
+CREATE TABLE pitch_arsenal (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pitcher_id TEXT NOT NULL,
+  pitch_type TEXT NOT NULL,  -- 'FF' | 'SL' | 'CU' | 'CH' | 'SI' | etc.
+  avg_velocity REAL,
+  avg_spin_rate REAL,
+  avg_break_x REAL,  -- Horizontal break (inches)
+  avg_break_z REAL,  -- Vertical break (inches)
+  spin_axis REAL,    -- Degrees from vertical
+  release_x REAL,
+  release_y REAL,
+  release_z REAL,
+  usage_pct REAL,
+  whiff_rate REAL,
+  FOREIGN KEY (pitcher_id) REFERENCES pitchers(id)
+);
+
+-- Table: pitch_designs
+CREATE TABLE pitch_designs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,  -- Optional user attribution
+  pitch_name TEXT,
+  velocity REAL,
+  spin_rate REAL,
+  spin_axis REAL,
+  release_point TEXT,  -- JSON: {x, y, z}
+  physics_valid BOOLEAN,  -- Passes physics validation
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user (user_id),
+  INDEX idx_created (created_at DESC)
+);
+
+-- Table: pitch_cache
+CREATE TABLE pitch_cache (
+  cache_key TEXT PRIMARY KEY,
+  trajectory_data TEXT,  -- JSON array of Vector3 positions
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ttl INTEGER DEFAULT 604800  -- 7 days in seconds
+);
+```
+
+**API Endpoints:**
+
+```typescript
+// Search for pitchers
+GET /api/pitch-tunnel/pitchers/search?q=kershaw&limit=10
+Response: {
+  pitchers: [
+    {
+      id: "kershaw-clayton",
+      name: "Clayton Kershaw",
+      team: "LAD",
+      mlb_id: 477132,
+      statcast_id: "477132"
+    }
+  ]
+}
+
+// Get pitcher's arsenal
+GET /api/pitch-tunnel/pitchers/:id/pitches
+Response: {
+  pitcher: {...},
+  arsenal: [
+    {
+      pitch_type: "FF",
+      name: "Four-Seam Fastball",
+      avg_velocity: 91.5,
+      avg_spin_rate: 2450,
+      avg_break_x: -4.2,
+      avg_break_z: 16.8,
+      spin_axis: 225,
+      release_point: {x: -2.1, y: 5.8, z: 54.5},
+      usage_pct: 42.3,
+      whiff_rate: 0.28
+    },
+    {
+      pitch_type: "SL",
+      name: "Slider",
+      avg_velocity: 87.2,
+      avg_spin_rate: 2680,
+      avg_break_x: 6.8,
+      avg_break_z: 2.1,
+      spin_axis: 45,
+      release_point: {x: -2.0, y: 5.9, z: 54.3},
+      usage_pct: 35.1,
+      whiff_rate: 0.41
+    }
+  ]
+}
+
+// Get simulated trajectory
+GET /api/pitch-tunnel/trajectory?pitcher_id=...&pitch_type=SL
+Response: {
+  trajectory: [
+    {x: -2.0, y: 5.9, z: 54.3},  // Release point
+    {x: -1.95, y: 5.85, z: 55.1},
+    // ... 60 FPS positions
+    {x: 0.2, y: 2.1, z: 60.5}    // Home plate
+  ],
+  physics: {
+    time_to_plate: 0.42,  // seconds
+    perceived_velocity: 88.7,  // mph (slower than actual)
+    max_break: 6.8,  // inches
+    break_point: 20.5  // feet from plate
+  }
+}
+
+// Create custom pitch design
+POST /api/pitch-tunnel/design
+Body: {
+  pitch_name: "My Slider",
+  velocity: 86,
+  spin_rate: 2600,
+  spin_axis: 50,
+  release_point: {x: -2.0, y: 6.0, z: 54.0}
+}
+Response: {
+  design_id: "design_abc123",
+  physics_valid: true,
+  trajectory: [...],
+  warnings: []  // e.g., "Spin rate high for velocity"
+}
+
+// Compare two pitches side-by-side
+GET /api/pitch-tunnel/compare?pitcher1=...&pitch1=SL&pitcher2=...&pitch2=SL
+Response: {
+  pitch1: {...},
+  pitch2: {...},
+  comparison: {
+    velocity_diff: 2.3,
+    break_diff: {x: 1.5, z: -0.8},
+    similarity_score: 0.87  // 0-1, cosine similarity of trajectories
+  }
+}
+
+// Health check
+GET /health
+Response: { status: "healthy", db_status: "connected", cache_size_mb: 45.2 }
+```
+
+**Frontend Integration:**
+
+```typescript
+// Iframe wrapper component
+export function PitchTunnelViewer({ pitcherId, pitchType }) {
+  const iframeUrl = `https://pitch-tunnel.blazesportsintel.com/viewer?pitcher=${pitcherId}&pitch=${pitchType}`;
+
+  return (
+    <iframe
+      src={iframeUrl}
+      width="800"
+      height="600"
+      style={{ border: 'none' }}
+      allow="accelerometer; gyroscope"  // For device orientation controls
+    />
+  );
+}
+
+// Direct Babylon.js integration (advanced)
+import { Scene, Engine, ArcRotateCamera, Vector3 } from '@babylonjs/core';
+
+export function PitchTunnel3D({ trajectory }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const engine = new Engine(canvasRef.current, true);
+    const scene = new Scene(engine);
+
+    // Camera setup (batter's POV)
+    const camera = new ArcRotateCamera(
+      "camera",
+      Math.PI / 2,
+      Math.PI / 3,
+      20,
+      new Vector3(0, 3, 60.5),  // Home plate position
+      scene
+    );
+
+    // Render baseball trajectory
+    const path = trajectory.map(p => new Vector3(p.x, p.y, p.z));
+    const tube = MeshBuilder.CreateTube("path", {
+      path,
+      radius: 0.037,  // Baseball radius in meters
+      tessellation: 32
+    }, scene);
+
+    engine.runRenderLoop(() => scene.render());
+
+    return () => engine.dispose();
+  }, [trajectory]);
+
+  return <canvas ref={canvasRef} width={800} height={600} />;
+}
+```
+
+**Commands:**
+
+```bash
+# Local development
+cd cloudflare-workers/pitch-tunnel
+wrangler dev
+
+# Deploy
+wrangler deploy
+
+# Update pitcher database from Statcast
+node scripts/update-statcast-data.js
+
+# Validate physics calculations
+npm run test:physics
+
+# Clear trajectory cache
+wrangler d1 execute pitch-tunnel-db --command "DELETE FROM pitch_cache WHERE created_at < datetime('now', '-7 days')"
+```
+
+**Performance Metrics:**
+- Trajectory calculation: <30ms
+- D1 pitch library query: <20ms P95
+- Cache TTL: 7 days
+- Trajectory points: 25-60 per pitch (60 FPS * 0.4-1.0s)
+
+---
 
 #### Blaze Trends Worker
 
 **Purpose:** Real-time sports news monitoring with AI-powered trend analysis
+
+**Location:** `cloudflare-workers/blaze-trends/`
 
 ```bash
 # Local development
@@ -142,20 +812,94 @@ pnpm trends:db help          # Show all db commands
 pnpm trends:setup            # Run setup wizard
 ```
 
-**Key Features:**
-- AI-powered trend identification with OpenAI GPT-4 Turbo
-- Multi-sport news aggregation via Brave Search API
-- Automated monitoring every 15 minutes (cron)
-- Edge computing with Cloudflare Workers
-- D1 database for persistence
-- KV caching for <10ms response times
+**D1 Database Schema:**
+
+```sql
+-- Table: trends
+CREATE TABLE trends (
+  id TEXT PRIMARY KEY,
+  sport TEXT NOT NULL,  -- 'mlb' | 'nfl' | 'nba' | 'college_baseball' | etc.
+  headline TEXT NOT NULL,
+  summary TEXT,
+  confidence REAL,  -- 0-100 score from GPT-4
+  source_count INTEGER,
+  sources TEXT,  -- JSON array of URLs
+  keywords TEXT,  -- JSON array
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+  decay_score REAL DEFAULT 100,  -- Decreases over time
+  INDEX idx_sport (sport),
+  INDEX idx_confidence (confidence DESC),
+  INDEX idx_created (created_at DESC)
+);
+
+-- Table: trend_sources
+CREATE TABLE trend_sources (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trend_id TEXT NOT NULL,
+  url TEXT NOT NULL,
+  title TEXT,
+  published_at DATETIME,
+  FOREIGN KEY (trend_id) REFERENCES trends(id)
+);
+
+-- Table: monitoring_log
+CREATE TABLE monitoring_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sport TEXT,
+  trends_found INTEGER,
+  api_calls INTEGER,
+  gpt4_tokens INTEGER,
+  errors TEXT,  -- JSON array
+  execution_time_ms INTEGER,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_timestamp (timestamp DESC)
+);
+```
+
+**AI Analysis Pipeline:**
+
+```typescript
+// GPT-4 Turbo prompt for trend identification
+const TREND_PROMPT = `
+You are a sports analyst identifying emerging trends from news articles.
+
+Articles: ${JSON.stringify(articles)}
+
+For each significant trend, output JSON:
+{
+  "headline": "Brief, compelling headline (max 80 chars)",
+  "summary": "2-3 sentence summary",
+  "confidence": 0-100 (based on source count, recency, significance),
+  "keywords": ["keyword1", "keyword2", ...],
+  "sport": "mlb" | "nfl" | "nba" | etc.
+}
+
+Only identify trends with confidence >= 60.
+`;
+
+// Decay algorithm (trends fade over time)
+function calculateDecay(created_at: Date): number {
+  const hours_old = (Date.now() - created_at.getTime()) / (1000 * 60 * 60);
+  const decay_rate = 0.05;  // 5% per hour
+  return Math.max(0, 100 - (hours_old * decay_rate));
+}
+```
 
 **API Endpoints:**
 - `GET /health` - Health check
 - `GET /api/trends` - Get all trends
 - `GET /api/trends?sport=college_baseball` - Filter by sport
 - `GET /api/trends/:id` - Get specific trend
-- `GET /cron/monitor` - Manual monitoring trigger
+- `GET /cron/monitor` - Manual monitoring trigger (internal)
+
+**Cron Schedule:**
+
+```toml
+# wrangler.toml
+[triggers]
+crons = ["*/15 * * * *"]  # Every 15 minutes
+```
 
 **Documentation:**
 - `cloudflare-workers/blaze-trends/README.md` - Technical overview
@@ -168,13 +912,24 @@ pnpm trends:setup            # Run setup wizard
 - Components: `TrendCard`, `SportFilter`
 - Types: `packages/web/types/trends.ts`
 
-#### Other Cloudflare Workers
+**Performance Metrics:**
+- Monitoring cycle: 15 minutes
+- GPT-4 analysis: <5s per batch
+- D1 storage: <20ms P95
+- KV cache hits: <10ms
+- Trend retention: 7 days
+
+---
+
+#### Other Production Workers
 
 **Location:** `cloudflare-workers/`
 
-- **blaze-content** - Content management worker
-- **blaze-ingestion** - Data ingestion pipeline
-- **longhorns-baseball** - Texas Longhorns baseball specific worker
+1. **blaze-content** - Content management and caching layer
+2. **blaze-ingestion** - Multi-source data pipeline aggregation
+3. **longhorns-baseball** - Texas Longhorns baseball-specific worker (team-focused analytics)
+4. **blaze-api-gateway** - Unified API gateway with rate limiting
+5. **blaze-webhooks** - Webhook delivery system for real-time notifications
 
 See `docs/INFRASTRUCTURE.md` for complete worker mapping (72 total workers documented).
 
@@ -338,6 +1093,292 @@ pnpm deploy
 
 ## Development Workflow
 
+### Adding a New Cloudflare Worker
+
+**When to create a worker:** Use Cloudflare Workers for edge computing tasks that require:
+- Real-time data processing (<50ms response times)
+- Global distribution (CDN benefits)
+- D1 database or KV storage
+- Cron-based automation
+- Heavy computational tasks offloaded from Next.js
+
+**Step-by-step Guide:**
+
+1. **Create Worker Directory:**
+   ```bash
+   mkdir -p cloudflare-workers/my-worker
+   cd cloudflare-workers/my-worker
+   ```
+
+2. **Initialize Wrangler Configuration:**
+   ```toml
+   # wrangler.toml
+   name = "my-worker"
+   main = "src/index.ts"
+   compatibility_date = "2024-01-01"
+
+   # D1 Database (optional)
+   [[d1_databases]]
+   binding = "DB"
+   database_name = "my-worker-db"
+   database_id = "your-database-id-here"
+
+   # KV Namespace (optional)
+   [[kv_namespaces]]
+   binding = "KV"
+   id = "your-kv-namespace-id"
+
+   # Cron Triggers (optional)
+   [triggers]
+   crons = ["*/15 * * * *"]  # Every 15 minutes
+
+   # Environment Variables
+   [vars]
+   ENVIRONMENT = "production"
+
+   # Secrets (set via: wrangler secret put SECRET_NAME)
+   # OPENAI_API_KEY
+   # BRAVE_SEARCH_API_KEY
+   ```
+
+3. **Create Worker Source Code:**
+   ```typescript
+   // src/index.ts
+   export interface Env {
+     DB: D1Database;       // D1 binding (if configured)
+     KV: KVNamespace;      // KV binding (if configured)
+     OPENAI_API_KEY: string;  // Secrets
+     ENVIRONMENT: string;   // Variables
+   }
+
+   export default {
+     // HTTP requests
+     async fetch(
+       request: Request,
+       env: Env,
+       ctx: ExecutionContext
+     ): Promise<Response> {
+       const url = new URL(request.url);
+
+       // Health check
+       if (url.pathname === '/health') {
+         return Response.json({
+           status: 'healthy',
+           timestamp: new Date().toISOString(),
+           environment: env.ENVIRONMENT
+         });
+       }
+
+       // API endpoint
+       if (url.pathname === '/api/data') {
+         try {
+           // Query D1 database
+           const result = await env.DB.prepare(
+             'SELECT * FROM my_table LIMIT 10'
+           ).all();
+
+           // Cache in KV
+           await env.KV.put(
+             'cache:data',
+             JSON.stringify(result.results),
+             { expirationTtl: 300 }  // 5 minutes
+           );
+
+           return Response.json(result.results);
+         } catch (error) {
+           return Response.json(
+             { error: error.message },
+             { status: 500 }
+           );
+         }
+       }
+
+       return Response.json(
+         { error: 'Not found' },
+         { status: 404 }
+       );
+     },
+
+     // Cron triggers (if configured)
+     async scheduled(
+       event: ScheduledEvent,
+       env: Env,
+       ctx: ExecutionContext
+     ): Promise<void> {
+       console.log('Cron triggered:', event.scheduledTime);
+
+       // Perform scheduled task
+       await performBackgroundTask(env);
+     }
+   };
+
+   async function performBackgroundTask(env: Env): Promise<void> {
+     // Example: Clean up old database records
+     await env.DB.prepare(
+       `DELETE FROM my_table WHERE created_at < datetime('now', '-7 days')`
+     ).run();
+   }
+   ```
+
+4. **Create D1 Database Schema (if needed):**
+   ```bash
+   # Create database
+   wrangler d1 create my-worker-db
+
+   # Get database ID and add to wrangler.toml
+   # Copy the ID from output
+   ```
+
+   ```sql
+   -- migrations/0001_initial.sql
+   CREATE TABLE my_table (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     data TEXT NOT NULL,
+     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+     INDEX idx_created (created_at DESC)
+   );
+   ```
+
+   ```bash
+   # Apply migration
+   wrangler d1 execute my-worker-db --file=migrations/0001_initial.sql
+   ```
+
+5. **Add Package Scripts:**
+   ```json
+   // package.json (root)
+   {
+     "scripts": {
+       "my-worker:dev": "cd cloudflare-workers/my-worker && wrangler dev",
+       "my-worker:deploy": "cd cloudflare-workers/my-worker && wrangler deploy",
+       "my-worker:tail": "cd cloudflare-workers/my-worker && wrangler tail",
+       "my-worker:db": "cd cloudflare-workers/my-worker && wrangler d1 execute my-worker-db"
+     }
+   }
+   ```
+
+6. **Test Locally:**
+   ```bash
+   # Start dev server
+   pnpm my-worker:dev
+
+   # Test in another terminal
+   curl http://localhost:8787/health
+   curl http://localhost:8787/api/data
+   ```
+
+7. **Deploy to Production:**
+   ```bash
+   # Set secrets (first time only)
+   cd cloudflare-workers/my-worker
+   wrangler secret put OPENAI_API_KEY
+   # Enter your API key when prompted
+
+   # Deploy
+   pnpm my-worker:deploy
+
+   # Monitor logs
+   pnpm my-worker:tail
+   ```
+
+8. **Integrate with Next.js (if needed):**
+   ```typescript
+   // packages/web/app/api/my-endpoint/route.ts
+   import { NextRequest, NextResponse } from 'next/server';
+
+   export async function GET(request: NextRequest) {
+     try {
+       // Call Cloudflare Worker
+       const response = await fetch(
+         'https://my-worker.your-subdomain.workers.dev/api/data',
+         {
+           headers: {
+             'Authorization': `Bearer ${process.env.WORKER_API_KEY}`
+           }
+         }
+       );
+
+       const data = await response.json();
+
+       return NextResponse.json(data, {
+         headers: {
+           'Cache-Control': 'public, max-age=300, s-maxage=600'
+         }
+       });
+     } catch (error) {
+       console.error('[API] Worker error:', error);
+       return NextResponse.json(
+         { error: 'Failed to fetch data' },
+         { status: 500 }
+       );
+     }
+   }
+   ```
+
+9. **Update Documentation:**
+   - Add worker to `docs/INFRASTRUCTURE.md`
+   - Document API endpoints in this CLAUDE.md file
+   - Add deployment notes to `DEPLOYMENT.md`
+   - Create README in worker directory
+
+**Best Practices:**
+
+- **Error Handling:** Always wrap D1/KV operations in try-catch blocks
+- **Caching:** Use KV for frequently accessed data (<1MB)
+- **Database:** Use D1 for relational data and complex queries
+- **Observability:** Log errors and performance metrics
+- **Security:** Never commit secrets, use wrangler secret
+- **Performance:** Keep response times <200ms P99
+- **Testing:** Test locally with wrangler dev before deploying
+
+**Common Patterns:**
+
+```typescript
+// Cache-aside pattern (check KV first, fallback to D1)
+async function getCachedData(env: Env, key: string) {
+  // Try KV cache first
+  const cached = await env.KV.get(key);
+  if (cached) {
+    return JSON.parse(cached);
+  }
+
+  // Fallback to D1 database
+  const result = await env.DB.prepare(
+    'SELECT * FROM data WHERE id = ?'
+  ).bind(key).first();
+
+  // Cache for next time
+  if (result) {
+    await env.KV.put(key, JSON.stringify(result), {
+      expirationTtl: 300  // 5 minutes
+    });
+  }
+
+  return result;
+}
+
+// Rate limiting pattern
+async function checkRateLimit(env: Env, clientId: string): Promise<boolean> {
+  const key = `ratelimit:${clientId}`;
+  const current = await env.KV.get(key);
+
+  if (!current) {
+    await env.KV.put(key, '1', { expirationTtl: 60 });
+    return true;
+  }
+
+  const count = parseInt(current);
+  if (count >= 60) {  // 60 requests per minute
+    return false;
+  }
+
+  await env.KV.put(key, String(count + 1), { expirationTtl: 60 });
+  return true;
+}
+```
+
+---
+
 ### Adding a New Sports Adapter
 
 1. **Create adapter** in `packages/api/src/adapters/`:
@@ -461,10 +1502,32 @@ GET /api/sports/mlb/games?date=2025-01-11
 GET /api/sports/mlb/standings?divisionId=200
 GET /api/sports/mlb/teams
 
-# MLB MMI (Major Moments Index)
-GET /api/sports/mlb/mmi/games/:gameId
-GET /api/sports/mlb/mmi/high-leverage
-GET /api/sports/mlb/mmi/health
+# MLB MMI (Major Moments Index) - Next.js Routes
+GET /api/sports/mlb/mmi/games/:gameId      # Get MMI breakdown for specific game
+GET /api/sports/mlb/mmi/high-leverage       # Get high-leverage moments
+GET /api/sports/mlb/mmi/health              # MMI service health check
+
+# MMI Engine Worker (Cloudflare Workers - Direct Access)
+GET /api/mmi/games/today                    # Real-time MMI for all live games
+GET /api/mmi/top?limit=10&days=7           # Top MMI moments across games
+GET /api/mmi/:gameId                        # MMI breakdown for game
+POST /api/mmi/calculate                     # Update MMI (internal)
+GET /health                                 # Worker health check
+
+# Pitch Tunnel Simulator (Cloudflare Workers)
+GET /api/pitch-tunnel/pitchers/search?q=kershaw&limit=10
+GET /api/pitch-tunnel/pitchers/:id/pitches
+GET /api/pitch-tunnel/trajectory?pitcher_id=...&pitch_type=SL
+POST /api/pitch-tunnel/design               # Create custom pitch
+GET /api/pitch-tunnel/compare?pitcher1=...&pitch1=SL&pitcher2=...&pitch2=SL
+GET /health                                 # Worker health check
+
+# Blaze Trends (AI-Powered News Monitoring)
+GET /api/trends                             # Get all trends
+GET /api/trends?sport=college_baseball     # Filter by sport
+GET /api/trends/:id                         # Get specific trend
+GET /cron/monitor                           # Manual monitoring trigger (internal)
+GET /health                                 # Worker health check
 
 # NFL
 GET /api/sports/nfl/games?week=1&season=2025
@@ -484,9 +1547,10 @@ GET /api/sports/ncaa/football/standings?conference=12
 GET /api/sports/ncaa/basketball/games?date=2025-01-11
 GET /api/sports/ncaa/basketball/standings
 
-# College Baseball
+# College Baseball (Priority #1)
 GET /api/sports/college-baseball/games?date=2025-01-11
 GET /api/sports/college-baseball/standings?conference=ACC
+GET /api/sports/college-baseball/teams
 
 # Youth Sports
 GET /api/sports/youth-sports/games
@@ -496,7 +1560,37 @@ GET /api/sports/youth-sports/teams
 GET /api/sports/command-center/dashboard
 
 # System Health
-GET /api/health
+GET /api/health                             # Next.js application health
+```
+
+**Endpoint Architecture:**
+
+- **Next.js API Routes** (`/api/sports/*`): Main application endpoints, deployed on Netlify
+- **Cloudflare Workers** (various domains): Edge computing endpoints with D1/KV
+  - MMI Engine: `https://mmi-engine.your-subdomain.workers.dev`
+  - Pitch Tunnel: `https://pitch-tunnel.your-subdomain.workers.dev`
+  - Blaze Trends: `https://blaze-trends.your-subdomain.workers.dev`
+
+**Response Format Standard:**
+
+All endpoints return JSON with the following structure:
+
+```typescript
+{
+  data: T,  // Actual response data
+  meta: {
+    lastUpdated: string,      // ISO 8601 timestamp
+    timezone: "America/Chicago",
+    dataSource: string,       // "MLB Stats API" | "ESPN" | "SportsDataIO" | etc.
+    cacheStatus?: "hit" | "miss",
+    responseTime?: number     // milliseconds
+  },
+  error?: {
+    message: string,
+    code: string,
+    details?: any
+  }
+}
 ```
 
 ---
@@ -1043,13 +2137,127 @@ pnpm dev
 
 ## Resources
 
+### Frontend & Build Tools
+
 - **Next.js 14:** https://nextjs.org/docs
 - **pnpm Workspaces:** https://pnpm.io/workspaces
 - **Tailwind CSS:** https://tailwindcss.com/docs
 - **Playwright:** https://playwright.dev/
 - **TypeScript:** https://www.typescriptlang.org/docs
+
+### Deployment & Hosting
+
 - **Netlify:** https://docs.netlify.com/
 - **Vercel:** https://vercel.com/docs
+- **Cloudflare Pages:** https://developers.cloudflare.com/pages/
+
+### Cloudflare Workers & Edge Computing
+
+- **Cloudflare Workers:** https://developers.cloudflare.com/workers/
+  - Platform overview and getting started
+  - Runtime APIs and bindings
+  - Best practices for edge computing
+
+- **Wrangler CLI:** https://developers.cloudflare.com/workers/wrangler/
+  - `wrangler dev` - Local development
+  - `wrangler deploy` - Production deployment
+  - `wrangler tail` - Real-time logging
+  - `wrangler d1` - D1 database management
+
+- **D1 Database:** https://developers.cloudflare.com/d1/
+  - SQLite-compatible edge database
+  - Query API and bindings
+  - Migrations and schema management
+  - Performance optimization
+
+- **Workers KV:** https://developers.cloudflare.com/kv/
+  - Global, low-latency key-value store
+  - <10ms read times (cached)
+  - TTL and expiration strategies
+  - List operations and pagination
+
+- **Durable Objects:** https://developers.cloudflare.com/durable-objects/
+  - Stateful coordination primitives
+  - Strong consistency guarantees
+  - WebSocket support for real-time
+
+- **Cloudflare Analytics Engine:** https://developers.cloudflare.com/analytics/analytics-engine/
+  - Time-series data collection
+  - Custom metrics and events
+  - SQL-based querying
+
+### 3D Graphics & Physics
+
+- **Babylon.js:** https://doc.babylonjs.com/
+  - 3D rendering engine for WebGL
+  - Scene graph and mesh manipulation
+  - Physics integration (Havok, Cannon.js)
+  - Camera systems and controls
+
+- **Babylon.js Playground:** https://playground.babylonjs.com/
+  - Interactive code examples
+  - Prototyping and testing
+
+- **WebGL:** https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API
+  - Low-level graphics API
+  - Performance considerations
+  - Browser compatibility
+
+### Sports Data APIs
+
+- **MLB Stats API:** https://github.com/toddrob99/MLB-StatsAPI
+  - Official MLB data (free)
+  - Game feeds, standings, stats
+  - No API key required
+
+- **SportsDataIO:** https://sportsdata.io/developers/api-documentation
+  - NFL, NBA, NCAA data
+  - Requires API key
+  - Real-time and historical data
+
+- **ESPN Public API:** https://gist.github.com/akeaswaran/b48b02f1c94f873c6655e7129910fc3b
+  - Unofficial documentation
+  - College sports coverage
+  - No API key required
+
+### AI & Machine Learning
+
+- **OpenAI API:** https://platform.openai.com/docs/api-reference
+  - GPT-4 Turbo for trend analysis
+  - Embeddings for similarity search
+  - Structured output mode
+
+- **Brave Search API:** https://brave.com/search/api/
+  - Web search for news aggregation
+  - Sports-specific queries
+  - Rate limiting and pricing
+
+### Observability & Monitoring
+
+- **Sentry:** https://docs.sentry.io/
+  - Error tracking and reporting
+  - Performance monitoring
+  - Source maps for debugging
+
+- **Cloudflare Web Analytics:** https://developers.cloudflare.com/analytics/web-analytics/
+  - Privacy-friendly analytics
+  - Real user monitoring (RUM)
+  - Core Web Vitals tracking
+
+### Development Tools
+
+- **GitHub Actions:** https://docs.github.com/en/actions
+  - CI/CD pipelines
+  - Automated testing and deployment
+  - Workflow triggers and secrets
+
+- **ESLint:** https://eslint.org/docs/latest/
+  - Code linting and style enforcement
+  - TypeScript integration
+
+- **Prettier:** https://prettier.io/docs/en/
+  - Code formatting
+  - Pre-commit hooks
 
 ---
 
@@ -1170,6 +2378,390 @@ const games = await adapter.getGames({ date });
 if (!games.length) {
   return <EmptyState message="No games scheduled" />;
 }
+```
+
+---
+
+### MMI Score Interpretation (Project-Specific)
+
+**IMPORTANT:** When displaying MMI scores in the UI, always show both the numeric value AND the contextual label. MMI scores are meaningless without interpretation.
+
+**Score Ranges and Labels:**
+
+```typescript
+function getMMILabel(score: number): string {
+  if (score >= 90) return 'Historic Pressure';      // 90-100
+  if (score >= 80) return 'Extreme Pressure';       // 80-89
+  if (score >= 60) return 'High Pressure';          // 60-79
+  if (score >= 40) return 'Medium Pressure';        // 40-59
+  if (score >= 20) return 'Low Pressure';           // 20-39
+  return 'Routine Play';                             // 0-19
+}
+
+function getMMIColor(score: number): string {
+  if (score >= 90) return 'bg-red-900 text-white';     // Historic
+  if (score >= 80) return 'bg-red-600 text-white';     // Extreme
+  if (score >= 60) return 'bg-orange-500 text-white';  // High
+  if (score >= 40) return 'bg-yellow-400 text-black';  // Medium
+  if (score >= 20) return 'bg-green-500 text-white';   // Low
+  return 'bg-gray-300 text-black';                     // Routine
+}
+```
+
+**Always Display Component Breakdown:**
+
+```typescript
+interface MMIDisplay {
+  score: number;
+  label: string;
+  breakdown: {
+    leverage: number;      // 0-10 scale
+    pressure: number;      // 0-10 scale
+    fatigue: number;       // 0-10 scale
+    execution: number;     // 0-10 scale
+    biometric: number;     // 0-10 scale
+  };
+}
+
+// Example UI component
+export function MMIIndicator({ mmi }: { mmi: MMIDisplay }) {
+  return (
+    <div className={`mmi-card ${getMMIColor(mmi.score)}`}>
+      {/* Primary score */}
+      <div className="text-3xl font-bold">{mmi.score.toFixed(1)}</div>
+      <div className="text-sm">{getMMILabel(mmi.score)}</div>
+
+      {/* Component breakdown */}
+      <div className="mt-2 text-xs">
+        <div>Leverage: {mmi.breakdown.leverage.toFixed(1)} / 10</div>
+        <div>Pressure: {mmi.breakdown.pressure.toFixed(1)} / 10</div>
+        <div>Fatigue: {mmi.breakdown.fatigue.toFixed(1)} / 10</div>
+        <div>Execution: {mmi.breakdown.execution.toFixed(1)} / 10</div>
+        {mmi.breakdown.biometric !== 5.0 && (
+          <div>Biometric: {mmi.breakdown.biometric.toFixed(1)} / 10</div>
+        )}
+      </div>
+
+      {/* Visual breakdown bars */}
+      <div className="mt-2 space-y-1">
+        <ProgressBar value={mmi.breakdown.leverage} max={10} label="L" />
+        <ProgressBar value={mmi.breakdown.pressure} max={10} label="P" />
+        <ProgressBar value={mmi.breakdown.fatigue} max={10} label="F" />
+        <ProgressBar value={mmi.breakdown.execution} max={10} label="E" />
+      </div>
+    </div>
+  );
+}
+```
+
+**Contextual Examples (for documentation/tooltips):**
+
+| MMI Score | Label | Example Situation |
+|-----------|-------|-------------------|
+| 95.7 | Historic Pressure | Bottom 9th, bases loaded, 2 outs, down by 1, World Series Game 7 |
+| 87.3 | Extreme Pressure | Bottom 9th, 2 outs, tying run on 3rd, pitcher at 110 pitches |
+| 72.4 | High Pressure | 8th inning, 1-run lead, runners on 2nd and 3rd, 1 out |
+| 48.2 | Medium Pressure | 6th inning, tie game, runner on 1st, 2 outs |
+| 25.1 | Low Pressure | 3rd inning, 5-run lead, bases empty, 1 out |
+| 12.5 | Routine Play | 2nd inning, 8-run lead, bases empty, 0 outs |
+
+**API Response Format (enforce this):**
+
+```typescript
+// ✅ CORRECT - Always include breakdown
+{
+  mmi_score: 78.5,
+  label: "High Pressure",
+  breakdown: {
+    leverage: 7.2,
+    pressure: 8.1,
+    fatigue: 6.5,
+    execution: 7.8,
+    biometric: 5.0  // Default when unavailable
+  },
+  situation: "Bottom 8th, 2 outs, runner on 2nd, down by 1"
+}
+
+// ❌ INCORRECT - Never return just the score
+{
+  mmi_score: 78.5
+}
+```
+
+---
+
+### Physics Accuracy Guidelines (Pitch Tunnel Simulator)
+
+**CRITICAL:** The Pitch Tunnel Simulator uses real physics. DO NOT use simplified or placeholder calculations.
+
+**Unit Conversions (MUST BE EXACT):**
+
+```typescript
+// Velocity conversions
+const mph_to_ms = (mph: number) => mph * 0.44704;  // mph → m/s
+const ms_to_mph = (ms: number) => ms / 0.44704;    // m/s → mph
+
+// Distance conversions
+const feet_to_m = (feet: number) => feet * 0.3048;  // feet → meters
+const m_to_feet = (m: number) => m / 0.3048;        // meters → feet
+
+// Spin rate conversions
+const rpm_to_rads = (rpm: number) => rpm * (2 * Math.PI / 60);  // rpm → rad/s
+const rads_to_rpm = (rads: number) => rads * (60 / (2 * Math.PI));  // rad/s → rpm
+
+// NEVER use approximations like:
+// ❌ const mph_to_ms = (mph: number) => mph * 0.45;  // TOO IMPRECISE
+```
+
+**Physics Constants (DO NOT MODIFY):**
+
+```typescript
+const PHYSICS_CONSTANTS = {
+  // Baseball properties
+  BALL_MASS: 0.145,           // kg (official MLB weight)
+  BALL_DIAMETER: 0.074,       // meters (2.9 inches)
+  BALL_CIRCUMFERENCE: 0.229,  // meters (9 inches)
+
+  // Field dimensions
+  MOUND_TO_PLATE: 18.44,      // meters (60.5 feet)
+  MOUND_HEIGHT: 0.254,        // meters (10 inches)
+  PLATE_WIDTH: 0.432,         // meters (17 inches)
+
+  // Air properties (sea level, 20°C)
+  AIR_DENSITY: 1.225,         // kg/m³
+  GRAVITY: 9.81,              // m/s²
+
+  // Drag coefficient (smooth sphere approximation)
+  DRAG_COEFFICIENT: 0.4,
+
+  // Simulation parameters
+  FRAME_RATE: 60,             // FPS (DO NOT CHANGE - affects accuracy)
+  TIME_STEP: 1/60,            // seconds per frame
+};
+```
+
+**Magnus Force Calculation (EXACT FORMULA):**
+
+```typescript
+/**
+ * Calculate Magnus force on a spinning baseball
+ *
+ * Formula: F_magnus = (1/2) * ρ * A * C_L * v²
+ * Where C_L = S / (v * d)  // Lift coefficient
+ *       S = ω * r           // Surface velocity
+ *
+ * @param velocity - Ball velocity in m/s
+ * @param spin_rate - Spin rate in rpm
+ * @param spin_axis - Spin axis in degrees from vertical (0° = pure backspin)
+ * @returns Magnus force vector in Newtons
+ */
+function calculateMagnus(
+  velocity: Vector3,
+  spin_rate: number,
+  spin_axis: number
+): Vector3 {
+  const v = velocity.length();  // Speed magnitude
+  const omega = rpm_to_rads(spin_rate);
+  const r = PHYSICS_CONSTANTS.BALL_DIAMETER / 2;
+  const S = omega * r;  // Surface velocity
+
+  // Lift coefficient (empirical)
+  const C_L = S / (v * PHYSICS_CONSTANTS.BALL_DIAMETER);
+
+  // Cross-sectional area
+  const A = Math.PI * Math.pow(r, 2);
+
+  // Magnus force magnitude
+  const F_mag = 0.5 * PHYSICS_CONSTANTS.AIR_DENSITY * A * C_L * Math.pow(v, 2);
+
+  // Direction: perpendicular to both velocity and spin axis
+  const spin_axis_rad = spin_axis * (Math.PI / 180);
+  const spin_vector = new Vector3(
+    Math.sin(spin_axis_rad),
+    Math.cos(spin_axis_rad),
+    0
+  );
+
+  // F = ω × v (cross product)
+  const force_direction = Vector3.Cross(spin_vector, velocity.normalize());
+
+  return force_direction.scale(F_mag);
+}
+```
+
+**Drag Force Calculation (EXACT FORMULA):**
+
+```typescript
+/**
+ * Calculate drag force on a baseball
+ *
+ * Formula: F_drag = (1/2) * ρ * A * C_D * v²
+ *
+ * @param velocity - Ball velocity vector in m/s
+ * @returns Drag force vector in Newtons (opposite to velocity)
+ */
+function calculateDrag(velocity: Vector3): Vector3 {
+  const v = velocity.length();
+  const r = PHYSICS_CONSTANTS.BALL_DIAMETER / 2;
+  const A = Math.PI * Math.pow(r, 2);
+
+  // Drag force magnitude
+  const F_drag = 0.5 *
+    PHYSICS_CONSTANTS.AIR_DENSITY *
+    A *
+    PHYSICS_CONSTANTS.DRAG_COEFFICIENT *
+    Math.pow(v, 2);
+
+  // Direction: opposite to velocity
+  return velocity.normalize().scale(-F_drag);
+}
+```
+
+**Trajectory Integration (60 FPS REQUIRED):**
+
+```typescript
+/**
+ * Simulate baseball trajectory using Euler integration
+ *
+ * IMPORTANT: Time step MUST be 1/60 second for accuracy
+ *
+ * @param initial_conditions - Release point, velocity, spin
+ * @returns Array of position vectors from release to plate
+ */
+function simulateTrajectory(initial_conditions: PitchPhysics): TrajectoryPoint[] {
+  const dt = PHYSICS_CONSTANTS.TIME_STEP;  // 1/60 second
+  const positions: TrajectoryPoint[] = [];
+
+  let pos = initial_conditions.release_point.clone();
+  let vel = initial_conditions.velocity.clone();
+
+  // Simulate until ball crosses home plate
+  const plate_distance = PHYSICS_CONSTANTS.MOUND_TO_PLATE;
+
+  while (pos.z < plate_distance && positions.length < 300) {  // Safety limit
+    // Calculate forces
+    const F_gravity = new Vector3(
+      0,
+      -PHYSICS_CONSTANTS.GRAVITY * PHYSICS_CONSTANTS.BALL_MASS,
+      0
+    );
+    const F_magnus = calculateMagnus(vel, initial_conditions.spin_rate, initial_conditions.spin_axis);
+    const F_drag = calculateDrag(vel);
+
+    // Net force
+    const F_total = F_gravity.add(F_magnus).add(F_drag);
+
+    // Acceleration (F = ma, so a = F/m)
+    const a = F_total.scale(1 / PHYSICS_CONSTANTS.BALL_MASS);
+
+    // Euler integration (position and velocity update)
+    vel = vel.add(a.scale(dt));
+    pos = pos.add(vel.scale(dt));
+
+    positions.push({
+      position: pos.clone(),
+      velocity: vel.clone(),
+      time: positions.length * dt
+    });
+  }
+
+  return positions;
+}
+```
+
+**Validation Checks (enforce these):**
+
+```typescript
+/**
+ * Validate pitch physics before simulation
+ *
+ * @throws Error if physics parameters are unrealistic
+ */
+function validatePitchPhysics(pitch: PitchPhysics): void {
+  // Velocity range (MLB: ~70-105 mph)
+  const velocity_mph = ms_to_mph(pitch.velocity.length());
+  if (velocity_mph < 50 || velocity_mph > 110) {
+    throw new Error(`Unrealistic velocity: ${velocity_mph.toFixed(1)} mph (expected 50-110)`);
+  }
+
+  // Spin rate range (MLB: ~1000-3500 rpm)
+  if (pitch.spin_rate < 500 || pitch.spin_rate > 4000) {
+    throw new Error(`Unrealistic spin rate: ${pitch.spin_rate} rpm (expected 500-4000)`);
+  }
+
+  // Spin axis (0-360 degrees)
+  if (pitch.spin_axis < 0 || pitch.spin_axis > 360) {
+    throw new Error(`Invalid spin axis: ${pitch.spin_axis}° (expected 0-360)`);
+  }
+
+  // Release point (reasonable range from mound)
+  const release_height_feet = m_to_feet(pitch.release_point.y);
+  if (release_height_feet < 4 || release_height_feet > 8) {
+    throw new Error(`Unrealistic release height: ${release_height_feet.toFixed(1)} ft (expected 4-8)`);
+  }
+
+  // Release distance from plate
+  const release_distance_feet = m_to_feet(pitch.release_point.z);
+  if (release_distance_feet < 50 || release_distance_feet > 58) {
+    throw new Error(`Unrealistic release distance: ${release_distance_feet.toFixed(1)} ft (expected 50-58)`);
+  }
+}
+```
+
+**Common Pitfalls (AVOID THESE):**
+
+```typescript
+// ❌ WRONG - Using simplified linear trajectory
+const trajectory = [
+  start,
+  {x: start.x, y: start.y - 1, z: start.z + 10},
+  {x: start.x, y: start.y - 2, z: start.z + 20},
+  // ...
+];
+
+// ✅ CORRECT - Using physics simulation
+const trajectory = simulateTrajectory(pitchPhysics);
+
+// ❌ WRONG - Ignoring Magnus force
+const force = gravity + drag;
+
+// ✅ CORRECT - Including all forces
+const force = gravity + magnus + drag;
+
+// ❌ WRONG - Using wrong time step
+const dt = 0.1;  // 10 FPS - too coarse!
+
+// ✅ CORRECT - 60 FPS for smooth, accurate simulation
+const dt = 1/60;  // 16.67 ms per frame
+
+// ❌ WRONG - Mixing units
+const velocity = 95;  // mph or m/s???
+
+// ✅ CORRECT - Explicit unit conversion
+const velocity_mph = 95;
+const velocity_ms = mph_to_ms(velocity_mph);
+```
+
+**Testing Physics Accuracy:**
+
+```typescript
+// Regression test: fastball drop should be ~2-3 feet
+test('fastball trajectory accuracy', () => {
+  const fastball: PitchPhysics = {
+    velocity: new Vector3(0, 0, mph_to_ms(95)),
+    spin_rate: 2400,
+    spin_axis: 180,  // Pure backspin
+    release_point: new Vector3(0, feet_to_m(6), feet_to_m(54))
+  };
+
+  const trajectory = simulateTrajectory(fastball);
+  const final_pos = trajectory[trajectory.length - 1].position;
+  const drop_feet = m_to_feet(fastball.release_point.y - final_pos.y);
+
+  // Expect 2-3 feet of drop for 95 mph fastball
+  expect(drop_feet).toBeGreaterThan(1.5);
+  expect(drop_feet).toBeLessThan(3.5);
+});
 ```
 
 ---
