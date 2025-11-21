@@ -66,74 +66,147 @@ export async function onRequestGet(context: any) {
         ttl: CACHE_DURATIONS.GLOBAL_STATS,
       },
       async () => {
-        // Get active players from KV (updated every 30 seconds by game clients)
-        const activePlayersData = await getKVWithResilience<{ count: number }>(
-          context.env.KV,
-          'active_players',
-          { type: 'json', timeoutMs: 5000, maxRetries: 2 }
-        );
-        const activePlayers = activePlayersData?.count || 0;
-
-        // Get today's date in America/Chicago timezone
+        // Get today's date in America/Chicago timezone (compute once)
         const now = new Date();
         const chicagoNow = new Date(
           now.toLocaleString('en-US', { timeZone: 'America/Chicago' })
         );
         const todayStart = new Date(chicagoNow);
         todayStart.setHours(0, 0, 0, 0);
-
-        // Query games played today (updated_at is Unix timestamp)
         const todayStartTimestamp = Math.floor(todayStart.getTime() / 1000);
-        const gamesTodayResult = await queryD1WithResilience<{ count: number }>(
-          context.env.DB,
-          `SELECT COUNT(*) as count
-           FROM player_progress
-           WHERE updated_at >= ?`,
-          [todayStartTimestamp],
-          { timeoutMs: 10000, maxRetries: 3, operation: 'Games Today Query' }
-        );
 
-        const gamesToday = gamesTodayResult.results?.[0]?.count || 0;
+        // PARALLEL EXECUTION: Run all independent queries simultaneously
+        const [
+          activePlayersResult,
+          gamesTodayResult,
+          totalsResult,
+          topPlayerResult,
+          stadiumStatsResult,
+          characterStatsResult,
+          avgGameLengthResult,
+        ] = await Promise.allSettled([
+          // KV: Active players
+          getKVWithResilience<{ count: number }>(
+            context.env.KV,
+            'active_players',
+            { type: 'json', timeoutMs: 5000, maxRetries: 2 }
+          ),
 
-        // Query total statistics
-        const totalsResult = await queryD1WithResilience<{
-          games_total: number;
-          total_home_runs: number;
-          total_hits: number;
-          total_runs: number;
-        }>(
-          context.env.DB,
-          `SELECT
-            SUM(games_played) as games_total,
-            SUM(total_home_runs) as total_home_runs,
-            SUM(total_hits) as total_hits,
-            SUM(total_runs) as total_runs
-          FROM player_progress`,
-          [],
-          { timeoutMs: 10000, maxRetries: 3, operation: 'Total Stats Query' }
-        );
+          // D1: Games played today
+          queryD1WithResilience<{ count: number }>(
+            context.env.DB,
+            `SELECT COUNT(*) as count
+             FROM player_progress
+             WHERE updated_at >= ?`,
+            [todayStartTimestamp],
+            { timeoutMs: 10000, maxRetries: 3, operation: 'Games Today Query' }
+          ),
 
-        const totals = totalsResult.results?.[0];
+          // D1: Total statistics
+          queryD1WithResilience<{
+            games_total: number;
+            total_home_runs: number;
+            total_hits: number;
+            total_runs: number;
+          }>(
+            context.env.DB,
+            `SELECT
+              SUM(games_played) as games_total,
+              SUM(total_home_runs) as total_home_runs,
+              SUM(total_hits) as total_hits,
+              SUM(total_runs) as total_runs
+            FROM player_progress`,
+            [],
+            { timeoutMs: 10000, maxRetries: 3, operation: 'Total Stats Query' }
+          ),
 
-        // Query top player by home runs
-        const topPlayerResult = await queryD1WithResilience<{
-          player_id: string;
-          total_home_runs: number;
-        }>(
-          context.env.DB,
-          `SELECT
-            player_id,
-            total_home_runs
-          FROM player_progress
-          ORDER BY total_home_runs DESC
-          LIMIT 1`,
-          [],
-          { timeoutMs: 10000, maxRetries: 3, operation: 'Top Player Query' }
-        );
+          // D1: Top player by home runs
+          queryD1WithResilience<{
+            player_id: string;
+            total_home_runs: number;
+          }>(
+            context.env.DB,
+            `SELECT
+              player_id,
+              total_home_runs
+            FROM player_progress
+            ORDER BY total_home_runs DESC
+            LIMIT 1`,
+            [],
+            { timeoutMs: 10000, maxRetries: 3, operation: 'Top Player Query' }
+          ),
 
-        const topPlayer = topPlayerResult.results?.[0];
+          // KV: Stadium statistics
+          getKVWithResilience<any>(
+            context.env.KV,
+            'stats:stadiums',
+            { type: 'json', timeoutMs: 5000, maxRetries: 2 }
+          ),
 
-        // Get player name from leaderboard (if exists)
+          // KV: Character statistics
+          getKVWithResilience<any>(
+            context.env.KV,
+            'stats:characters',
+            { type: 'json', timeoutMs: 5000, maxRetries: 2 }
+          ),
+
+          // KV: Average game length
+          getKVWithResilience<string>(
+            context.env.KV,
+            'stats:avg_game_length',
+            { type: 'text', timeoutMs: 5000, maxRetries: 2 }
+          ),
+        ]);
+
+        // Extract results with safe fallbacks
+        const activePlayers =
+          activePlayersResult.status === 'fulfilled'
+            ? activePlayersResult.value?.count || 0
+            : 0;
+
+        const gamesToday =
+          gamesTodayResult.status === 'fulfilled'
+            ? gamesTodayResult.value.results?.[0]?.count || 0
+            : 0;
+
+        const totals =
+          totalsResult.status === 'fulfilled'
+            ? totalsResult.value.results?.[0]
+            : undefined;
+
+        const topPlayer =
+          topPlayerResult.status === 'fulfilled'
+            ? topPlayerResult.value.results?.[0]
+            : undefined;
+
+        const stadiumStats =
+          stadiumStatsResult.status === 'fulfilled' && stadiumStatsResult.value
+            ? stadiumStatsResult.value
+            : {
+                mostPopular: {
+                  id: 'dusty_acres',
+                  name: 'Dusty Acres',
+                  usagePercent: 20,
+                },
+              };
+
+        const characterStats =
+          characterStatsResult.status === 'fulfilled' && characterStatsResult.value
+            ? characterStatsResult.value
+            : {
+                mostPopular: {
+                  id: 'rocket_rivera',
+                  name: 'Rocket Rivera',
+                  usagePercent: 15,
+                },
+              };
+
+        const avgGameLength =
+          avgGameLengthResult.status === 'fulfilled' && avgGameLengthResult.value
+            ? parseFloat(avgGameLengthResult.value)
+            : 8.5 * 60; // 8.5 minutes in seconds
+
+        // DEPENDENT QUERY: Get player name (only if we have a top player)
         let topPlayerName = 'Anonymous';
         if (topPlayer?.player_id) {
           const leaderboardEntry = await queryD1WithResilience<{ player_name: string }>(
@@ -149,44 +222,6 @@ export async function onRequestGet(context: any) {
 
           topPlayerName = leaderboardEntry.results?.[0]?.player_name || 'Anonymous';
         }
-
-        // Get most popular stadium from KV
-        const stadiumStatsData = await getKVWithResilience<any>(
-          context.env.KV,
-          'stats:stadiums',
-          { type: 'json', timeoutMs: 5000, maxRetries: 2 }
-        );
-        const stadiumStats = stadiumStatsData || {
-          mostPopular: {
-            id: 'dusty_acres',
-            name: 'Dusty Acres',
-            usagePercent: 20,
-          },
-        };
-
-        // Get most popular character from KV
-        const characterStatsData = await getKVWithResilience<any>(
-          context.env.KV,
-          'stats:characters',
-          { type: 'json', timeoutMs: 5000, maxRetries: 2 }
-        );
-        const characterStats = characterStatsData || {
-          mostPopular: {
-            id: 'rocket_rivera',
-            name: 'Rocket Rivera',
-            usagePercent: 15,
-          },
-        };
-
-        // Calculate average game length (default 8.5 minutes if no data)
-        const avgGameLengthData = await getKVWithResilience<string>(
-          context.env.KV,
-          'stats:avg_game_length',
-          { type: 'text', timeoutMs: 5000, maxRetries: 2 }
-        );
-        const avgGameLength = avgGameLengthData
-          ? parseFloat(avgGameLengthData)
-          : 8.5 * 60; // 8.5 minutes in seconds
 
         return {
           activePlayers,

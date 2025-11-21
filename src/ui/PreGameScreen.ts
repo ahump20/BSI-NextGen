@@ -10,6 +10,7 @@ interface PreGameScreenConfig {
   progressionAPI: ProgressionAPI;
   playerId: string;
   onStartGame: (selectedCharacter: Player, selectedStadium: Stadium) => void;
+  onViewChampionships?: () => void; // Optional callback to view championship dashboard
 }
 
 export class PreGameScreen {
@@ -17,6 +18,7 @@ export class PreGameScreen {
   private progressionAPI: ProgressionAPI;
   private playerId: string;
   private onStartGame: (character: Player, stadium: Stadium) => void;
+  private onViewChampionships?: () => void;
 
   private availableCharacters: Player[] = [];
   private availableStadiums: Stadium[] = [];
@@ -32,6 +34,7 @@ export class PreGameScreen {
     this.progressionAPI = config.progressionAPI;
     this.playerId = config.playerId;
     this.onStartGame = config.onStartGame;
+    this.onViewChampionships = config.onViewChampionships;
 
     // Initialize loading spinner
     this.loadingSpinner = new LoadingSpinner({
@@ -143,9 +146,14 @@ export class PreGameScreen {
             <div id="stadium-info" class="info-panel"></div>
           </div>
 
-          <button id="start-game-btn" class="start-button" disabled>
-            Start Game
-          </button>
+          <div class="button-row">
+            <button id="start-game-btn" class="start-button" disabled>
+              Start Game
+            </button>
+            <button id="view-championships-btn" class="secondary-button">
+              📊 Cardinals Championships
+            </button>
+          </div>
 
           <div class="unlock-hint">
             🏆 Win games to unlock new characters and stadiums!
@@ -173,6 +181,16 @@ export class PreGameScreen {
     const startBtn = this.screenElement.querySelector("#start-game-btn") as HTMLButtonElement;
     if (startBtn) {
       startBtn.addEventListener("click", () => this.handleStartGame());
+    }
+
+    // Championships button
+    const championshipsBtn = this.screenElement.querySelector("#view-championships-btn") as HTMLButtonElement;
+    if (championshipsBtn && this.onViewChampionships) {
+      championshipsBtn.addEventListener("click", () => {
+        if (this.onViewChampionships) {
+          this.onViewChampionships();
+        }
+      });
     }
   }
 
@@ -582,8 +600,14 @@ export class PreGameScreen {
         color: #ff6b00;
       }
 
+      .button-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
       .start-button {
-        width: 100%;
+        flex: 1;
         padding: 1.5rem;
         font-size: 1.5rem;
         font-weight: bold;
@@ -606,6 +630,26 @@ export class PreGameScreen {
         background: #ccc;
         cursor: not-allowed;
         box-shadow: none;
+      }
+
+      .secondary-button {
+        flex: 1;
+        padding: 1.5rem;
+        font-size: 1.2rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      }
+
+      .secondary-button:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
       }
 
       .unlock-hint {

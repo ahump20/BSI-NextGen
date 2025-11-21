@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": false
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "src/analytics/**/*",
+    "src/crowd/**/*",
+    "src/multiplayer/**/*",
+    "src/ui/ComprehensiveUISystem.ts",
+    "src/ui/ChampionshipDashboard.ts",
+    "src/weather/**/*",
+    "src/replay/**/*",
+    "src/audio/AudioSystem.ts",
+    "src/hooks/useAuth.ts",
+    "src/pages/CollegeBaseballSchedule.tsx",
+    "src/pages/CollegeBaseballStandings.tsx"
+  ]
+}

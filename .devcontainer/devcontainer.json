@@ -1,0 +1,67 @@
+{
+  "name": "Blaze Sports Intel - Dev Environment",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20-bookworm",
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "cloudflare.vscode-wrangler",
+        "firsttris.vscode-jest-runner",
+        "orta.vscode-jest",
+        "ms-playwright.playwright",
+        "eamodio.gitlens",
+        "editorconfig.editorconfig"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true,
+        "files.exclude": {
+          "**/.git": true,
+          "**/.DS_Store": true,
+          "**/node_modules": true,
+          "**/.wrangler": true,
+          "**/dist": true
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [8788, 5173],
+  "portsAttributes": {
+    "8788": {
+      "label": "Wrangler Dev (Functions)",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "Vite Dev Server (Frontend)",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "postCreateCommand": "npm install && npm run setup:db",
+
+  "postStartCommand": "npm run dev:full",
+
+  "remoteEnv": {
+    "NODE_ENV": "development"
+  },
+
+  "mounts": [
+    "source=${localEnv:HOME}/.wrangler,target=/home/node/.wrangler,type=bind,consistency=cached"
+  ]
+}
