@@ -13,13 +13,10 @@ import { LeagueOrchestrator } from '@bsi/api';
  * NOTE: In production, this would connect to a picks/analytics database.
  * For now, we calculate metrics from actual game results.
  *
- * Query params:
- * - weeks: number (default: 1) - Number of weeks to include
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const weeks = parseInt(searchParams.get('weeks') || '1', 10);
+    void _request;
 
     // Initialize orchestrator to fetch real game data
     const orchestrator = new LeagueOrchestrator({
@@ -28,11 +25,6 @@ export async function GET(request: NextRequest) {
 
     // Fetch recent games from all leagues to calculate performance
     const today = new Date().toISOString().split('T')[0];
-
-    // Calculate date range for the past week
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7 * weeks);
-    const startDate = oneWeekAgo.toISOString().split('T')[0];
 
     // Fetch unified games for analysis
     let gamesResponse;
