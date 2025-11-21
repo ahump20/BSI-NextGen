@@ -31,7 +31,7 @@ jobs:
       - name: Build all packages
         run: pnpm build
         env:
-          SPORTSDATAIO_API_KEY: ${{ secrets.sportsdataio_api_key }} }}
+          SPORTSDATAIO_API_KEY: ${{ secrets.sportsdataio_api_key }}
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
