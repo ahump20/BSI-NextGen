@@ -165,7 +165,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: cloudflare-workers/blaze-trends
-          command: deploy --env development
+          command: deploy --env staging
 
       - name: Deploy Next.js to Cloudflare Pages (staging)
         uses: cloudflare/pages-action@v1
