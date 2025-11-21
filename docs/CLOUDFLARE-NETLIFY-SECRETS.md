@@ -4,16 +4,15 @@ This repository uses GitHub Actions to deploy Cloudflare Workers (with KV, D1, a
 
 ## Required secrets (GitHub Actions)
 
-| Secret | Purpose |
-| --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Token with access to Workers, KV, D1, R2, and Pages deploys. Scope it to the specific account and projects. |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID used by `wrangler` and the Pages deploy action. |
-| `CLOUDFLARE_PAGES_PROJECT` | Cloudflare Pages project slug for the Next.js frontend. |
-| `CLOUDFLARE_D1_DATABASE_ID` | D1 database identifier for data plane access and migrations. |
-| `CLOUDFLARE_R2_BUCKET` | Default R2 bucket binding used by Workers and the Next.js asset pipeline. |
-| `CLOUDFLARE_KV_NAMESPACE` | Namespace ID for KV used by Workers. |
-| `NETLIFY_AUTH_TOKEN` | Token for optional Netlify fallback deploys. |
-| `NETLIFY_SITE_ID` | Site ID for the Netlify fallback target. |
+| Secret | Purpose | Required/Optional |
+| --- | --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Token with access to Workers, KV, D1, R2, and Pages deploys. Scope it to the specific account and projects. | Required |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID used by `wrangler` and the Pages deploy action. | Required |
+| `CLOUDFLARE_PAGES_PROJECT` | Cloudflare Pages project slug for the Next.js frontend. | Required |
+| `NETLIFY_AUTH_TOKEN` | Token for optional Netlify fallback deploys. | Optional |
+| `NETLIFY_SITE_ID` | Site ID for the Netlify fallback target. | Optional |
+
+**Note:** D1, KV, and R2 bindings are configured in `wrangler.toml` for each environment. The workflow deploys Workers with environment-specific settings (`--env staging` or `--env production`).
 
 Store these values in GitHub repository *Secrets and variables → Actions* so they are available to the workflows. Use environment-level secrets for `staging` and `production` to enforce scoped credentials and manual approvals.
 
@@ -38,9 +37,9 @@ Prefer storing sensitive values as environment secrets; fall back to environment
 
 ## Promotion and rollback
 
-- Staging deploys run automatically on `main` and publish artifacts as `staging-release` so they can be promoted to production with a manual `workflow_dispatch` run.
-- Production deploys use the `production` environment in GitHub Actions; configure required reviewers for manual approval.
-- Rollbacks use the last staged artifact. Trigger `rollback_production` via `workflow_dispatch` to push the staged bundle back onto production Pages and Workers.
+- Staging deploys run automatically on `main` and publish artifacts as `staging-release`. Promotion to production is performed by manually triggering the workflow with the `promote_to_production` input, which fetches the latest successful staging artifact from a previous workflow run and requires approval in the `production` environment.
+- Production deploys are gated by the `production` environment in GitHub Actions, with required reviewers for manual approval. The workflow ensures correct job dependencies by fetching artifacts from previous runs rather than depending on jobs with mutually exclusive conditions.
+- Rollbacks are performed by manually triggering the workflow with the `rollback_production` input, which redeploys the most recent successful staging artifact to production. The `staging` environment is now defined in `wrangler.toml` for environment-specific Worker deploys.
 
 ## Operational tips
 

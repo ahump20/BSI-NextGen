@@ -49,6 +49,11 @@ command = ""
 [env.development]
 name = "blaze-trends-dev"
 
+# Staging environment
+[env.staging]
+name = "blaze-trends-staging"
+workers_dev = false
+
 # Production environment
 [env.production]
 name = "blaze-trends-production"
