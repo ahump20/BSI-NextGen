@@ -18,10 +18,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 packages/
-├── shared/           # @bsi/shared - Common types and utilities
-├── api/              # @bsi/api - Sports data adapters
-├── web/              # @bsi/web - Next.js web application
-└── sports-dashboard/ # Sports dashboard components
+├── shared/             # @bsi/shared - Common types and utilities
+├── api/                # @bsi/api - Sports data adapters
+├── web/                # @bsi/web - Next.js web application
+├── sports-dashboard/   # Sports dashboard components
+├── mcp-sportsdata-io/  # Model Context Protocol server for SportsData.io
+└── mmi-baseball/       # Major Moments Index for baseball analytics (Python)
 ```
 
 ### Package Dependencies
@@ -30,6 +32,8 @@ packages/
 @bsi/web → @bsi/api → @bsi/shared
                  ↘
           sports-dashboard
+          mcp-sportsdata-io → SportsData.io APIs
+          mmi-baseball (Python package)
 ```
 
 ---
@@ -109,7 +113,11 @@ pnpm clean
 pnpm clean && pnpm install
 ```
 
-### Blaze Trends (Cloudflare Worker)
+### Cloudflare Workers
+
+BSI-NextGen uses multiple Cloudflare Workers for edge computing:
+
+#### Blaze Trends Worker
 
 **Purpose:** Real-time sports news monitoring with AI-powered trend analysis
 
@@ -160,6 +168,16 @@ pnpm trends:setup            # Run setup wizard
 - Components: `TrendCard`, `SportFilter`
 - Types: `packages/web/types/trends.ts`
 
+#### Other Cloudflare Workers
+
+**Location:** `cloudflare-workers/`
+
+- **blaze-content** - Content management worker
+- **blaze-ingestion** - Data ingestion pipeline
+- **longhorns-baseball** - Texas Longhorns baseball specific worker
+
+See `docs/INFRASTRUCTURE.md` for complete worker mapping (72 total workers documented).
+
 ---
 
 ## Architecture
@@ -192,7 +210,9 @@ export function getTodayInChicago(): string;              // YYYY-MM-DD format
 - `NFLAdapter` - SportsDataIO (requires API key)
 - `NBAAdapter` - SportsDataIO (requires API key)
 - `NCAAFootballAdapter` - ESPN public API
+- `NCAABasketballAdapter` - ESPN public API
 - `CollegeBaseballAdapter` - ESPN API + enhanced box scores
+- `YouthSportsAdapter` - Youth sports data management
 
 **Usage Pattern:**
 ```typescript
@@ -233,15 +253,86 @@ packages/web/
 │   │   └── sports/           # API routes
 │   │       ├── mlb/
 │   │       ├── nfl/
-│   │       └── college-baseball/
-│   └── sports/
-│       ├── mlb/              # MLB pages
-│       ├── nfl/              # NFL pages
-│       └── college-baseball/ # College baseball pages
+│   │       ├── nba/
+│   │       ├── college-baseball/
+│   │       ├── ncaa/
+│   │       ├── youth-sports/
+│   │       └── command-center/
+│   ├── sports/
+│   │   ├── mlb/              # MLB pages
+│   │   ├── nfl/              # NFL pages
+│   │   ├── nba/              # NBA pages
+│   │   ├── college-baseball/ # College baseball pages
+│   │   ├── ncaa-football/    # NCAA football pages
+│   │   ├── ncaa-basketball/  # NCAA basketball pages
+│   │   └── youth-sports/     # Youth sports pages
+│   ├── trends/               # Blaze Trends page
+│   ├── privacy/              # Privacy policy
+│   └── cookies/              # Cookie settings
 ├── components/               # React components
 ├── lib/                      # Utilities
 └── public/                   # Static assets
 ```
+
+### Package: `@bsi/mcp-sportsdata-io`
+
+**Purpose:** Model Context Protocol (MCP) server for SportsData.io API integration.
+
+**Key Features:**
+- 8 specialized tools for sports data retrieval
+- Priority #1: College Baseball (fills ESPN gaps)
+- Multi-sport support: MLB, NFL, NCAA Football, NCAA Basketball
+- Real-time data with play-by-play feeds
+- Cloudflare Workers deployment
+
+**Tools:**
+1. `fetch_college_baseball_data` - Priority #1 college baseball coverage
+2. `fetch_mlb_data` - MLB games, scores, stats
+3. `fetch_nfl_data` - NFL games, scores, stats, injuries
+4. `fetch_college_football_data` - College football with FCS focus
+5. `fetch_ncaa_basketball_data` - NCAA basketball and March Madness
+6. `stream_live_game_data` - Real-time play-by-play updates
+7. `fetch_historical_stats` - Historical season and career stats
+8. `fetch_odds_and_projections` - Betting lines and projections
+
+**Usage:**
+```bash
+# Local development
+cd packages/mcp-sportsdata-io
+pnpm dev
+
+# Deploy to Cloudflare Workers
+pnpm deploy
+```
+
+**Location:** `packages/mcp-sportsdata-io/`
+
+**Documentation:** `packages/mcp-sportsdata-io/README.md`
+
+### Package: `mmi-baseball`
+
+**Purpose:** Major Moments Index (MMI) - Python package for baseball analytics.
+
+**Key Features:**
+- Advanced baseball analytics and moment scoring
+- Play-by-play analysis
+- Win probability calculations
+- High-leverage situation detection
+- Python-based analytics engine
+
+**Integration:** Available via `/api/sports/mlb/mmi/*` endpoints
+
+**MMI API Endpoints:**
+- `GET /api/sports/mlb/mmi/games/:gameId` - Get MMI score for a game
+- `GET /api/sports/mlb/mmi/high-leverage` - High-leverage moments
+- `GET /api/sports/mlb/mmi/health` - MMI service health check
+
+**Location:** `packages/mmi-baseball/`
+
+**Documentation:**
+- `packages/mmi-baseball/README.md`
+- `MMI_INTEGRATION_COMPLETE.md`
+- `MMI_DEPLOYMENT_SUMMARY.md`
 
 ---
 
@@ -365,23 +456,47 @@ export async function POST(request: NextRequest) {
 ### Available API Endpoints
 
 ```
+# MLB
 GET /api/sports/mlb/games?date=2025-01-11
 GET /api/sports/mlb/standings?divisionId=200
 GET /api/sports/mlb/teams
 
+# MLB MMI (Major Moments Index)
+GET /api/sports/mlb/mmi/games/:gameId
+GET /api/sports/mlb/mmi/high-leverage
+GET /api/sports/mlb/mmi/health
+
+# NFL
 GET /api/sports/nfl/games?week=1&season=2025
 GET /api/sports/nfl/standings?season=2025
 GET /api/sports/nfl/teams
 
+# NBA
 GET /api/sports/nba/games?date=2025-01-11
 GET /api/sports/nba/standings
 GET /api/sports/nba/teams
 
-GET /api/sports/ncaa_football/games?week=1
-GET /api/sports/ncaa_football/standings?conference=12
+# NCAA Football
+GET /api/sports/ncaa/football/games?week=1
+GET /api/sports/ncaa/football/standings?conference=12
 
-GET /api/sports/college_baseball/games?date=2025-01-11
-GET /api/sports/college_baseball/standings?conference=ACC
+# NCAA Basketball
+GET /api/sports/ncaa/basketball/games?date=2025-01-11
+GET /api/sports/ncaa/basketball/standings
+
+# College Baseball
+GET /api/sports/college-baseball/games?date=2025-01-11
+GET /api/sports/college-baseball/standings?conference=ACC
+
+# Youth Sports
+GET /api/sports/youth-sports/games
+GET /api/sports/youth-sports/teams
+
+# Command Center (Multi-sport dashboard)
+GET /api/sports/command-center/dashboard
+
+# System Health
+GET /api/health
 ```
 
 ---
@@ -417,20 +532,80 @@ NCAA_API_KEY=your_key_here
 
 ## Deployment
 
-### Netlify
+### Current Production Deployment
 
-**Build Command:** `pnpm build`
-**Publish Directory:** `packages/web/.next`
+**Platform:** Netlify
+**Production URL:** https://blazesportsintelligence.netlify.app
+**Alternate URL:** https://www.blazesportsintel.com
+**Deployment Status:** ✅ Live
 
-**Environment Variables:**
-- Set in Netlify Dashboard → Site Settings → Environment Variables
-- Add `SPORTSDATAIO_API_KEY`
+**Build Configuration:**
+- **Build Command:** `cd ../.. && CI='' pnpm install --frozen-lockfile && pnpm build`
+- **Publish Directory:** `packages/web/.next`
+- **Node Version:** 18
+- **Base Directory:** `packages/web`
+- **Plugin:** `@netlify/plugin-nextjs`
+
+**Environment Variables (Required):**
+- `SPORTSDATAIO_API_KEY` - SportsDataIO API key for NFL/NBA data
 
 **Auto-deploy:**
-- Pushes to `main` branch deploy automatically
-- PR previews enabled
+- ✅ Pushes to `main` branch deploy automatically
+- ✅ PR previews enabled
+- ✅ Automatic cache purge via GitHub Actions
 
-### Vercel
+**Security Headers (Deployed):**
+- ✅ X-Frame-Options: DENY
+- ✅ X-Content-Type-Options: nosniff
+- ✅ X-XSS-Protection: 1; mode=block
+- ✅ Strict-Transport-Security: max-age=31536000
+- ✅ Content-Security-Policy: Comprehensive CSP
+- ✅ Referrer-Policy: origin-when-cross-origin
+- ✅ Permissions-Policy: Restricted device permissions
+
+**Configuration Files:**
+- `netlify.toml` - Netlify build configuration
+- `packages/web/next.config.js` - Next.js configuration with security headers
+
+### Deployment Workflow
+
+**GitHub Actions:** `.github/workflows/deploy-with-cache-purge.yml`
+
+The deployment workflow includes:
+1. ✅ Automatic Netlify deployment on push to `main`
+2. ✅ Cloudflare cache purge after successful deployment
+3. ✅ Verification checks for critical endpoints
+4. ✅ Slack/PagerDuty notifications (optional)
+
+**Manual Cache Purge:**
+```bash
+# Purge all cache
+curl -X POST "https://api.cloudflare.com/client/v4/zones/{zone_id}/purge_cache" \
+  -H "Authorization: Bearer {api_token}" \
+  -H "Content-Type: application/json" \
+  --data '{"purge_everything":true}'
+```
+
+### Deployment Checklist
+
+Before deploying:
+- [ ] All tests passing (`pnpm test`)
+- [ ] Build succeeds locally (`pnpm build`)
+- [ ] Environment variables configured
+- [ ] Cache headers reviewed
+- [ ] Security headers verified
+- [ ] Health check endpoint responding
+- [ ] Monitoring scripts tested
+
+After deployment:
+- [ ] Verify homepage loads
+- [ ] Test API endpoints
+- [ ] Check `/api/health` endpoint
+- [ ] Monitor error rates for 15 minutes
+- [ ] Verify cache headers with `curl -I`
+- [ ] Check Cloudflare Analytics dashboard
+
+### Alternative: Vercel Deployment
 
 **Framework Preset:** Next.js
 **Root Directory:** `packages/web`
@@ -444,6 +619,14 @@ NCAA_API_KEY=your_key_here
 **Auto-deploy:**
 - Pushes to `main` → Production
 - PR pushes → Preview deployments
+
+### Deployment Documentation
+
+- `DEPLOYMENT.md` - General deployment procedures
+- `DEPLOYMENT-READY-STATUS.md` - Pre-deployment status
+- `DEPLOYMENT_LOG.md` - Recent deployment history
+- `CACHE-FIX-IMPLEMENTATION.md` - Cache control implementation
+- `observability/PRODUCTION_DEPLOYMENT_GUIDE.md` - Observability deployment
 
 ---
 
@@ -503,7 +686,78 @@ npx playwright test --debug
 
 ## Infrastructure & Operations
 
-### Documentation Files
+### Observability & Monitoring
+
+**Location:** `observability/`
+
+BSI-NextGen has comprehensive production observability infrastructure:
+
+**Key Components:**
+1. **Structured Logging** - JSON-formatted logs with correlation IDs
+2. **Metrics Recording** - Cloudflare Analytics Engine integration
+3. **Distributed Tracing** - OpenTelemetry-compatible tracing
+4. **Circuit Breakers** - Automatic failure protection for external APIs
+5. **Health Checks** - Production health monitoring endpoints
+
+**Observability Helpers:**
+- `observability/helpers/telemetry.ts` - Logging, metrics, tracing
+- `observability/helpers/middleware.ts` - Request instrumentation
+- `observability/helpers/circuit-breaker.ts` - Failure protection
+
+**Service Level Objectives (SLOs):**
+- Page Load Performance: P95 <2s, Error rate <0.1%
+- API Response Time: P99 <200ms, 5xx rate <0.5%
+- Data Freshness: Live games <30s, Standings <5min
+- External API Reliability: 99.5% success rate
+
+**Documentation:**
+- `observability/README.md` - Observability overview (START HERE)
+- `observability/QUICK_START.md` - 5-minute quick start
+- `observability/DEBUGGABILITY_CARD.md` - Incident response guide
+- `observability/RUNBOOK.md` - Operational procedures
+- `observability/PRODUCTION_DEPLOYMENT_GUIDE.md` - Deployment steps
+
+**Monitoring Commands:**
+```bash
+# Check production health
+curl https://www.blazesportsintel.com/api/health
+
+# Monitor production endpoints
+./scripts/monitor-production.sh
+
+# Check cache staleness
+./scripts/check-cache-staleness.sh
+```
+
+### Production Monitoring
+
+**Health Check Endpoint:** `GET /api/health`
+
+**Response Format:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-20T18:30:00.000Z",
+  "timezone": "America/Chicago",
+  "response_time_ms": 45,
+  "checks": {
+    "database": "not_configured",
+    "external_apis": "healthy",
+    "environment": "healthy"
+  },
+  "version": "1.0.0"
+}
+```
+
+**Monitoring Script:** `scripts/monitor-production.sh`
+- Monitors multiple endpoints (/, /api/health, /sports/mlb)
+- Email alerts via ALERT_EMAIL environment variable
+- Slack alerts via SLACK_WEBHOOK_URL
+- Exit codes for CI/CD integration
+
+**Documentation:** `MONITORING.md`
+
+### Infrastructure Documentation
 
 Located in `docs/`:
 
@@ -539,6 +793,9 @@ Located in `docs/`:
    - Overview of all guides
    - Implementation roadmap
    - Success metrics
+
+7. **[PRODUCTION_SETUP.md](./docs/PRODUCTION_SETUP.md)** - Production configuration
+8. **[SENTRY-SETUP-GUIDE.md](./docs/SENTRY-SETUP-GUIDE.md)** - Error tracking setup
 
 ### Implementation Priorities
 
@@ -578,6 +835,17 @@ Located in `docs/`:
 - **Base URL:** `https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball`
 - **Enhancement:** Add complete box scores (ESPN gap filler)
 - **No API Key Required**
+
+### NCAA Basketball
+- **API:** ESPN Public API
+- **Base URL:** `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball`
+- **No API Key Required**
+
+### Youth Sports
+- **Purpose:** Local youth sports leagues and tournaments
+- **Data Management:** Internal API for community sports coverage
+- **Features:** Schedules, scores, team rosters, standings
+- **No External API Required**
 
 ---
 
@@ -640,7 +908,10 @@ export async function GET(request: NextRequest) {
 
 ### Caching Strategy
 
+**IMPORTANT:** BSI-NextGen uses aggressive cache control to prevent stale content and React hydration errors.
+
 ```typescript
+// API Routes - Data endpoints
 export async function GET(request: NextRequest) {
   const data = await fetchData();
 
@@ -653,6 +924,54 @@ export async function GET(request: NextRequest) {
   });
 }
 ```
+
+**HTML Pages Cache Control:**
+
+Configured in `packages/web/next.config.js`:
+
+```javascript
+{
+  // HTML pages: Short CDN cache to prevent stale content
+  source: '/:path((?!_next|api).*)*',
+  headers: [
+    {
+      key: 'Cache-Control',
+      // Browser: always revalidate
+      // CDN: cache for 60 seconds, then revalidate
+      // Prevents hydration mismatches from stale HTML
+      value: 'public, max-age=0, s-maxage=60, must-revalidate',
+    },
+  ],
+},
+{
+  // Static assets: Long cache with immutable (versioned by Next.js)
+  source: '/_next/static/:path*',
+  headers: [
+    {
+      key: 'Cache-Control',
+      // 1 year cache - safe because Next.js versions these files
+      value: 'public, max-age=31536000, immutable',
+    },
+  ],
+}
+```
+
+**Why This Matters:**
+- Prevents 500 errors from HTML/JS version mismatches
+- Ensures users always get fresh content after deployment
+- Static assets still cached aggressively (1 year) with versioned URLs
+- CDN cache limited to 60 seconds for HTML prevents stale content
+
+**Cache Monitoring:**
+```bash
+# Check for cache staleness
+./scripts/check-cache-staleness.sh
+
+# Monitor with alerts
+MAX_CACHE_AGE=90 SLACK_WEBHOOK_URL="..." ./scripts/check-cache-staleness.sh
+```
+
+**Documentation:** `CACHE-FIX-IMPLEMENTATION.md`
 
 ---
 
@@ -734,6 +1053,84 @@ pnpm dev
 
 ---
 
+## Production Status & Recent Updates
+
+### Current Production Status (November 2025)
+
+**Deployment:** ✅ Live on Netlify
+**URL:** https://blazesportsintelligence.netlify.app
+**Status:** Stable and monitored
+
+**Recent Major Updates:**
+1. ✅ **P0 Critical Fixes** (Nov 20, 2025)
+   - Health check endpoint deployed (`/api/health`)
+   - Production monitoring script implemented
+   - Complete monitoring documentation (MONITORING.md)
+
+2. ✅ **P1 Security Improvements** (Nov 20, 2025)
+   - Security headers implemented (7/7 deployed)
+   - Console logging cleanup in production routes
+   - Debug endpoint removed
+   - Security audit passed (0 vulnerabilities)
+
+3. ✅ **Cache Control Fix** (Nov 20, 2025)
+   - HTML cache reduced from 7 days to 60 seconds
+   - Prevents React hydration errors from stale content
+   - Automatic cache purge via GitHub Actions
+   - Cache monitoring script implemented
+
+4. ✅ **Homepage Enhancement** (Nov 20, 2025)
+   - Full backend integration with real data
+   - Alerts system with live data sources
+   - Enhanced homepage with interactive design
+   - Improved mobile responsiveness
+
+5. ✅ **Observability Infrastructure** (Nov 20, 2025)
+   - Structured logging with correlation IDs
+   - Metrics recording with Cloudflare Analytics Engine
+   - Distributed tracing support
+   - Circuit breakers for external APIs
+   - SLO definitions and monitoring
+
+6. ✅ **MMI Integration** (2025)
+   - Major Moments Index for baseball analytics
+   - API endpoints for high-leverage situations
+   - Win probability calculations
+   - Play-by-play analysis
+
+7. ✅ **MCP Server** (2025)
+   - Model Context Protocol server for SportsData.io
+   - 8 specialized tools for sports data
+   - Priority on college baseball coverage
+   - Cloudflare Workers deployment
+
+**Season Updates:**
+- ✅ All sports updated for 2025-2026 season
+- ✅ MLB MMI with adaptive cache control
+- ✅ NFL season data current
+- ✅ NBA season data via ESPN adapter
+
+**Known Limitations:**
+- MMI service returns 503 (expected - service in development)
+- Some API endpoints require SPORTSDATAIO_API_KEY
+
+### Next Steps (Planned)
+
+**P2 Enhancements:**
+- Tighten CSP by removing 'unsafe-inline' and 'unsafe-eval'
+- Add Subresource Integrity (SRI) for external scripts
+- Implement rate limiting on API endpoints
+- Set up automated security scanning in CI/CD
+- Add request logging with correlation IDs
+
+**Feature Development:**
+- Youth sports league management expansion
+- Enhanced analytics dashboard
+- Real-time notifications system
+- Mobile app development
+
+---
+
 ## Project-Specific Notes
 
 ### Mobile-First Design
@@ -774,6 +1171,74 @@ if (!games.length) {
   return <EmptyState message="No games scheduled" />;
 }
 ```
+
+---
+
+## AI Assistant Guidelines
+
+### Working with this Codebase
+
+**Key Principles:**
+1. **Always use real data** - Never create placeholder or mock data
+2. **Mobile-first approach** - Start with mobile design, scale up to desktop
+3. **College baseball priority** - This is the #1 feature (fills ESPN gaps)
+4. **Cache awareness** - Understand cache implications of changes
+5. **Security first** - Never expose API keys or sensitive data
+6. **Comprehensive error handling** - All external API calls must handle failures
+7. **Timezone consistency** - Always use America/Chicago timezone
+
+**Before Making Changes:**
+1. Read relevant documentation in `docs/` and `observability/`
+2. Check recent deployment logs in `DEPLOYMENT_LOG.md`
+3. Verify production status with `/api/health` endpoint
+4. Review SLOs in `observability/slos/`
+5. Test locally before suggesting deployment
+
+**When Adding New Features:**
+1. Create adapter in `packages/api/src/adapters/`
+2. Export from `packages/api/src/index.ts`
+3. Build API package: `pnpm --filter @bsi/api build`
+4. Create API route in `packages/web/app/api/sports/[sport]/`
+5. Add frontend page in `packages/web/app/sports/[sport]/`
+6. Update this CLAUDE.md with new endpoints and features
+7. Add tests and verify functionality
+8. Check monitoring and observability impact
+
+**When Fixing Production Issues:**
+1. Check `observability/DEBUGGABILITY_CARD.md` for common issues
+2. Review logs in Cloudflare Dashboard
+3. Check health endpoint: `curl https://www.blazesportsintel.com/api/health`
+4. Verify external API connectivity
+5. Check cache staleness with monitoring script
+6. Document fix in `DEPLOYMENT_LOG.md`
+
+**API Development Patterns:**
+- Always transform external API responses to shared types (`@bsi/shared`)
+- Include `meta` object with `dataSource`, `lastUpdated`, `timezone`
+- Implement proper error handling with descriptive messages
+- Use appropriate cache headers (see Caching Strategy section)
+- Add observability metadata (requestId, traceId)
+
+**Security Considerations:**
+- Never commit `.env` files
+- Never log API keys or sensitive data
+- Always validate environment variables
+- Use security headers (already configured in `next.config.js`)
+- Follow OWASP top 10 guidelines
+
+**Performance Guidelines:**
+- Keep API response times under 200ms (P99)
+- HTML pages cached for 60 seconds max (CDN)
+- Static assets cached for 1 year (immutable)
+- Monitor external API latency with circuit breakers
+- Use Cloudflare Analytics Engine for metrics
+
+**Testing Requirements:**
+- Playwright tests for E2E functionality
+- Integration tests for API endpoints
+- Mobile regression tests for UI changes
+- Performance tests before production deployment
+- Health check verification after deployment
 
 ---
 
@@ -914,11 +1379,65 @@ cp .env.example .env
 
 ## Documentation Files
 
+### Root Documentation
+
 - `README.md` - Project overview and quick start
 - `QUICK_START.md` - Detailed setup instructions
-- `DEPLOYMENT.md` - Deployment procedures
+- `CLAUDE.md` - **This file** - AI assistant guide and codebase overview
+- `DEPLOYMENT.md` - General deployment procedures
+- `DEPLOYMENT-READY-STATUS.md` - Pre-deployment status check
+- `DEPLOYMENT_LOG.md` - Recent deployment history (P0/P1 fixes)
+- `MONITORING.md` - Production monitoring setup guide
+- `CACHE-FIX-IMPLEMENTATION.md` - Cache control implementation details
+
+### Integration & Implementation
+
 - `SPORTSDATAIO_INTEGRATION.md` - SportsDataIO API integration guide
+- `MMI_INTEGRATION_COMPLETE.md` - Major Moments Index integration
+- `MMI_DEPLOYMENT_SUMMARY.md` - MMI deployment status
+- `BLAZE-TRENDS-IMPLEMENTATION.md` - Blaze Trends worker implementation
+- `COLLEGE-BASEBALL-IMPLEMENTATION.md` - College baseball feature implementation
+- `NCAA-FUSION-DASHBOARD.md` - NCAA multi-sport dashboard
+
+### Analytics & 3D Features
+
+- `ANALYTICS-DEPLOYMENT-GUIDE.md` - Analytics implementation guide
+- `BLAZE-3D-IMPLEMENTATION-SUMMARY.md` - 3D visualization summary
+- `BLAZE-3D-QUICK-START.md` - 3D visualization quick start
+- `BLAZE-3D-VISUALIZATION-ARCHITECTURE.md` - 3D architecture details
+
+### Infrastructure Documentation (`docs/`)
+
+- `docs/INFRASTRUCTURE.md` - Complete architecture mapping (72 workers, 18 D1 DBs)
 - `docs/IMPLEMENTATION_SUMMARY.md` - Infrastructure implementation roadmap
-- `docs/INFRASTRUCTURE.md` - Complete architecture mapping
 - `docs/OPERATIONAL_RUNBOOKS.md` - Operations procedures
+- `docs/PRODUCTION_SETUP.md` - Production configuration
+- `docs/R2_STORAGE_SETUP.md` - R2 media storage implementation
+- `docs/HYPERDRIVE_SETUP.md` - Database connection pooling
+- `docs/DATABASE_MONITORING.md` - Database monitoring setup
+- `docs/SENTRY-SETUP-GUIDE.md` - Error tracking setup
+- `docs/DOMAIN_SETUP_GUIDE.md` - Domain configuration
+- `docs/PERFORMANCE_TESTING.md` - Performance testing procedures
+
+### Observability Documentation (`observability/`)
+
+- `observability/README.md` - Observability overview (**START HERE**)
+- `observability/QUICK_START.md` - 5-minute quick start guide
+- `observability/DEBUGGABILITY_CARD.md` - Incident response guide
+- `observability/RUNBOOK.md` - Operational procedures
+- `observability/PRODUCTION_DEPLOYMENT_GUIDE.md` - Deployment steps
+- `observability/IMPLEMENTATION_SUMMARY.md` - Technical implementation overview
+
+### Claude Code Configuration (`.claude/`)
+
 - `.claude/README.md` - Claude Code web setup documentation
+- `.claude/scripts/setup.sh` - Automatic session setup script
+- `.claude/scripts/network-check.sh` - API connectivity verification
+- `.claude/settings.json` - SessionStart hooks configuration
+
+### Package-Specific Documentation
+
+- `packages/mcp-sportsdata-io/README.md` - MCP server documentation
+- `packages/mmi-baseball/README.md` - MMI analytics package
+- `cloudflare-workers/blaze-trends/README.md` - Blaze Trends worker
+- `cloudflare-workers/blaze-trends/DEPLOYMENT.md` - Trends deployment guide
