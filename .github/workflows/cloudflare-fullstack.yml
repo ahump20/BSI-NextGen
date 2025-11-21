@@ -157,7 +157,7 @@ jobs:
 
       - name: Export Next.js for Cloudflare Pages
         working-directory: packages/web
-        run: pnpm exec npx @cloudflare/next-on-pages --outdir .vercel/output/static --experimental-minify
+        run: pnpm exec @cloudflare/next-on-pages --outdir .vercel/output/static --experimental-minify
 
       - name: Deploy Workers (KV/D1/R2 bindings)
         uses: cloudflare/wrangler-action@v3
@@ -201,7 +201,7 @@ jobs:
 
   promote-production:
     name: Promote to production
-    needs: deploy-staging
+
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.promote_to_production == 'true'
     runs-on: ubuntu-latest
     environment:
@@ -237,7 +237,7 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
 
       - name: Netlify production fallback (optional)
-        if: secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != ''
+        if: ${{ secrets.NETLIFY_AUTH_TOKEN && secrets.NETLIFY_SITE_ID }}
         uses: nwtgck/actions-netlify@v3
         with:
           publish-dir: packages/web/.vercel/output/static
