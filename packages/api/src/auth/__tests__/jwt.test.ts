@@ -403,9 +403,10 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
 
   describe('extractBearerToken', () => {
     it('should extract token from valid Bearer header', () => {
-      const token = extractBearerToken('Bearer mock-jwt-token');
+      const validToken = 'eyJhbGci.eyJzdWIi.SflKxwRJ';
+      const token = extractBearerToken(`Bearer ${validToken}`);
 
-      expect(token).toBe('mock-jwt-token');
+      expect(token).toBe(validToken);
     });
 
     it('should return null for null header', () => {
@@ -421,29 +422,32 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
     });
 
     it('should return null for header without Bearer prefix', () => {
-      const token = extractBearerToken('mock-jwt-token');
+      const validToken = 'eyJhbGci.eyJzdWIi.SflKxwRJ';
+      const token = extractBearerToken(validToken);
 
       expect(token).toBeNull();
     });
 
     it('should return null for malformed Bearer header', () => {
-      const token = extractBearerToken('Bear mock-jwt-token');
+      const validToken = 'eyJhbGci.eyJzdWIi.SflKxwRJ';
+      const token = extractBearerToken(`Bear ${validToken}`);
 
       expect(token).toBeNull();
     });
 
     it('should handle Bearer with different casing', () => {
       // The "Bearer" prefix should be matched case-insensitively (RFC 7230)
-      const token = extractBearerToken('bearer mock-jwt-token');
+      const validToken = 'eyJhbGci.eyJzdWIi.SflKxwRJ';
+      const token = extractBearerToken(`bearer ${validToken}`);
 
-      expect(token).toBe('mock-jwt-token');
+      expect(token).toBe(validToken);
     });
 
-    it('should extract token with spaces in it', () => {
-      // Though not typical, some systems might have spaces
+    it('should reject tokens with spaces (invalid JWT format)', () => {
+      // JWTs must match format: header.payload.signature (no spaces allowed)
       const token = extractBearerToken('Bearer token with spaces');
 
-      expect(token).toBe('token with spaces');
+      expect(token).toBeNull();
     });
 
     it('should handle empty token after Bearer', () => {
@@ -452,11 +456,43 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
       expect(token).toBeNull();
     });
 
-    it('should handle very long tokens', () => {
-      const longToken = 'x'.repeat(1000);
-      const token = extractBearerToken(`Bearer ${longToken}`);
+    it('should accept valid JWT format tokens', () => {
+      // Valid JWT: three base64url parts separated by dots
+      const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+      const token = extractBearerToken(`Bearer ${validToken}`);
 
-      expect(token).toBe(longToken);
+      expect(token).toBe(validToken);
+    });
+
+    it('should reject tokens with only one part (missing dots)', () => {
+      const token = extractBearerToken('Bearer invalidtoken');
+
+      expect(token).toBeNull();
+    });
+
+    it('should reject tokens with only two parts', () => {
+      const token = extractBearerToken('Bearer header.payload');
+
+      expect(token).toBeNull();
+    });
+
+    it('should reject tokens with too many parts', () => {
+      const token = extractBearerToken('Bearer header.payload.signature.extra');
+
+      expect(token).toBeNull();
+    });
+
+    it('should reject tokens with invalid characters', () => {
+      const token = extractBearerToken('Bearer header.pay load.signature');
+
+      expect(token).toBeNull();
+    });
+
+    it('should accept tokens with base64url characters (including - and _)', () => {
+      const validToken = 'ey-J_hbG.ey-J_zdW.Sfl-Kx_wRJ';
+      const token = extractBearerToken(`Bearer ${validToken}`);
+
+      expect(token).toBe(validToken);
     });
   });
 
