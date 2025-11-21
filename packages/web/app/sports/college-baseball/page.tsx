@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import type { NCAAGame } from '@bsi/shared';
+import { SportPageShell } from '@/components/sports/SportPageShell';
+import { LiveTicker } from '@/components/sports/LiveTicker';
 
 export default function CollegeBaseballPage() {
   const [games, setGames] = useState<NCAAGame[]>([]);
@@ -15,6 +17,8 @@ export default function CollegeBaseballPage() {
 
   useEffect(() => {
     fetchGames(selectedDate);
+    const interval = setInterval(() => fetchGames(selectedDate), 30000);
+    return () => clearInterval(interval);
   }, [selectedDate]);
 
   const fetchGames = async (date: string) => {
@@ -68,15 +72,36 @@ export default function CollegeBaseballPage() {
     }
   };
 
+  const tickerItems = useMemo(() =>
+    games.slice(0, 8).map((game) => ({
+      id: game.id,
+      label: `${game.teams.away.abbreviation} @ ${game.teams.home.abbreviation}`,
+      status: game.status.type.toUpperCase(),
+      detail: `${game.teams.away.score} - ${game.teams.home.score} · ${game.status.detail}`,
+    })), [games]);
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">
-          College Baseball Schedule
-        </h1>
-        <p className="text-gray-600">
-          Complete box scores and play-by-play - the ESPN gap filler
-        </p>
+    <SportPageShell
+      sport="College Baseball"
+      tagline="Box scores, rankings, and gap-filling coverage"
+      accent="orange"
+      actions={(
+        <Link
+          href="/sports/college-baseball/rankings"
+          className="px-4 py-2 rounded-full bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+        >
+          Rankings
+        </Link>
+      )}
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6" role="presentation">
+        <div className="lg:col-span-2">
+          <LiveTicker items={tickerItems} onRefresh={() => fetchGames(selectedDate)} />
+        </div>
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-orange-900 shadow-sm">
+          <p className="text-sm font-semibold">America/Chicago cadence</p>
+          <p className="text-sm">Live tickers refresh every 30s while keeping keyboard focus intact.</p>
+        </div>
       </div>
 
       <div className="mb-6">
@@ -88,13 +113,13 @@ export default function CollegeBaseballPage() {
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
         />
       </div>
 
       {loading && (
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
         </div>
       )}
 
@@ -135,7 +160,6 @@ export default function CollegeBaseballPage() {
               </div>
 
               <div className="grid grid-cols-3 gap-4 items-center">
-                {/* Away Team */}
                 <div className="flex items-center space-x-3">
                   {game.teams.away.logo && (
                     <img
@@ -152,7 +176,6 @@ export default function CollegeBaseballPage() {
                   </div>
                 </div>
 
-                {/* Score */}
                 <div className="text-center">
                   <div className="text-2xl md:text-3xl font-bold">
                     {game.teams.away.score} - {game.teams.home.score}
@@ -170,7 +193,6 @@ export default function CollegeBaseballPage() {
                   )}
                 </div>
 
-                {/* Home Team */}
                 <div className="flex items-center justify-end space-x-3">
                   <div className="text-right">
                     <p className="font-semibold text-sm md:text-base">
@@ -203,6 +225,6 @@ export default function CollegeBaseballPage() {
           Data from ESPN College Baseball API · Updated in America/Chicago timezone
         </p>
       </div>
-    </div>
+    </SportPageShell>
   );
 }
