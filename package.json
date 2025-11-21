@@ -12,7 +12,7 @@
     "format": "prettier --write \"packages/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf packages/*/dist packages/*/.next packages/*/node_modules node_modules",
-    "test": "pnpm --filter @bsi/api test && pnpm --filter @bsi/web test",
+    "test": "pnpm -r test",
     "test:watch": "pnpm --filter @bsi/api test:watch",
     "test:coverage": "pnpm --filter @bsi/api test:coverage; pnpm --filter @bsi/web test:coverage",
     "test:e2e": "playwright test",
