@@ -753,7 +753,7 @@ describe('CollegeBaseballAdapter', () => {
       const result = await adapter.getGames({ date: '2025-01-13' });
       const gameWithBoxScore = result.data[0] as any;
 
-      expect(gameWithBoxScore.boxScore.battingLines[0].avg).toBe('.000');
+      expect(gameWithBoxScore.boxScore.battingLines[0].avg).toBe('N/A');
 
       consoleSpy.mockRestore();
     });

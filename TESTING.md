@@ -34,12 +34,12 @@ BSI-NextGen uses a comprehensive testing strategy to ensure code quality, preven
 
 | Package | Coverage | Status |
 |---------|----------|--------|
-| @bsi/shared | ~85% | ✅ Good |
-| @bsi/api | ~50%+ | 🟡 Improving |
-| @bsi/web | ~30%+ | 🟡 Improving |
-| mmi-baseball | ~70% | ✅ Good |
+| @bsi/shared    | 84.7% | ✅ Good |
+| @bsi/api       | 51.2% | 🟡 Improving |
+| @bsi/web       | 32.8% | 🟡 Improving |
+| mmi-baseball   | 69.5% | ✅ Good |
 
-**Goal:** Achieve and maintain 70%+ coverage across all packages.
+**Goal:** Achieve and maintain at least 70% coverage across all packages.
 
 ---
 

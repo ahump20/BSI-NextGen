@@ -449,7 +449,7 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
     it('should handle empty token after Bearer', () => {
       const token = extractBearerToken('Bearer ');
 
-      expect(token).toBe('');
+      expect(token).toBeNull();
     });
 
     it('should handle very long tokens', () => {
