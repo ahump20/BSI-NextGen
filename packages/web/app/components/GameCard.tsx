@@ -7,14 +7,31 @@ interface GameCardProps {
 export function GameCard({ game }: GameCardProps) {
   const isLive = game.status === 'live';
   const isFinal = game.status === 'final';
+  const isPostponed = game.status === 'postponed';
+  const isCancelled = game.status === 'cancelled';
+
+  const getStatusText = () => {
+    if (isLive) return 'LIVE';
+    if (isFinal) return 'FINAL';
+    if (isPostponed) return 'POSTPONED';
+    if (isCancelled) return 'CANCELLED';
+    return 'SCHEDULED';
+  };
+
+  const getStatusColor = () => {
+    if (isLive) return 'text-red-500';
+    if (isFinal) return 'text-gray-400';
+    if (isPostponed || isCancelled) return 'text-yellow-500';
+    return 'text-blue-400';
+  };
 
   return (
     <div className="game-card">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {isLive && <span className="live-indicator"></span>}
-          <span className={`text-xs font-semibold ${isLive ? 'text-red-500' : isFinal ? 'text-gray-400' : 'text-blue-400'}`}>
-            {isLive ? 'LIVE' : isFinal ? 'FINAL' : 'SCHEDULED'}
+          <span className={`text-xs font-semibold ${getStatusColor()}`}>
+            {getStatusText()}
           </span>
           {game.period && (
             <span className="text-xs text-gray-400">

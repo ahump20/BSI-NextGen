@@ -613,10 +613,17 @@ describe('NCAAFootballAdapter', () => {
   });
 
   describe('getCurrentSeason', () => {
-    it('should calculate season correctly for different months', async () => {
-      // Mock date to test season calculation
-      const realDate = Date;
+    let realDate: DateConstructor;
 
+    beforeEach(() => {
+      realDate = Date;
+    });
+
+    afterEach(() => {
+      global.Date = realDate;
+    });
+
+    it('should calculate season correctly for different months', async () => {
       // Test August (start of season) - should use current year
       global.Date = jest.fn(() => new realDate('2025-08-01')) as any;
       global.Date.now = realDate.now;
@@ -638,9 +645,6 @@ describe('NCAAFootballAdapter', () => {
       await adapter.getGames({ week: 1 });
       fetchUrl = (mockFetch.mock.calls[0][0] as string);
       expect(fetchUrl).toContain('year=2024');
-
-      // Restore original Date
-      global.Date = realDate;
     });
   });
 
