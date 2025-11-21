@@ -88,6 +88,15 @@ export function PitchTunnelSimulator() {
   });
   const [tunnelGap, setTunnelGap] = useState(0);
 
+  const handlePitchTypeChange = (newPitchType: PitchType) => {
+    setPitchType(newPitchType);
+    if (newPitchType === tunnelPitch) {
+      // Set to the first available option that isn't the new pitch type
+      const alternatives = Object.keys(pitchPalette).filter(key => key !== newPitchType);
+      setTunnelPitch(alternatives[0] as PitchType);
+    }
+  };
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -393,7 +402,7 @@ export function PitchTunnelSimulator() {
                 Primary pitch
                 <select
                   value={pitchType}
-                  onChange={(e) => setPitchType(e.target.value as PitchType)}
+                  onChange={(e) => handlePitchTypeChange(e.target.value as PitchType)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   {Object.entries(pitchPalette).map(([key, meta]) => (
