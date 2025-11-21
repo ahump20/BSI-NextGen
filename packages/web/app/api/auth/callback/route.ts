@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuth0Client, createJWT } from '@bsi/api';
 import type { AuthUser } from '@bsi/shared';
+import {
+  deriveFeatureFlags,
+  extractEntitlementsFromClaims,
+  extractRoleFromClaims,
+} from '@/lib/auth/featureFlags';
 
 // Configure for Cloudflare Edge Runtime
 export const runtime = 'edge';
@@ -67,17 +72,24 @@ export async function GET(request: NextRequest) {
     // Exchange authorization code for tokens
     const tokens = await auth0.exchangeCodeForTokens(code);
 
-    // Get user information
+    // Get user information (with namespaced claims)
     const userInfo = await auth0.getUserInfo(tokens.access_token);
 
-    // Create user object
+    const entitlements = extractEntitlementsFromClaims(userInfo);
+    const role = extractRoleFromClaims(userInfo);
+    const featureFlags = deriveFeatureFlags(role, entitlements);
+
+    // Create user object enriched with Auth0 claims
     const user: AuthUser = {
       id: userInfo.sub,
       email: userInfo.email,
       name: userInfo.name,
       picture: userInfo.picture,
-      role: 'user', // Default role
+      role,
       emailVerified: userInfo.email_verified,
+      entitlements,
+      featureFlags,
+      sessionExpiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
     };
 
     // Create JWT session token

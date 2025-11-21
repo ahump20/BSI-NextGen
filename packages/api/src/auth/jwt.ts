@@ -21,6 +21,11 @@ export async function createJWT(
     sub: user.id,
     email: user.email,
     role: user.role,
+    name: user.name,
+    picture: user.picture,
+    emailVerified: user.emailVerified,
+    entitlements: user.entitlements,
+    featureFlags: user.featureFlags,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -38,7 +43,7 @@ export async function createJWT(
 export async function verifyJWT(
   token: string,
   config: Omit<JWTConfig, 'expiresIn'>
-): Promise<AuthUser | null> {
+): Promise<(AuthUser & { sessionExpiresAt?: number }) | null> {
   try {
     const secret = new TextEncoder().encode(config.secret);
 
@@ -55,6 +60,12 @@ export async function verifyJWT(
       id: payload.sub,
       email: payload.email as string,
       role: payload.role as AuthUser['role'],
+      name: payload.name as string | undefined,
+      picture: payload.picture as string | undefined,
+      emailVerified: payload.emailVerified as boolean | undefined,
+      entitlements: (payload.entitlements as string[] | undefined) || [],
+      featureFlags: (payload.featureFlags as string[] | undefined) || [],
+      sessionExpiresAt: payload.exp ? payload.exp * 1000 : undefined,
     };
   } catch (error) {
     console.error('JWT verification failed:', error);

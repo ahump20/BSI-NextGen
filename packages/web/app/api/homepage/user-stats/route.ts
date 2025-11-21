@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         });
 
         if (user) {
-          userId = user.userId || user.sub || 'guest';
+          userId = user.id || user.sub || 'guest';
           isAuthenticated = true;
         }
       } catch (error) {

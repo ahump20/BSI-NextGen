@@ -9,9 +9,22 @@ export interface AuthUser {
   name?: string;
   picture?: string;
   role: 'user' | 'premium' | 'admin';
+  /**
+   * Entitlements granted by Auth0 or internal feature provisioning
+   * Example: ["command_center", "personalization", "alerts"]
+   */
+  entitlements?: string[];
+  /**
+   * Resolved feature flags derived from entitlements + role
+   */
+  featureFlags?: string[];
   emailVerified?: boolean;
   createdAt?: string;
   lastLogin?: string;
+  /**
+   * Epoch milliseconds for when the session JWT expires on the client
+   */
+  sessionExpiresAt?: number;
 }
 
 export interface AuthSession {
@@ -38,12 +51,18 @@ export interface Auth0UserInfo {
   nickname?: string;
   picture?: string;
   updated_at?: string;
+  [claim: string]: unknown;
 }
 
 export interface JWTPayload {
   sub: string;
   email: string;
   role: AuthUser['role'];
+  name?: string;
+  picture?: string;
+  emailVerified?: boolean;
+  entitlements?: string[];
+  featureFlags?: string[];
   iat: number;
   exp: number;
   iss: string;

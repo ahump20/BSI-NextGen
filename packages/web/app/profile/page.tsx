@@ -3,6 +3,7 @@
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Avatar } from '@/components/Avatar';
+import { PersonalizationDashboard } from './PersonalizationDashboard';
 
 /**
  * User Profile Page
@@ -348,6 +349,12 @@ function ProfileContent() {
             </p>
           </div>
         </div>
+
+        {user.featureFlags?.includes('personalization-dashboard') && (
+          <div className="mt-8">
+            <PersonalizationDashboard user={user} />
+          </div>
+        )}
       </div>
     </div>
   );

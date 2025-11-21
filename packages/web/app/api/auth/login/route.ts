@@ -32,8 +32,11 @@ export async function GET(request: NextRequest) {
       audience: process.env.AUTH0_AUDIENCE,
     });
 
-    // Get authorization URL
-    const authUrl = auth0.getAuthorizationUrl(state);
+    // Request enriched scopes so Auth0 returns roles/entitlements + refresh support
+    const authUrl = auth0.getAuthorizationUrl(
+      state,
+      'openid profile email offline_access read:current_user'
+    );
 
     // Create response with redirect
     const response = NextResponse.redirect(authUrl);

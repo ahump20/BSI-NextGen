@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
 
     if (!sessionToken) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
+        { error: 'Not authenticated', code: 'NO_SESSION' },
+        { status: 401, headers: { 'x-session-expired': '1' } }
       );
     }
 
@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
     if (!user) {
       // Invalid or expired token
       const response = NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
+        { error: 'Invalid session', code: 'SESSION_EXPIRED' },
+        { status: 401, headers: { 'x-session-expired': '1' } }
       );
 
       // Clear invalid session cookie
@@ -46,10 +46,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Return user data
-    return NextResponse.json({
-      user,
-      authenticated: true,
-    });
+    return NextResponse.json(
+      {
+        user,
+        authenticated: true,
+      },
+      {
+        headers: {
+          ...(user.sessionExpiresAt
+            ? { 'x-session-expires-at': user.sessionExpiresAt.toString() }
+            : {}),
+        },
+      }
+    );
   } catch (error) {
     console.error('[Auth Me] Error:', error);
     return NextResponse.json(
