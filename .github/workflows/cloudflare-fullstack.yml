@@ -182,7 +182,7 @@ jobs:
       - name: Netlify fallback deploy (optional)
         run: |
           if [ -n "${NETLIFY_AUTH_TOKEN}" ] && [ -n "${NETLIFY_SITE_ID}" ]; then
-            npx netlify deploy --dir=packages/web/.vercel/output/static --alias=staging-fallback
+            npx netlify deploy --dir=packages/web/.vercel/output/static --site="${NETLIFY_SITE_ID}" --auth="${NETLIFY_AUTH_TOKEN}" --alias=staging-fallback
           else
             echo "Skipping Netlify fallback deploy: NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID not set."
           fi
@@ -239,7 +239,7 @@ jobs:
       - name: Netlify production fallback (optional)
         run: |
           if [ -n "${NETLIFY_AUTH_TOKEN}" ] && [ -n "${NETLIFY_SITE_ID}" ]; then
-            npx netlify deploy --dir=packages/web/.vercel/output/static --prod
+            npx netlify deploy --dir=packages/web/.vercel/output/static --site="${NETLIFY_SITE_ID}" --auth="${NETLIFY_AUTH_TOKEN}" --prod
           else
             echo "Skipping Netlify production fallback deploy: NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID not set."
           fi
