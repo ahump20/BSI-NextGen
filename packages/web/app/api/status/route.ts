@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { withApiObservability } from '../../lib/observability';
 
 /**
  * Detailed Status Endpoint
@@ -9,7 +10,7 @@ import { NextResponse } from 'next/server';
  * - Performance metrics
  * - Data freshness indicators
  */
-export async function GET() {
+export const GET = withApiObservability(async () => {
   const startTime = Date.now();
 
   // System metrics
@@ -60,9 +61,23 @@ export async function GET() {
   // Calculate response time
   status.performance.responseTime = Date.now() - startTime;
 
-  return NextResponse.json(status, {
-    headers: {
-      'Cache-Control': 'public, max-age=30, s-maxage=60',
+  const mostRecentUpdate = Object.values(status.sports)
+    .map((sport: any) => new Date(sport.lastUpdate).getTime())
+    .sort((a, b) => b - a)[0];
+
+  const dataFreshnessSeconds = mostRecentUpdate
+    ? Math.max(0, (Date.now() - mostRecentUpdate) / 1000)
+    : 0;
+
+  return {
+    response: NextResponse.json(status, {
+      headers: {
+        'Cache-Control': 'public, max-age=30, s-maxage=60',
+      },
+    }),
+    cacheStatus: 'bypass',
+    alertContext: {
+      dataFreshnessSeconds,
     },
-  });
-}
+  };
+}, { feature: 'status' });

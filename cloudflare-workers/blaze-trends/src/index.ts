@@ -1,6 +1,39 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 
+const createTraceId = (prefix: string = 'worker') =>
+  `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+
+const logMetric = (
+  name: string,
+  value: number,
+  tags?: Record<string, string | number | boolean>
+) => {
+  console.log('[METRIC]', {
+    name,
+    value,
+    tags,
+    timestamp: new Date().toISOString(),
+  });
+};
+
+const logTrace = (
+  traceId: string,
+  message: string,
+  data?: Record<string, any>,
+  level: 'info' | 'warn' | 'error' = 'info'
+) => {
+  const payload = {
+    traceId,
+    message,
+    ...data,
+    timestamp: new Date().toISOString(),
+  };
+
+  const logger = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
+  logger('[TRACE]', payload);
+};
+
 // Types for Cloudflare bindings
 type Bindings = {
   DB: D1Database;
@@ -11,6 +44,11 @@ type Bindings = {
 
 type Variables = {
   startTime: number;
+  traceId: string;
+  cacheHit: boolean;
+  dataFreshnessSeconds: number;
+  authFailures: number;
+  upstreamErrorRate: number;
 };
 
 // Initialize Hono app
@@ -20,8 +58,93 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 app.use('*', cors());
 app.use('*', async (c, next) => {
   c.set('startTime', Date.now());
+  c.set('traceId', createTraceId('blaze-trends'));
+  c.set('cacheHit', false);
+  c.set('dataFreshnessSeconds', 0);
+  c.set('authFailures', 0);
+  c.set('upstreamErrorRate', 0);
+
   await next();
+
+  const duration = Date.now() - c.get('startTime');
+  const traceId = c.get('traceId');
+  const status = c.res?.status || 200;
+
+  logTrace(traceId, 'request.complete', {
+    route: c.req.path,
+    status,
+    duration,
+    cacheHit: c.get('cacheHit'),
+  });
+
+  logMetric('worker.request.duration', duration, {
+    route: c.req.path,
+    status,
+    traceId,
+  });
+
+  logMetric('worker.cache.hit', c.get('cacheHit') ? 1 : 0, {
+    route: c.req.path,
+    traceId,
+  });
+
+  const freshness = c.get('dataFreshnessSeconds');
+  if (freshness) {
+    logMetric('worker.data.freshness_seconds', freshness, {
+      route: c.req.path,
+      traceId,
+    });
+  }
+
+  const alertContext = {
+    dataFreshnessSeconds: freshness,
+    authFailures: c.get('authFailures'),
+    upstreamErrorRate: c.get('upstreamErrorRate'),
+  };
+
+  const alerts = evaluateAlertRules(alertContext);
+  for (const alert of alerts) {
+    logTrace(traceId, `alert.${alert.id}`, alert, alert.severity === 'critical' ? 'error' : 'warn');
+    await logMonitoringEvent(c.env.DB, {
+      eventType: `alert_${alert.id}`,
+      details: JSON.stringify(alert),
+      success: false,
+      durationMs: duration,
+    });
+  }
 });
+
+const evaluateAlertRules = (
+  context: { dataFreshnessSeconds?: number; authFailures?: number; upstreamErrorRate?: number }
+) => {
+  const alerts: Array<{ id: string; severity: 'warning' | 'critical'; description: string }> = [];
+
+  if ((context.dataFreshnessSeconds ?? 0) > 90) {
+    alerts.push({
+      id: 'data-freshness',
+      severity: 'critical',
+      description: 'Live game feed freshness breached 90s SLO',
+    });
+  }
+
+  if ((context.authFailures ?? 0) > 0) {
+    alerts.push({
+      id: 'auth-failures',
+      severity: 'warning',
+      description: 'Authentication failures detected while resolving content',
+    });
+  }
+
+  if ((context.upstreamErrorRate ?? 0) >= 0.1) {
+    alerts.push({
+      id: 'upstream-errors',
+      severity: 'critical',
+      description: 'Upstream provider errors exceeded 10%',
+    });
+  }
+
+  return alerts;
+};
 
 // Types
 interface Trend {
@@ -107,6 +230,7 @@ app.get('/api/trends', async (c) => {
     const cached = await c.env.BLAZE_TRENDS_CACHE.get(cacheKey);
 
     if (cached) {
+      c.set('cacheHit', true);
       return c.json({
         trends: JSON.parse(cached),
         cached: true,
@@ -125,6 +249,10 @@ app.get('/api/trends', async (c) => {
     const result = await c.env.DB.prepare(query).bind(...params).all();
 
     const trends = result.results.map(formatTrend);
+    if (trends.length > 0) {
+      const latestUpdate = new Date(trends[0].updatedAt).getTime();
+      c.set('dataFreshnessSeconds', Math.max(0, (Date.now() - latestUpdate) / 1000));
+    }
 
     // Cache for 5 minutes
     await c.env.BLAZE_TRENDS_CACHE.put(cacheKey, JSON.stringify(trends), {
@@ -137,6 +265,7 @@ app.get('/api/trends', async (c) => {
     });
   } catch (error) {
     console.error('Error fetching trends:', error);
+    c.set('upstreamErrorRate', 1);
     return c.json({ error: 'Failed to fetch trends' }, 500);
   }
 });
@@ -151,6 +280,7 @@ app.get('/api/trends/:id', async (c) => {
     const cached = await c.env.BLAZE_TRENDS_CACHE.get(cacheKey);
 
     if (cached) {
+      c.set('cacheHit', true);
       return c.json({
         trend: JSON.parse(cached),
         cached: true,
@@ -166,6 +296,8 @@ app.get('/api/trends/:id', async (c) => {
     }
 
     const trend = formatTrend(result);
+    const latestUpdate = new Date(trend.updatedAt).getTime();
+    c.set('dataFreshnessSeconds', Math.max(0, (Date.now() - latestUpdate) / 1000));
 
     // Cache for 10 minutes
     await c.env.BLAZE_TRENDS_CACHE.put(cacheKey, JSON.stringify(trend), {
@@ -178,6 +310,7 @@ app.get('/api/trends/:id', async (c) => {
     });
   } catch (error) {
     console.error('Error fetching trend:', error);
+    c.set('upstreamErrorRate', 1);
     return c.json({ error: 'Failed to fetch trend' }, 500);
   }
 });

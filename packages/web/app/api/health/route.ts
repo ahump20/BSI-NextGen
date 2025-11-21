@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withApiObservability } from '../../lib/observability';
 
 // Configure for edge runtime
 export const runtime = 'edge';
@@ -17,7 +18,7 @@ export const runtime = 'edge';
  * - 200: All systems operational
  * - 503: Service degraded or unavailable
  */
-export async function GET(request: NextRequest) {
+export const GET = withApiObservability(async (_request: NextRequest) => {
   const startTime = Date.now();
 
   const checks = {
@@ -42,14 +43,19 @@ export async function GET(request: NextRequest) {
     version: '1.0.0',
   };
 
-  return NextResponse.json(response, {
-    status: allHealthy ? 200 : 503,
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'X-Service-Status': status,
+  return {
+    response: NextResponse.json(response, {
+      status: allHealthy ? 200 : 503,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'X-Service-Status': status,
+      },
+    }),
+    alertContext: {
+      upstreamErrorRate: checks.external_apis === 'healthy' ? 0 : 0.2,
     },
-  });
-}
+  };
+}, { feature: 'health' });
 
 /**
  * Check external API availability

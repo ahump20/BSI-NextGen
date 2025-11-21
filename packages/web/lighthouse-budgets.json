@@ -1,0 +1,12 @@
+{
+  "scores": {
+    "performance": 0.9,
+    "accessibility": 0.95
+  },
+  "metrics": {
+    "largest-contentful-paint": 2500,
+    "cumulative-layout-shift": 0.1,
+    "total-blocking-time": 300,
+    "interactive": 4000
+  }
+}

@@ -247,6 +247,23 @@ wrangler d1 execute blaze-db --command "VACUUM"
 
 ## Incident Response
 
+### Observability-Guided Triage
+1. **Check dashboards first** – call `GET /api/observability/dashboard` or open Cloudflare Analytics for `worker.request.duration` and `error_budget.breach` to see which route or worker is burning the budget.
+2. **Correlate alerts** – review Cloudflare Logpush or GitHub notifications for:
+   - `alert.data-freshness` (stale live game feed >90s)
+   - `alert.auth-failures` (401/403 rate from API wrappers)
+   - `alert.upstream-errors` (>=10% failures from providers)
+3. **Trace by ID** – copy the `x-trace-id` header from the failing API response and search worker logs (`wrangler tail`) and Next.js server logs for matching entries.
+4. **Stabilize with cache** – if upstream is failing, enable KV cache for the affected route and verify cache hit rate via `/api/observability/dashboard` > `cache.hitRate`.
+5. **Escalate** – if data freshness remains >90s for 10+ minutes, fail over to static scoreboard JSON in R2 and notify #ops.
+
+### Performance Tuning with Instrumentation
+1. Hit `/api/observability/dashboard` and record current p50/p95, cache hit rate, and error budget breaches.
+2. Use `reportWebVitals` output (via Analytics Engine) to isolate INP/LCP regressions; compare against CI Lighthouse report stored as `lighthouse-report.json` in workflow artifacts.
+3. Add or adjust caching (Cloudflare KV/CDN) and re-run the `quality-audits` GitHub Action to ensure budgets stay above **Performance ≥0.9** / **Accessibility ≥0.95**.
+4. For Workers, run `wrangler tail --format json | grep traceId` with the ID from `x-trace-id` to find slow spans and upstream errors.
+5. Update alert thresholds in code (`withApiObservability` / Worker middleware) if SLOs change, and document the new targets in `OBSERVABILITY_DASHBOARDS.md`.
+
 ### Worker Down / Failing
 
 **Severity:** HIGH

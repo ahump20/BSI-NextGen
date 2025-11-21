@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withApiObservability } from '../../lib/observability';
 
 // Configure for Cloudflare Edge Runtime
 export const runtime = 'edge';
@@ -47,7 +48,7 @@ interface AnalyticsPayload {
   timestamp: number;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withApiObservability(async (request: NextRequest) => {
   try {
     const payload: AnalyticsPayload = await request.json();
 
@@ -108,29 +109,39 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        received: {
-          events: payload.events?.length || 0,
-          performance: payload.performance?.length || 0,
-          errors: payload.errors?.length || 0,
-        }
+    return {
+      response: NextResponse.json(
+        {
+          success: true,
+          received: {
+            events: payload.events?.length || 0,
+            performance: payload.performance?.length || 0,
+            errors: payload.errors?.length || 0,
+          }
+        },
+        { status: 200 }
+      ),
+      alertContext: {
+        upstreamErrorRate: 0,
       },
-      { status: 200 }
-    );
+    };
   } catch (error) {
     console.error('[Analytics API] Error processing request:', error);
 
-    return NextResponse.json(
-      {
-        error: 'Failed to process analytics data',
-        message: error instanceof Error ? error.message : 'Unknown error'
+    return {
+      response: NextResponse.json(
+        {
+          error: 'Failed to process analytics data',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        },
+        { status: 500 }
+      ),
+      alertContext: {
+        upstreamErrorRate: 1,
       },
-      { status: 500 }
-    );
+    };
   }
-}
+}, { feature: 'analytics-ingest', cacheStatus: 'bypass' });
 
 // Handle OPTIONS for CORS preflight
 export async function OPTIONS(request: NextRequest) {

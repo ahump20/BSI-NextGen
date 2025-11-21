@@ -69,6 +69,47 @@ jobs:
       - name: Build project
         run: pnpm build || echo "Build command not yet configured - skipping"
 
+  quality-audits:
+    name: Performance & Accessibility Budgets
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter @bsi/web build
+
+      - name: Start Next.js server
+        run: pnpm --filter @bsi/web start -- --hostname 0.0.0.0 --port 3000 &
+
+      - name: Wait for server
+        run: pnpm dlx wait-on http://localhost:3000
+
+      - name: Run Lighthouse budgets
+        run: pnpm exec lighthouse http://localhost:3000 \
+          --quiet --chrome-flags="--headless --no-sandbox" \
+          --only-categories=performance,accessibility \
+          --output=json --output-path=./lighthouse-report.json
+
+      - name: Validate budgets
+        run: node scripts/validate-lighthouse.js ./lighthouse-report.json packages/web/lighthouse-budgets.json
+
   deploy-info:
     name: Deployment Information
     runs-on: ubuntu-latest
