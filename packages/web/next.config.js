@@ -2,12 +2,22 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  modularizeImports: {
+    '@react-three/drei': {
+      transform: '@react-three/drei/{{member}}',
+    },
+    '@react-three/fiber': {
+      transform: '@react-three/fiber/{{member}}',
+    },
+  },
   eslint: {
     // Temporarily ignore ESLint during builds
     // TODO: Fix linting issues in production code
     ignoreDuringBuilds: true,
   },
   images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 604800,
     domains: [
       'www.mlbstatic.com',
       'a.espncdn.com',
@@ -16,6 +26,9 @@ const nextConfig = {
   },
   env: {
     SPORTSDATAIO_API_KEY: process.env.SPORTSDATAIO_API_KEY,
+  },
+  experimental: {
+    optimizePackageImports: ['@react-three/drei', '@react-three/fiber'],
   },
   async headers() {
     return [

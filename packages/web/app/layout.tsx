@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { CookieConsent } from '@/components/CookieConsent';
+import { ObservabilityInitializer } from '@/components/monitoring/ObservabilityInitializer';
 
 // Using system fonts as fallback to avoid network dependency during build
 const fontClass = 'font-sans';
@@ -36,6 +37,7 @@ export default function RootLayout({
       <body className={fontClass}>
         {children}
         <CookieConsent />
+        <ObservabilityInitializer />
       </body>
     </html>
   );

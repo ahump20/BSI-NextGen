@@ -5,6 +5,8 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
 import type { Game, Standing } from '@bsi/shared';
+import { LiveDataSkeleton } from '@/components/monitoring/LiveDataSkeleton';
+import { formatDateTime, formatNumber } from '@/lib/formatting';
 
 interface ApiResponse<T> {
   data: T;
@@ -23,6 +25,7 @@ export default function NFLPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
   const [selectedConference, setSelectedConference] = useState<string>('all');
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchNFLData() {
@@ -44,6 +47,11 @@ export default function NFLPage() {
 
         setGames(gamesData.data);
         setStandings(standingsData.data);
+        setLastUpdated(
+          gamesData.source?.timestamp ||
+            standingsData.source?.timestamp ||
+            new Date().toISOString(),
+        );
       } catch (err) {
         console.error('Error fetching NFL data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load NFL data');
@@ -55,9 +63,9 @@ export default function NFLPage() {
     fetchNFLData();
 
     // Refresh every 30 seconds for live games
-    const interval = setInterval(fetchNFLData, 30000);
-    return () => clearInterval(interval);
-  }, [selectedWeek]);
+        const interval = setInterval(fetchNFLData, 30000);
+        return () => clearInterval(interval);
+      }, [selectedWeek]);
 
   const weeks = Array.from({ length: 18 }, (_, i) => i + 1);
 
@@ -151,23 +159,28 @@ export default function NFLPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        aria-busy={loading}
+        aria-live="polite"
+      >
         {/* Status Badge */}
         <div className="mb-6 flex items-center gap-2">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             Live Data from SportsDataIO
           </div>
+          {lastUpdated && (
+            <p className="text-sm text-gray-600" aria-label={`Last updated ${formatDateTime(lastUpdated)}`}>
+              Updated {formatDateTime(lastUpdated)}
+            </p>
+          )}
         </div>
 
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-          </div>
-        )}
+        {loading && <LiveDataSkeleton />}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6" role="alert">
             <h3 className="text-red-800 font-semibold mb-2">Error Loading NFL Data</h3>
             <p className="text-red-600">{error}</p>
           </div>
@@ -231,25 +244,25 @@ export default function NFLPage() {
 
                       {/* Teams and Scores */}
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between" aria-label={`Away team ${game.awayTeam.name} score`}>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-gray-800">
                               {game.awayTeam.abbreviation}
                             </span>
                           </div>
                           <span className="text-xl font-bold text-gray-800">
-                            {game.awayScore}
+                            {formatNumber(game.awayScore, { maximumFractionDigits: 0 })}
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between" aria-label={`Home team ${game.homeTeam.name} score`}>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-gray-800">
                               {game.homeTeam.abbreviation}
                             </span>
                           </div>
                           <span className="text-xl font-bold text-gray-800">
-                            {game.homeScore}
+                            {formatNumber(game.homeScore, { maximumFractionDigits: 0 })}
                           </span>
                         </div>
                       </div>
@@ -345,10 +358,17 @@ export default function NFLPage() {
                                 {standing.losses}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800">
-                                {standing.winPercentage.toFixed(3)}
+                                {formatNumber(standing.winPercentage, {
+                                  minimumFractionDigits: 3,
+                                  maximumFractionDigits: 3,
+                                })}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
-                                {standing.gamesBack === 0 ? '-' : standing.gamesBack?.toFixed(1) || '-'}
+                                {standing.gamesBack === 0
+                                  ? '-'
+                                  : standing.gamesBack
+                                      ? formatNumber(standing.gamesBack, { maximumFractionDigits: 1 })
+                                      : '-'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800">
                                 {standing.streak || '-'}
