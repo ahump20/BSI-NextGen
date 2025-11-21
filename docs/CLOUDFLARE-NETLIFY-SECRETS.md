@@ -38,9 +38,9 @@ Prefer storing sensitive values as environment secrets; fall back to environment
 
 ## Promotion and rollback
 
-- Staging deploys run automatically on `main` and publish artifacts as `staging-release` so they can be promoted to production with a manual `workflow_dispatch` run.
-- Production deploys use the `production` environment in GitHub Actions; configure required reviewers for manual approval.
-- Rollbacks use the last staged artifact. Trigger `rollback_production` via `workflow_dispatch` to push the staged bundle back onto production Pages and Workers.
+- Staging deploys run automatically on `main` and publish artifacts as `staging-release`. Promotion to production is performed by manually triggering the `promote_to_production` workflow, which uses the latest staged artifact and requires approval in the `production` environment.
+- Production deploys are gated by the `production` environment in GitHub Actions, with required reviewers for manual approval. The workflow ensures correct job dependencies and conditions so promotion and rollback jobs run successfully.
+- Rollbacks are performed by manually triggering the `rollback_production` workflow, which redeploys the most recent staged artifact to production. Ensure that the `staging` environment is defined in `wrangler.toml` if using environment-specific deploys.
 
 ## Operational tips
 
