@@ -362,7 +362,7 @@ describe('NCAAFootballAdapter', () => {
         json: async () => mockGamesResponse,
       } as Response);
 
-      const result = await adapter.getGames({ week: 5 });
+      await adapter.getGames({ week: 5 });
 
       const fetchUrl = (mockFetch.mock.calls[0][0] as string);
       expect(fetchUrl).toContain('week=5');
