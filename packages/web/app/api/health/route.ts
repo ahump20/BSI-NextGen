@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { APP_VERSION, APP_TIMEZONE } from '../../config/constants';
 
 // Configure for edge runtime
 export const runtime = 'edge';
@@ -36,10 +37,10 @@ export async function GET(request: NextRequest) {
   const response = {
     status,
     timestamp: new Date().toISOString(),
-    timezone: 'America/Chicago',
+    timezone: APP_TIMEZONE,
     response_time_ms: responseTime,
     checks,
-    version: '1.0.0',
+    version: APP_VERSION,
   };
 
   return NextResponse.json(response, {

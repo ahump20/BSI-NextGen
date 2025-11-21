@@ -5,6 +5,7 @@
 
 import { GET } from '../route';
 import { NextRequest } from 'next/server';
+import { APP_VERSION, APP_TIMEZONE } from '../../../config/constants';
 
 // Mock global fetch
 global.fetch = jest.fn();
@@ -42,8 +43,8 @@ describe('/api/health', () => {
       expect(data.checks.external_apis).toBe('healthy');
       expect(data.checks.environment).toBe('healthy');
       expect(data.checks.database).toBe('not_configured');
-      expect(data.timezone).toBe('America/Chicago');
-      expect(data.version).toBe('1.0.0');
+      expect(data.timezone).toBe(APP_TIMEZONE);
+      expect(data.version).toBe(APP_VERSION);
     });
 
     it('should include response time', async () => {
