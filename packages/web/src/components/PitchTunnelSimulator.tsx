@@ -185,6 +185,17 @@ export function PitchTunnelSimulator() {
     return () => {
       cancelAnimationFrame(animationRef.current ?? 0);
       window.removeEventListener('resize', resize);
+      // Dispose geometries and materials to prevent memory leaks
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach((m) => m.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
       renderer.dispose();
       container.removeChild(renderer.domElement);
     };
