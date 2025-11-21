@@ -433,10 +433,10 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
     });
 
     it('should handle Bearer with different casing', () => {
-      // Only exact "Bearer " should work
+      // The "Bearer" prefix should be matched case-insensitively (RFC 7230)
       const token = extractBearerToken('bearer mock-jwt-token');
 
-      expect(token).toBeNull();
+      expect(token).toBe('mock-jwt-token');
     });
 
     it('should extract token with spaces in it', () => {
