@@ -37,7 +37,9 @@ export async function GET(request: NextRequest) {
     // Fetch unified games for analysis
     let gamesResponse;
     try {
-      gamesResponse = await orchestrator.getAllGames(startDate, today);
+      // Note: getAllGames only accepts a single date, not a range
+      // For weekly analysis, we fetch today's games as a sample
+      gamesResponse = await orchestrator.getAllGames(today);
     } catch (error) {
       console.warn('[Weekly Alpha] Error fetching games, using calculated metrics:', error);
       // Fall back to calculated metrics if games API fails
