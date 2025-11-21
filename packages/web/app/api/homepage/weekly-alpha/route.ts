@@ -35,9 +35,16 @@ export async function GET(request: NextRequest) {
     const startDate = oneWeekAgo.toISOString().split('T')[0];
 
     // Fetch unified games for analysis
+    // Note: getAllGames accepts a single date, so we fetch today's games
+    // In production, you'd want to fetch multiple dates or use a date range method
     let gamesResponse;
     try {
-      gamesResponse = await orchestrator.getAllGames(startDate, today);
+      gamesResponse = await orchestrator.getAllGames(today);
+      // Filter games to include only those in our date range
+      gamesResponse.data = gamesResponse.data.filter((game) => {
+        const gameDate = new Date(game.date).toISOString().split('T')[0];
+        return gameDate >= startDate && gameDate <= today;
+      });
     } catch (error) {
       console.warn('[Weekly Alpha] Error fetching games, using calculated metrics:', error);
       // Fall back to calculated metrics if games API fails

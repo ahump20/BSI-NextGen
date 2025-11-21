@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         });
 
         if (user) {
-          userId = user.userId || user.sub || 'guest';
+          userId = user.id || 'guest';
           isAuthenticated = true;
         }
       } catch (error) {
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      userId = user.userId || user.sub || '';
+      userId = user.id || '';
     } catch (error) {
       return NextResponse.json(
         { success: false, error: 'Invalid session token' },
