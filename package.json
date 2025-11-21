@@ -18,6 +18,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:all": "pnpm test && pnpm test:e2e",
+    "test:all:continue": "pnpm test; pnpm test:e2e",
     "test:sportsdataio": "tsx scripts/test-sportsdataio.ts",
     "trends:dev": "cd cloudflare-workers/blaze-trends && npm run dev",
     "trends:deploy": "cd cloudflare-workers/blaze-trends && npm run deploy",
