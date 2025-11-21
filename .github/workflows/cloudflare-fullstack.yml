@@ -209,20 +209,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: 'npm'
+          cache-dependency-path: cloudflare-workers/blaze-trends/package-lock.json
 
       - name: Install Worker dependencies
         working-directory: cloudflare-workers/blaze-trends
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Download staged artifact
         uses: actions/download-artifact@v4
