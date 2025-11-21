@@ -98,7 +98,7 @@ describe('GameCard', () => {
       });
       render(<GameCard game={game} />);
 
-      // Date should be formatted as "Jan 13, 1:00 PM" (or similar based on CST)
+      // Only checks that "Jan 13" (the date) appears in the output; does not assert on time or timezone formatting.
       expect(screen.getByText(/Jan 13/)).toBeInTheDocument();
     });
   });
