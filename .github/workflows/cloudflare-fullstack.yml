@@ -240,7 +240,7 @@ jobs:
               per_page: 10
             });
             const run = runs.data.workflow_runs.find(r => 
-              r.name === context.workflow
+              r.name === '${{ github.workflow }}'
             );
             if (!run) {
               throw new Error('No successful staging deployment found');
@@ -329,7 +329,7 @@ jobs:
               per_page: 10
             });
             const run = runs.data.workflow_runs.find(r => 
-              r.name === context.workflow
+              r.name === '${{ github.workflow }}'
             );
             if (!run) {
               throw new Error('No successful staging deployment found');
