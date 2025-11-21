@@ -293,7 +293,7 @@ describe('GameCard', () => {
         status: 'live',
         period: undefined,
       });
-      const { container } = render(<GameCard game={game} />);
+      render(<GameCard game={game} />);
 
       // Should not crash and should render game without period
       expect(screen.getByText('LIVE')).toBeInTheDocument();
