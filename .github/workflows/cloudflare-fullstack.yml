@@ -201,17 +201,19 @@ jobs:
 
   promote-production:
     name: Promote to production
-    needs: deploy-staging
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.promote_to_production == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production
     steps:
-      - name: Download staged artifact
-        uses: actions/download-artifact@v4
+      - name: Download latest staging artifact
+        uses: dawidd6/action-download-artifact@v3
         with:
+          workflow: cloudflare-fullstack.yml
+          workflow_conclusion: success
           name: staging-release
           path: ./release
+          branch: main
 
       - name: Extract release bundle
         run: tar -xzf release/staging-artifact.tar.gz
@@ -247,17 +249,19 @@ jobs:
 
   rollback-production:
     name: Rollback production from staged artifact
-    needs: deploy-staging
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.rollback_production == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production
     steps:
-      - name: Download staged artifact
-        uses: actions/download-artifact@v4
+      - name: Download latest staging artifact
+        uses: dawidd6/action-download-artifact@v3
         with:
+          workflow: cloudflare-fullstack.yml
+          workflow_conclusion: success
           name: staging-release
           path: ./release
+          branch: main
 
       - name: Extract release bundle
         run: tar -xzf release/staging-artifact.tar.gz
