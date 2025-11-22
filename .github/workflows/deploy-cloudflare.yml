@@ -1,0 +1,118 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Cloudflare Pages
+        id: cloudflare_pages_deploy
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: blazesportsintel
+          directory: packages/web/.next
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref || github.ref_name }}
+          wranglerVersion: '3'
+
+      - name: Add deployment comment to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### 🚀 Cloudflare Pages Deployment
+
+              **Environment:** Preview
+              **URL:** ${{ steps.cloudflare_pages_deploy.outputs.url }}
+              **Deployment ID:** ${{ steps.cloudflare_pages_deploy.outputs.id }}
+
+              ✅ Deployment successful!`
+            })
+
+      - name: Verify deployment
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🔍 Verifying production deployment..."
+          DEPLOY_URL="${{ steps.cloudflare_pages_deploy.outputs.url }}"
+
+          # Wait for deployment to be ready
+          sleep 10
+
+          # Check health endpoint
+          if curl -f -s "$DEPLOY_URL/api/health" > /dev/null; then
+            echo "✅ Health check passed"
+          else
+            echo "⚠️ Health check failed (may take a few minutes)"
+          fi
+
+          # Check homepage
+          if curl -f -s "$DEPLOY_URL/" > /dev/null; then
+            echo "✅ Homepage accessible"
+          else
+            echo "❌ Homepage check failed"
+            exit 1
+          fi
+
+      - name: Post-deployment notification
+        if: github.ref == 'refs/heads/main' && success()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  ✅ Production Deployment Complete"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "🌐 URL: ${{ steps.cloudflare_pages_deploy.outputs.url }}"
+          echo "📊 Deployment ID: ${{ steps.cloudflare_pages_deploy.outputs.id }}"
+          echo "🔧 Environment: ${{ steps.cloudflare_pages_deploy.outputs.environment }}"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
